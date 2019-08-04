@@ -37,7 +37,7 @@ publish {
     artifactId = 'easyble2' //项目名称  
     publishVersion = "$lib_version" //版本号  
     desc = 'A framework for Android Bluetooth Low Energy (BLE)'
-    website = 'https://github.com/wandersnail/easyble'
+    website = 'https://github.com/wandersnail/easyble2'
 }
 
 if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUpload') }) {
@@ -58,9 +58,9 @@ if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUploa
                     version lib_version
 
                     scm {
-                        url 'https://github.com/wandersnail/easyble'
-                        connection 'scm:git:https://github.com/wandersnail/easyble.git'
-                        developerConnection 'scm:git:https://github.com/wandersnail/easyble.git'
+                        url 'https://github.com/wandersnail/easyble2'
+                        connection 'scm:git:https://github.com/wandersnail/easyble2.git'
+                        developerConnection 'scm:git:https://github.com/wandersnail/easyble2.git'
                     }
 
                     licenses {
