@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:minHeight="60dp">
+
+    <ImageView
+        android:id="@+id/ivIcon"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="5dp"
+        android:layout_width="18dp"
+        android:layout_height="18dp"/>
+    <LinearLayout
+        android:layout_toEndOf="@id/ivIcon"
+        android:layout_marginStart="5dp"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="60dp">
+        <TextView
+            android:text="Unknown Service"
+            android:textSize="18dp"
+            android:textColor="#404040"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <LinearLayout
+            android:gravity="center_vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="UUID: "
+                android:textSize="12dp"
+                android:textColor="#909090"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+            <TextView
+                android:id="@+id/tvUuid"
+                android:textSize="12dp"
+                android:textColor="#404040"
+                android:text="00002902-0000-1000-8000-00805f9b34fb"                
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>        
+    </LinearLayout>
+</RelativeLayout>

@@ -1,0 +1,84 @@
+apply plugin: 'com.android.library'
+apply plugin: 'com.novoda.bintray-release'
+apply plugin: 'maven'
+
+def lib_version = '1.0.0'
+group = "com.github.wandersnail"
+version = lib_version
+
+android {
+    compileSdkVersion build_versions.target_sdk
+    defaultConfig {
+        minSdkVersion build_versions.min_sdk
+        targetSdkVersion build_versions.target_sdk
+        versionCode 1
+        versionName "$lib_version"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+}
+
+dependencies {
+    compileOnly deps.appcompat
+}
+
+publish {
+    repoName="android"//仓库名
+    userOrg = 'wandersnail' //bintray.com用户名  
+    groupId = 'com.github.wandersnail' //jcenter上的路径  
+    artifactId = 'easyble2' //项目名称  
+    publishVersion = "$lib_version" //版本号  
+    desc = 'A framework for Android Bluetooth Low Energy (BLE)'
+    website = 'https://github.com/wandersnail/easyble'
+}
+
+if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUpload') }) {
+    gradle.taskGraph.whenReady { taskGraph ->
+        taskGraph.getAllTasks().find {
+            it.path == ":$project.name:generatePomFileForReleasePublication"
+        }.doLast {
+            file("build/publications/release/pom-default.xml").delete()
+            println 'Overriding pom-file to make sure we can sync to maven central!'
+            pom {
+                //noinspection GroovyAssignabilityCheck
+                project {
+                    name "easyble2"
+                    artifactId 'easyble2'
+                    packaging 'aar'
+                    description 'A framework for Android Bluetooth Low Energy (BLE)'
+                    url 'https://github.com/wandersnail'
+                    version lib_version
+
+                    scm {
+                        url 'https://github.com/wandersnail/easyble'
+                        connection 'scm:git:https://github.com/wandersnail/easyble.git'
+                        developerConnection 'scm:git:https://github.com/wandersnail/easyble.git'
+                    }
+
+                    licenses {
+                        license {
+                            name 'The Apache License, Version 2.0'
+                            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id 'wandersnail'
+                            name 'Zeng Fansheng'
+                            email 'bingmo977@qq.com'
+                        }
+                    }
+                }
+            }.writeTo("build/publications/release/pom-default.xml")
+        }
+    }
+}
