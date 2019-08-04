@@ -1,0 +1,39 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+
+android {
+    compileSdkVersion build_versions.target_sdk
+    defaultConfig {
+        minSdkVersion build_versions.min_sdk
+        targetSdkVersion build_versions.target_sdk
+        applicationId "com.wandersnail.bledemo"
+        versionCode 7
+        versionName "1.6"
+    }
+    lintOptions {
+        abortOnError false
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    packagingOptions {
+        exclude 'META-INF/library_release.kotlin_module'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation deps.appcompat
+    implementation deps.mmkv
+    implementation deps.kotlin.stdlib
+    implementation deps.wandersnail.commons_android
+    implementation deps.wandersnail.treeadapter
+    implementation deps.wandersnail.widgets
+    implementation deps.eventbus
+    implementation deps.avi_loading
+    implementation project(':library')
+}

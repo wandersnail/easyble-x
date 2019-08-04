@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#f9f9f9"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    
+    <ListView
+        android:id="@+id/lv"
+        android:overScrollMode="never"
+        android:scrollbars="none"
+        android:dividerHeight="1px"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <FrameLayout
+        android:id="@+id/layoutConnecting"
+        android:background="#fafafa"
+        android:visibility="gone"
+        android:focusable="true"
+        android:clickable="true"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.wang.avi.AVLoadingIndicatorView
+            android:id="@+id/loadingIndicator"
+            style="@style/AVLoadingIndicatorView"
+            app:indicatorColor="?attr/colorPrimary"
+            app:indicatorName="BallPulseIndicator"
+            android:layout_marginBottom="40dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"/>
+
+        <ImageView
+            android:id="@+id/ivDisconnected"
+            android:layout_gravity="center"
+            android:layout_marginBottom="40dp"
+            android:src="@drawable/disconnect"
+            android:layout_width="48dp"
+            android:layout_height="48dp"/>
+    </FrameLayout>
+</FrameLayout>
