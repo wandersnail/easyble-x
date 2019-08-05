@@ -7,21 +7,20 @@ import androidx.annotation.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.concurrent.ExecutorService;
 
 /**
  * date: 2019/8/3 11:19
  * author: zengfansheng
  */
-class RunnablePoster {
-    @NonNull
-    private ExecutorService executor;
-    @NonNull
-    private Handler mainHandler;
+final class Poster {
+    private final Handler mainHandler;
+    private final BackgroundPoster backgroundPoster;
+    private final EasyBLE easyBle;
 
-    RunnablePoster(@NonNull ExecutorService executor, @NonNull Handler mainHandler) {
-        this.executor = executor;
-        this.mainHandler = mainHandler;
+    Poster(EasyBLE easyBle) {
+        this.easyBle = easyBle;
+        mainHandler = new Handler(Looper.getMainLooper());
+        backgroundPoster = new BackgroundPoster(easyBle);
     }
 
     /**
@@ -31,6 +30,7 @@ class RunnablePoster {
      * @param runnable 要执行的任务
      */
     static void postToMainThread(@NonNull Handler handler, @NonNull Runnable runnable) {
+        Inspector.requireNonNull(runnable, "runnable is null");
         if (Looper.myLooper() == Looper.getMainLooper()) {
             runnable.run();
         } else {
@@ -45,11 +45,12 @@ class RunnablePoster {
      * @param runnable 要执行的任务
      */
     void post(@Nullable Method method, @NonNull Runnable runnable) {
+        Inspector.requireNonNull(runnable, "runnable is null");
         if (method != null) {
             RunOn annotation = method.getAnnotation(RunOn.class);
             ThreadMode mode;
             if (annotation == null) {
-                mode = EasyBLE.instance.methodDefaultThreadMode;
+                mode = easyBle.methodDefaultThreadMode;
             } else {
                 mode = annotation.threadMode();
             }
@@ -64,6 +65,7 @@ class RunnablePoster {
      * @param runnable 要执行的任务
      */
     void post(@NonNull ThreadMode mode, @NonNull Runnable runnable) {
+        Inspector.requireNonNull(runnable, "runnable is null");
         switch (mode) {
             case MAIN:
                 postToMainThread(mainHandler, runnable);
@@ -72,7 +74,7 @@ class RunnablePoster {
                 runnable.run();
                 break;
             case BACKGROUND:
-                executor.execute(runnable);
+                backgroundPoster.enqueue(runnable);
                 break;
         }
     }
@@ -85,6 +87,7 @@ class RunnablePoster {
      * @param pairs      参数信息对
      */
     void post(@NonNull final Object owner, @NonNull String methodName, @Nullable TypeValuePair... pairs) {
+        Inspector.requireNonNull(methodName, "methodName is null");
         if (pairs == null || pairs.length == 0) {
             try {
                 final Method method = owner.getClass().getMethod(methodName);
@@ -129,9 +132,10 @@ class RunnablePoster {
      * 将任务post到指定线程执行
      *
      * @param owner 方法的所在的对象实例
-     * @param info  方法信息实例
+     * @param methodInfo  方法信息实例
      */
-    void post(@NonNull Object owner, @NonNull MethodInfo info) {
-        post(owner, info.name, info.pairs);
+    void post(@NonNull Object owner, @NonNull MethodInfo methodInfo) {
+        Inspector.requireNonNull(methodInfo, "methodInfo is null");
+        post(owner, methodInfo.name, methodInfo.pairs);
     }
 }

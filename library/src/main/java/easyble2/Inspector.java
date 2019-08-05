@@ -4,7 +4,7 @@ package easyble2;
  * date: 2019/8/5 16:10
  * author: zengfansheng
  */
-class Inspector {
+final class Inspector {    
     /**
      * 对象为空时抛EasyBLEException
      *

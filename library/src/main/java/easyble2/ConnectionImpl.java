@@ -38,16 +38,16 @@ class ConnectionImpl implements Connection, ScanListener {
     private static final int MSG_ARG_NOTIFY = 2;
     private static final int MSG_ARG_RELEASE = 3;
 
-    private BluetoothAdapter bluetoothAdapter;
-    private Device device;
-    private ConnectionConfiguration configuration;//连接配置
+    private final BluetoothAdapter bluetoothAdapter;
+    private final Device device;
+    private final ConnectionConfiguration configuration;//连接配置
     private BluetoothGatt bluetoothGatt;
-    private List<Request> requestQueue = new ArrayList<>();//请求队列
+    private final List<Request> requestQueue = new ArrayList<>();//请求队列
     private Request currentRequest;//当前的请求
     private BluetoothGattCharacteristic pendingCharacteristic;
     private ConnectionStateChangeListener stateChangeListener;//连接状态监听器
     private boolean isReleased;//连接是否已释放
-    private Handler connHandler;//用于操作连接的Handler，运行在主线程
+    private final Handler connHandler;//用于操作连接的Handler，运行在主线程
     private CharacteristicChangedCallback characChangedCallback;//特征值变化回调
     private long connStartTime; //用于连接超时计时
     private int refreshCount;//刷新（清缓存）计数，在发现服务后清零
@@ -57,28 +57,31 @@ class ConnectionImpl implements Connection, ScanListener {
     private boolean refreshing;//是否正在执行清理缓存
     private boolean isActiveDisconnect;//是否主动断开连接
     private long lastScanStopTime;//上次搜索停止时间
-    private Logger logger;
-    private EventObservable observable;
-    private RunnablePoster runnablePoster;
-    private BluetoothGattCallback gattCallback = new BleGattCallback();
+    private final Logger logger;
+    private final EventObservable observable;
+    private final Poster poster;
+    private final BluetoothGattCallback gattCallback = new BleGattCallback();
+    private final EasyBLE easyBle;
 
-    ConnectionImpl(BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration, int connectDelay, ConnectionStateChangeListener listener) {
+    ConnectionImpl(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration, int connectDelay, ConnectionStateChangeListener listener) {
         this.bluetoothAdapter = bluetoothAdapter;
         this.device = device;
-        this.configuration = configuration;
-        logger = EasyBLE.instance.logger;
-        observable = EasyBLE.instance.eventObservable;
-        runnablePoster = EasyBLE.instance.runnablePoster;
         //如果没有配置
         if (configuration == null) {
             this.configuration = new ConnectionConfiguration();
+        } else {
+            this.configuration = configuration;
         }
+        this.easyBle = easyBle;
+        logger = easyBle.logger;
+        observable = easyBle.eventObservable;
+        poster = easyBle.poster;
         connHandler = new ConnHandler(this);
         stateChangeListener = listener;
         connStartTime = System.currentTimeMillis();
         connHandler.sendEmptyMessageDelayed(MSG_CONNECT, connectDelay); //执行连接
         connHandler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay); //启动定时器
-        EasyBLE.instance.addScanListener(this);
+        easyBle.addScanListener(this);
     }
 
     @Override
@@ -173,7 +176,7 @@ class ConnectionImpl implements Connection, ScanListener {
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             notifyCharacteristicChanged(characteristic);
             if (characChangedCallback != null) {
-                runnablePoster.post(characChangedCallback, MethodInfoGenerator.onCharacteristicChanged(device,
+                poster.post(characChangedCallback, MethodInfoGenerator.onCharacteristicChanged(device,
                         characteristic.getService().getUuid(), characteristic.getUuid(), characteristic.getValue()));
             }
         }
@@ -396,15 +399,15 @@ class ConnectionImpl implements Connection, ScanListener {
         public void run() {
             if (!isReleased) {
                 //连接之前必须先停止搜索
-                EasyBLE.instance.stopScan();
+                easyBle.stopScan();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    bluetoothGatt = device.getOriginDevice().connectGatt(EasyBLE.instance.getContext(), false, gattCallback,
+                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), false, gattCallback,
                             configuration.transport, configuration.phy);
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    bluetoothGatt = device.getOriginDevice().connectGatt(EasyBLE.instance.getContext(), false, gattCallback,
+                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), false, gattCallback,
                             configuration.transport);
                 } else {
-                    bluetoothGatt = device.getOriginDevice().connectGatt(EasyBLE.instance.getContext(), false, gattCallback);
+                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), false, gattCallback);
                 }
             }
         }
@@ -507,12 +510,12 @@ class ConnectionImpl implements Connection, ScanListener {
     private void tryScanReconnect() {
         if (!isReleased) {
             connStartTime = System.currentTimeMillis();
-            EasyBLE.instance.stopScan();
+            easyBle.stopScan();
             //搜索设备，搜索到才执行连接
             device.connectionState = STATE_SCANNING;
             String msg = String.format(Locale.US, "scanning for reconnection [name: %s, addr: %s]", device.name, device.address);
             logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
-            EasyBLE.instance.startScan();
+            easyBle.startScan();
         }
     }
 
@@ -913,7 +916,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private void notifyRequestFialed(Request request, int failType) {
         MethodInfo info = MethodInfoGenerator.onRequestFailed(device, request, failType);
         if (request.callback != null) {//回调方式
-            runnablePoster.post(request.callback, info);
+            poster.post(request.callback, info);
         } else {//观察者模式
             observable.notifyObservers(info);
         }
@@ -925,7 +928,7 @@ class ConnectionImpl implements Connection, ScanListener {
         MethodInfo info = MethodInfoGenerator.onCharacteristicRead(tag, device, characteristic.getService().getUuid(),
                 characteristic.getUuid(), characteristic.getValue());
         if (callback != null) {//回调方式
-            runnablePoster.post(callback, info);
+            poster.post(callback, info);
         } else {//观察者模式
             observable.notifyObservers(info);
         }
@@ -946,7 +949,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private void notifyReadRemoteRssi(RequestCallback callback, String tag, int rssi) {
         MethodInfo info = MethodInfoGenerator.onRemoteRssiRead(tag, device, rssi);
         if (callback != null) {//回调方式
-            runnablePoster.post(callback, info);
+            poster.post(callback, info);
         } else {//观察者模式
             observable.notifyObservers(info);
         }
@@ -957,7 +960,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private void notifyMtuChanged(RequestCallback callback, String tag, int mtu) {
         MethodInfo info = MethodInfoGenerator.onMtuChanged(tag, device, mtu);
         if (callback != null) {//回调方式
-            runnablePoster.post(callback, info);
+            poster.post(callback, info);
         } else {//观察者模式
             observable.notifyObservers(info);
         }
@@ -970,7 +973,7 @@ class ConnectionImpl implements Connection, ScanListener {
         MethodInfo info = MethodInfoGenerator.onDescriptorRead(tag, device, charac.getService().getUuid(),
                 charac.getUuid(), descriptor.getUuid(), descriptor.getValue());
         if (callback != null) {//回调方式
-            runnablePoster.post(callback, info);
+            poster.post(callback, info);
         } else {//观察者模式
             observable.notifyObservers(info);
         }
@@ -984,7 +987,7 @@ class ConnectionImpl implements Connection, ScanListener {
         MethodInfo info = MethodInfoGenerator.onNotificationChanged(tag, device, characteristic.getService().getUuid(),
                 characteristic.getUuid(), descriptor.getUuid(), isEnabled);
         if (callback != null) {//回调方式
-            runnablePoster.post(callback, info);
+            poster.post(callback, info);
         } else {//观察者模式
             observable.notifyObservers(info);
         }
@@ -998,7 +1001,7 @@ class ConnectionImpl implements Connection, ScanListener {
         MethodInfo info = MethodInfoGenerator.onIndicationChanged(tag, device, characteristic.getService().getUuid(),
                 characteristic.getUuid(), descriptor.getUuid(), isEnabled);
         if (callback != null) {//回调方式
-            runnablePoster.post(callback, info);
+            poster.post(callback, info);
         } else {//观察者模式
             observable.notifyObservers(info);
         }
@@ -1010,7 +1013,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private void notifyCharacteristicWrite(RequestCallback callback, String tag, UUID serviceUuid, UUID characteristicUuid, byte[] value) {
         MethodInfo info = MethodInfoGenerator.onCharacteristicWrite(tag, device, serviceUuid, characteristicUuid, value);
         if (callback != null) {//回调方式
-            runnablePoster.post(callback, info);
+            poster.post(callback, info);
         } else {
             observable.notifyObservers(info);
         }
@@ -1023,7 +1026,7 @@ class ConnectionImpl implements Connection, ScanListener {
         if (read) {
             MethodInfo info = MethodInfoGenerator.onPhyRead(tag, device, txPhy, rxPhy);
             if (callback != null) {//回调方式
-                runnablePoster.post(callback, info);
+                poster.post(callback, info);
             } else {//观察者模式
                 observable.notifyObservers(info);
             }
@@ -1031,7 +1034,7 @@ class ConnectionImpl implements Connection, ScanListener {
         } else {
             MethodInfo info = MethodInfoGenerator.onPhyUpdate(tag, device, txPhy, rxPhy);
             if (callback != null) {//回调方式
-                runnablePoster.post(callback, info);
+                poster.post(callback, info);
             } else {//观察者模式
                 observable.notifyObservers(info);
             }
@@ -1087,7 +1090,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private void finalRelease() {
         isReleased = true;
         connHandler.removeCallbacksAndMessages(null);
-        EasyBLE.instance.removeScanListener(this);
+        easyBle.removeScanListener(this);
         clearRequestQueueAndNotify();
     }
 

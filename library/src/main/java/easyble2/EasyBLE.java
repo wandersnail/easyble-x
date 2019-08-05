@@ -36,7 +36,7 @@ public class EasyBLE {
     private static final EasyBLEBuilder DEFAULT_BUILDER = new EasyBLEBuilder();
     private final Handler mainHandler;
     final ExecutorService executorService;
-    final RunnablePoster runnablePoster;
+    final Poster poster;
     final ThreadMode methodDefaultThreadMode;
     private final BondController bondController;
     final DeviceCreator deviceCreator;
@@ -48,7 +48,7 @@ public class EasyBLE {
     private boolean isInited;
     private BluetoothAdapter bluetoothAdapter;
     private BroadcastReceiver broadcastReceiver;
-    private Map<String, Connection> connectionMap = new ConcurrentHashMap<>();
+    private final Map<String, Connection> connectionMap = new ConcurrentHashMap<>();
 
     private EasyBLE() {
         this(DEFAULT_BUILDER);
@@ -56,20 +56,21 @@ public class EasyBLE {
 
     EasyBLE(EasyBLEBuilder builder) {
         mainHandler = new Handler(Looper.getMainLooper());
-        RunnablePoster.postToMainThread(mainHandler, new Runnable() {
+        Poster.postToMainThread(mainHandler, new Runnable() {
             @Override
             public void run() {
                 tryGetApplication();
             }
         });
         executorService = builder.executorService;
-        runnablePoster = new RunnablePoster(executorService, mainHandler);
         methodDefaultThreadMode = builder.methodDefaultThreadMode;
         bondController = builder.bondController;
         deviceCreator = builder.deviceCreator == null ? new DefaultDeviceCreator() : builder.deviceCreator;
         eventObservable = builder.eventObservable == null ? new EventObservable() : builder.eventObservable;
         scanConfiguration = builder.scanConfiguration == null ? new ScanConfiguration() : builder.scanConfiguration;
         logger = builder.logger == null ? new DefaultLogger("EasyBLE") : builder.logger;
+        poster = new Poster(this);
+        eventObservable.poster = poster;
     }
 
     /**
@@ -178,11 +179,11 @@ public class EasyBLE {
             filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
             application.registerReceiver(broadcastReceiver, filter);
         }
-        scanner = new Scanner(bluetoothAdapter);
+        scanner = new Scanner(this, bluetoothAdapter);
         isInited = true;
     }
 
-    private synchronized boolean checkSDK() {
+    private synchronized boolean checkStatus() {
         Inspector.requireNonNull(instance, "EasyBLE instance has been destroyed!");
         if (!isInited) {
             if (!tryAutoInit()) {
@@ -225,6 +226,7 @@ public class EasyBLE {
         }
         releaseAllConnections();
         eventObservable.unregisterAll();
+        mainHandler.removeCallbacksAndMessages(null);
     }
 
     /**
@@ -241,7 +243,7 @@ public class EasyBLE {
      * 注册连接状态及数据接收观察者
      */
     public void registerObserver(@NonNull EventObserver observer) {
-        checkSDK();
+        checkStatus();
         eventObservable.registerObserver(observer);
     }
 
@@ -263,7 +265,7 @@ public class EasyBLE {
      * 添加搜索监听器
      */
     public void addScanListener(@NonNull ScanListener listener) {
-        if (checkSDK() && scanner != null) {
+        if (checkStatus() && scanner != null) {
             scanner.addScanListener(listener);
         }
     }
@@ -288,7 +290,7 @@ public class EasyBLE {
      * 搜索BLE设备
      */
     public void startScan() {
-        if (checkSDK() && scanner != null) {
+        if (checkStatus() && scanner != null) {
             scanner.startScan(application);
         }
     }
@@ -297,7 +299,7 @@ public class EasyBLE {
      * 停止搜索
      */
     public void stopScan() {
-        if (checkSDK() && scanner != null) {
+        if (checkStatus() && scanner != null) {
             scanner.stopScan(false);
         }
     }
@@ -306,7 +308,7 @@ public class EasyBLE {
      * 停止搜索，不触发回调
      */
     public void stopScanQuietly() {
-        if (checkSDK() && scanner != null) {
+        if (checkStatus() && scanner != null) {
             scanner.stopScan(true);
         }
     }
@@ -357,7 +359,7 @@ public class EasyBLE {
     @Nullable
     public Connection connect(@NonNull String address, @Nullable ConnectionConfiguration configuration,
                                            @Nullable ConnectionStateChangeListener listener) {
-        if (checkSDK()) {
+        if (checkStatus()) {
             Inspector.requireNonNull(address, "address is null");
             BluetoothDevice remoteDevice = bluetoothAdapter.getRemoteDevice(address);
             if (remoteDevice != null) {
@@ -413,7 +415,7 @@ public class EasyBLE {
     @Nullable
     public synchronized Connection connect(@NonNull final Device device, @Nullable ConnectionConfiguration configuration,
                                            @Nullable final ConnectionStateChangeListener listener) {
-        if (checkSDK()) {
+        if (checkStatus()) {
             Inspector.requireNonNull(device, "device is null");
             Connection connection = connectionMap.remove(device.address);
             //如果连接已存在，先释放掉
@@ -429,7 +431,7 @@ public class EasyBLE {
                         connectDelay = createBond(device.address) ? 1500 : 0;
                     }
                 }
-                connection = new ConnectionImpl(bluetoothAdapter, device, configuration, connectDelay, listener);
+                connection = new ConnectionImpl(this, bluetoothAdapter, device, configuration, connectDelay, listener);
                 connectionMap.put(device.address, connection);
                 return connection;
             } else {
@@ -437,7 +439,7 @@ public class EasyBLE {
                         device.name, device.address);
                 logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, message);
                 if (listener != null) {
-                    RunnablePoster.postToMainThread(mainHandler, new Runnable() {
+                    Poster.postToMainThread(mainHandler, new Runnable() {
                         @Override
                         public void run() {
                             listener.onConnectFailed(device, Connection.CONNECT_FAIL_TYPE_UNCONNECTABLE);
@@ -464,7 +466,7 @@ public class EasyBLE {
      * 断开连接
      */
     public void disconnectConnection(Device device) {
-        if (checkSDK() && device != null) {
+        if (checkStatus() && device != null) {
             Connection connection = connectionMap.remove(device.address);
             if (connection != null) {
                 connection.disconnect();
@@ -476,7 +478,7 @@ public class EasyBLE {
      * 断开连接
      */
     public void disconnectConnection(String address) {
-        if (checkSDK() && address != null) {
+        if (checkStatus() && address != null) {
             Connection connection = connectionMap.remove(address);
             if (connection != null) {
                 connection.disconnect();
@@ -488,7 +490,7 @@ public class EasyBLE {
      * 断开所有连接
      */
     public void disconnectAllConnections() {
-        if (checkSDK()) {
+        if (checkStatus()) {
             for (Connection connection : connectionMap.values()) {
                 connection.disconnect();
             }            
@@ -499,7 +501,7 @@ public class EasyBLE {
      * 释放所有连接
      */
     public void releaseAllConnections() {
-        if (checkSDK()) {
+        if (checkStatus()) {
             for (Connection connection : connectionMap.values()) {
                 connection.release();
             }
@@ -511,7 +513,7 @@ public class EasyBLE {
      * 释放连接
      */
     public void releaseConnection(String address) {
-        if (checkSDK() && address != null) {
+        if (checkStatus() && address != null) {
             Connection connection = connectionMap.remove(address);
             if (connection != null) {
                 connection.release();
@@ -523,7 +525,7 @@ public class EasyBLE {
      * 释放连接
      */
     public void releaseConnection(Device device) {
-        if (checkSDK() && device != null) {
+        if (checkStatus() && device != null) {
             Connection connection = connectionMap.remove(device.address);
             if (connection != null) {
                 connection.release();
@@ -535,7 +537,7 @@ public class EasyBLE {
      * 重连所有设备
      */
     public void reconnectAll() {
-        if (checkSDK()) {
+        if (checkStatus()) {
             for (Connection connection : connectionMap.values()) {
                 if (connection.getConnctionState() != Connection.STATE_SERVICE_DISCOVERED) {
                     connection.reconnect();
@@ -548,7 +550,7 @@ public class EasyBLE {
      * 重连设备
      */
     public void reconnect(Device device) {
-        if (checkSDK() && device != null) {
+        if (checkStatus() && device != null) {
             Connection connection = connectionMap.get(device.address);
             if (connection != null && connection.getConnctionState() != Connection.STATE_SERVICE_DISCOVERED) {
                 connection.reconnect();
@@ -562,7 +564,7 @@ public class EasyBLE {
      * @return {@link BluetoothDevice#BOND_NONE}，{@link BluetoothDevice#BOND_BONDED}，{@link BluetoothDevice#BOND_BONDING}
      */
     public int getBondState(@NonNull String address) {
-        checkSDK();
+        checkStatus();
         try {
             return bluetoothAdapter.getRemoteDevice(address).getBondState();
         } catch (Exception e) {
@@ -576,7 +578,7 @@ public class EasyBLE {
      * @param address 设备地址
      */
     public boolean createBond(@NonNull String address) {
-        checkSDK();
+        checkStatus();
         try {
             BluetoothDevice remoteDevice = bluetoothAdapter.getRemoteDevice(address);
             return remoteDevice.getBondState() != BluetoothDevice.BOND_NONE || remoteDevice.createBond();
@@ -590,7 +592,7 @@ public class EasyBLE {
      */
     @SuppressWarnings("all")
     public void clearBondDevices(RemoveBondFilter filter) {
-        checkSDK();
+        checkStatus();
         if (bluetoothAdapter != null) {
             Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
             for (BluetoothDevice device : devices) {
@@ -611,7 +613,7 @@ public class EasyBLE {
      */
     @SuppressWarnings("all")
     public void removeBond(@NonNull String address) {
-        checkSDK();
+        checkStatus();
         try {
             BluetoothDevice remoteDevice = bluetoothAdapter.getRemoteDevice(address);
             if (remoteDevice.getBondState() != BluetoothDevice.BOND_NONE) {
