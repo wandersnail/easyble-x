@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'maven'
 
-def lib_version = '1.0.0'
+def lib_version = '1.0.1'
 group = "com.github.wandersnail"
 version = lib_version
 

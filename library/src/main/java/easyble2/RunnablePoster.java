@@ -98,7 +98,7 @@ class RunnablePoster {
                         }
                     }
                 });
-            } catch (NoSuchMethodException ignored) {
+            } catch (Exception ignored) {
             }
         } else {
             final Object[] params = new Object[pairs.length];
@@ -120,7 +120,7 @@ class RunnablePoster {
                         }
                     }
                 });
-            } catch (NoSuchMethodException ignored) {
+            } catch (Exception ignored) {
             }
         }
     }

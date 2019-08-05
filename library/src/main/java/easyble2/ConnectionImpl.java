@@ -1126,7 +1126,7 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     @Override
-    public void clearRequestQueueByType(@NonNull Request.RequestType type) {
+    public void clearRequestQueueByType(@Nullable Request.RequestType type) {
         synchronized (this) {
             Iterator<Request> it = requestQueue.iterator();
             while (it.hasNext()) {
@@ -1198,16 +1198,19 @@ class ConnectionImpl implements Connection, ScanListener {
         return null;
     }
 
-    //检查uuid是否存在
-    private boolean checkUuidExists(Request request, UUID... uuids) {
+    //检查uuid是否存在，存在则将请求加入队列，不存在则失败回调或通知观察者
+    private void checkUuidExistsAndEnqueue(Request request, UUID... uuids) {
+        boolean exists = false;
         if (uuids.length > 2) {
-            return checkDescriptoreExists(request, uuids[0], uuids[1], uuids[2]);
+            exists = checkDescriptoreExists(request, uuids[0], uuids[1], uuids[2]);
         } else if (uuids.length > 1) {
-            return checkCharacteristicExists(request, uuids[0], uuids[1]);
+            exists = checkCharacteristicExists(request, uuids[0], uuids[1]);
         } else if (uuids.length == 1) {
-            return checkServiceExists(request, uuids[0]);
+            exists = checkServiceExists(request, uuids[0]);
         }
-        return false;
+        if (exists) {
+            enqueue(request);
+        }
     }
 
     //检查服务是否存在
@@ -1242,7 +1245,7 @@ class ConnectionImpl implements Connection, ScanListener {
         }
         return false;
     }
-
+    
     @Override
     public void changeMtu(@Nullable String tag, int mtu) {
         enqueue(Request.newChangeMtuRequest(tag, mtu, 0, null));
@@ -1326,65 +1329,53 @@ class ConnectionImpl implements Connection, ScanListener {
     @Override
     public void readCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic) {
         Request request = Request.newReadCharacteristicRequest(tag, service, characteristic, 0, null);
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
     public void readCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, int priority) {
         Request request = Request.newReadCharacteristicRequest(tag, service, characteristic, priority, null);
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
     public void readCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull CharacteristicReadCallback callback) {
         Request request = Request.newReadCharacteristicRequest(tag, service, characteristic, 0, callback);
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
     public void readCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, int priority, @NonNull CharacteristicReadCallback callback) {
         Request request = Request.newReadCharacteristicRequest(tag, service, characteristic, priority, callback);
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
     public void writeCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull byte[] value) {
+        Inspector.requireNonNull(value, "value is null");
         Request request = Request.newWriteCharacteristicRequest(tag, service, characteristic, value, 0, null);
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
     public void writeCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull byte[] value, int priority) {
+        Inspector.requireNonNull(value, "value is null");
         Request request = Request.newWriteCharacteristicRequest(tag, service, characteristic, value, priority, null);
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
     public void writeCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull byte[] value, @NonNull CharacteristicWriteCallback callback) {
+        Inspector.requireNonNull(value, "value is null");
         Request request = Request.newWriteCharacteristicRequest(tag, service, characteristic, value, 0, callback);
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
     public void writeCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull byte[] value, int priority, @NonNull CharacteristicWriteCallback callback) {
+        Inspector.requireNonNull(value, "value is null");
         Request request = Request.newWriteCharacteristicRequest(tag, service, characteristic, value, priority, callback);
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
@@ -1395,9 +1386,7 @@ class ConnectionImpl implements Connection, ScanListener {
         } else {
             request = Request.newDisableNotificationRequest(tag, service, characteristic, 0, null);
         }
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
@@ -1408,9 +1397,7 @@ class ConnectionImpl implements Connection, ScanListener {
         } else {
             request = Request.newDisableNotificationRequest(tag, service, characteristic, priority, null);
         }
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
@@ -1421,9 +1408,7 @@ class ConnectionImpl implements Connection, ScanListener {
         } else {
             request = Request.newDisableNotificationRequest(tag, service, characteristic, 0, callback);
         }
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
@@ -1434,22 +1419,20 @@ class ConnectionImpl implements Connection, ScanListener {
         } else {
             request = Request.newDisableNotificationRequest(tag, service, characteristic, priority, callback);
         }
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
     public void setIndicationEnabled(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, boolean isEnabled) {
+        Inspector.requireNonNull(service, "service' uuid is null");
+        Inspector.requireNonNull(characteristic, "characteristic' uuid is null");
         Request request;
         if (isEnabled) {
             request = Request.newEnableIndicationRequest(tag, service, characteristic, 0, null);
         } else {
             request = Request.newDisableIndicationRequest(tag, service, characteristic, 0, null);
         }
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
@@ -1460,9 +1443,7 @@ class ConnectionImpl implements Connection, ScanListener {
         } else {
             request = Request.newDisableIndicationRequest(tag, service, characteristic, priority, null);
         }
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
@@ -1473,9 +1454,7 @@ class ConnectionImpl implements Connection, ScanListener {
         } else {
             request = Request.newDisableIndicationRequest(tag, service, characteristic, 0, callback);
         }
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
@@ -1486,45 +1465,36 @@ class ConnectionImpl implements Connection, ScanListener {
         } else {
             request = Request.newDisableIndicationRequest(tag, service, characteristic, priority, callback);
         }
-        if (checkUuidExists(request, service, characteristic)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic);
     }
 
     @Override
     public void readDescriptor(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull UUID descriptor) {
         Request request = Request.newReadDescriptorRequest(tag, service, characteristic, descriptor, 0, null);
-        if (checkUuidExists(request, service, characteristic, descriptor)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic, descriptor);
     }
 
     @Override
     public void readDescriptor(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull UUID descriptor, int priority) {
         Request request = Request.newReadDescriptorRequest(tag, service, characteristic, descriptor, priority, null);
-        if (checkUuidExists(request, service, characteristic, descriptor)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic, descriptor);
     }
 
     @Override
     public void readDescriptor(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull UUID descriptor, @NonNull DescriptorReadCallback callback) {
         Request request = Request.newReadDescriptorRequest(tag, service, characteristic, descriptor, 0, callback);
-        if (checkUuidExists(request, service, characteristic, descriptor)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic, descriptor);
     }
 
     @Override
     public void readDescriptor(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull UUID descriptor, int priority, @NonNull DescriptorReadCallback callback) {
         Request request = Request.newReadDescriptorRequest(tag, service, characteristic, descriptor, priority, callback);
-        if (checkUuidExists(request, service, characteristic, descriptor)) {
-            enqueue(request);
-        }
+        checkUuidExistsAndEnqueue(request, service, characteristic, descriptor);
     }
 
     @Override
     public boolean isNotificationOrIndicationEnabled(@NonNull BluetoothGattCharacteristic characteristic) {
+        Inspector.requireNonNull(characteristic, "characteristic is null");
         BluetoothGattDescriptor descriptor = characteristic.getDescriptor(clientCharacteristicConfig);
         return descriptor != null && (Arrays.equals(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) ||
                 Arrays.equals(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_INDICATION_VALUE));

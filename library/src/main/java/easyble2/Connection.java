@@ -124,9 +124,9 @@ public interface Connection {
     void clearRequestQueue();
 
     /**
-     * 将指定的请求类型从队列中移除，不触发事件
+     * 将指定的请求类型从队列中移除，如果传null，则清除请求队列，不触发事件
      */
-    void clearRequestQueueByType(@NonNull Request.RequestType type);
+    void clearRequestQueueByType(@Nullable Request.RequestType type);
 
     @NonNull
     ConnectionConfiguration getConnectionConfiguration();

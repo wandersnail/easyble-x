@@ -38,9 +38,9 @@ public class BleUtils {
     /**
      * 将整数转字节数组
      *
-     * @param bigEndian ture表示高位在前，false表示低位在前
+     * @param bigEndian true表示高位在前，false表示低位在前
      * @param value     整数，short、int、long
-     * @param len 结果取几个字节，如是高位在前，从数组后端向前计数；如是低位在前，从数组前端向后计数
+     * @param len       结果取几个字节，如是高位在前，从数组后端向前计数；如是低位在前，从数组前端向后计数
      */
     @NonNull
     public static byte[] numberToBytes(boolean bigEndian, long value, int len) {
@@ -52,14 +52,14 @@ public class BleUtils {
         if (len > 8) {
             return bytes;
         } else {
-            return Arrays.copyOfRange(bytes, bigEndian ? 8 -len : 0, bigEndian ? 8 : len);
+            return Arrays.copyOfRange(bytes, bigEndian ? 8 - len : 0, bigEndian ? 8 : len);
         }
     }
 
     /**
      * 将字节数组转数值
      *
-     * @param bigEndian ture表示高位在前，false表示低位在前
+     * @param bigEndian true表示高位在前，false表示低位在前
      * @param src       待转字节数组
      */
     public static long bytesToNumber(boolean bigEndian, @NonNull byte... src) {
@@ -84,8 +84,8 @@ public class BleUtils {
 
     /**
      * 分包
-     * 
-     * @param src 源
+     *
+     * @param src  源
      * @param size 包大小，字节
      * @return 分好的包的集合
      */
@@ -103,7 +103,7 @@ public class BleUtils {
 
     /**
      * 组包
-     * 
+     *
      * @param src 源
      * @return 组好的字节数组
      */
@@ -127,9 +127,9 @@ public class BleUtils {
 
     /**
      * 判断广播字段里是否有此UUID
-     * 
+     *
      * @param advData 广播数据
-     * @param uuid 要查询的UUID
+     * @param uuid    要查询的UUID
      */
     public static boolean hasUUID(@Nullable byte[] advData, @NonNull UUID uuid) {
         return hasUUID(advData, Collections.singletonList(uuid));
@@ -137,9 +137,9 @@ public class BleUtils {
 
     /**
      * 判断广播字段里是否集合中的其中一个UUID
-     * 
+     *
      * @param advData 广播数据
-     * @param uuids 要查询的UUID集合
+     * @param uuids   要查询的UUID集合
      */
     public static boolean hasUUID(@Nullable byte[] advData, @NonNull List<UUID> uuids) {
         try {
@@ -152,10 +152,10 @@ public class BleUtils {
                 if (len == 0) {
                     continue;
                 }
-                switch(buffer.get()) {
-                    case 0x02:	// Partial list of 16-bit UUIDs	
-                    case 0x03:	// Complete list of 16-bit UUIDs	
-                    case 0x14:	// List of 16-bit Service Solicitation UUIDs
+                switch (buffer.get()) {
+                    case 0x02:    // Partial list of 16-bit UUIDs	
+                    case 0x03:    // Complete list of 16-bit UUIDs	
+                    case 0x14:    // List of 16-bit Service Solicitation UUIDs
                         while (len >= 2) {
                             String name = String.format(Locale.US, "%08x-0000-1000-8000-00805f9b34fb", buffer.getShort());
                             if (uuids.contains(UUID.fromString(name))) {
@@ -163,7 +163,7 @@ public class BleUtils {
                             }
                             len -= 2;
                         }
-                		break;
+                        break;
                     case 0x04:
                     case 0x05:
                         while (len >= 4) {
@@ -185,10 +185,10 @@ public class BleUtils {
                             }
                             len -= 16;
                         }
-                        break;    
+                        break;
                     default:
                         buffer.position(buffer.position() + len - 1);
-                		break;
+                        break;
                 }
             }
         } catch (Exception e) {

@@ -3,7 +3,6 @@ package easyble2;
 import androidx.annotation.NonNull;
 import easyble2.util.Logger;
 
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -28,7 +27,7 @@ public class EasyBLEBuilder {
      * 自定义线程池用来执行后台任务
      */
     public EasyBLEBuilder setExecutorService(@NonNull ExecutorService executorService) {
-        Objects.requireNonNull(executorService);
+        Inspector.requireNonNull(executorService, "executorService is null");
         this.executorService = executorService;
         return this;
     }
@@ -37,7 +36,7 @@ public class EasyBLEBuilder {
      * 设备实例构建器
      */
     public EasyBLEBuilder setDeviceCreator(@NonNull DeviceCreator deviceCreator) {
-        Objects.requireNonNull(executorService);
+        Inspector.requireNonNull(deviceCreator, "deviceCreator is null");
         this.deviceCreator = deviceCreator;
         return this;
     }
@@ -46,7 +45,7 @@ public class EasyBLEBuilder {
      * 配对控制器。如果设置了控制器，则会在连接时，尝试配对
      */
     public EasyBLEBuilder setBondController(@NonNull BondController bondController) {
-        Objects.requireNonNull(executorService);
+        Inspector.requireNonNull(bondController, "bondController is null");
         this.bondController = bondController;
         return this;
     }
@@ -55,7 +54,7 @@ public class EasyBLEBuilder {
      * 观察者或者回调的方法在没有使用注解指定调用线程时，默认被调用的线程
      */
     public EasyBLEBuilder setMethodDefaultThreadMode(@NonNull ThreadMode mode) {
-        Objects.requireNonNull(executorService);
+        Inspector.requireNonNull(mode, "mode is null");
         methodDefaultThreadMode = mode;
         return this;
     }
@@ -64,7 +63,7 @@ public class EasyBLEBuilder {
      * 被观察者，消息发布者
      */
     public EasyBLEBuilder setEventObservable(@NonNull EventObservable eventObservable) {
-        Objects.requireNonNull(executorService);
+        Inspector.requireNonNull(eventObservable, "eventObservable is null");
         this.eventObservable = eventObservable;
         return this;
     }
@@ -73,7 +72,7 @@ public class EasyBLEBuilder {
      * 搜索配置
      */
     public EasyBLEBuilder setScanConfigation(@NonNull ScanConfiguration scanConfiguration) {
-        Objects.requireNonNull(executorService);
+        Inspector.requireNonNull(scanConfiguration, "scanConfiguration is null");
         this.scanConfiguration = scanConfiguration;
         return this;
     }
@@ -82,7 +81,7 @@ public class EasyBLEBuilder {
      * 日志打印
      */
     public EasyBLEBuilder setLogger(@NonNull Logger logger) {
-        Objects.requireNonNull(executorService);
+        Inspector.requireNonNull(logger, "logger is null");
         this.logger = logger;
         return this;
     }

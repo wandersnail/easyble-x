@@ -7,7 +7,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * date: 2019/8/3 15:31
@@ -70,7 +69,7 @@ public class ScanConfiguration {
      * {@link android.bluetooth.le.BluetoothLeScanner}的搜索设置
      */
     public ScanConfiguration setScanSettings(@NonNull ScanSettings scanSettings) {
-        Objects.requireNonNull(scanSettings);
+        Inspector.requireNonNull(scanSettings, "scanSettings is null");
         this.scanSettings = scanSettings;
         return this;
     }
