@@ -228,6 +228,16 @@ public class EasyBLE {
     }
 
     /**
+     * 销毁，可重新构建
+     */
+    public void destroy() {
+        release();
+        synchronized (EasyBLE.class) {
+            instance = null;
+        }
+    }
+
+    /**
      * 注册连接状态及数据接收观察者
      */
     public void registerObserver(@NonNull EventObserver observer) {
