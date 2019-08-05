@@ -86,7 +86,7 @@ public class ConnectionConfiguration {
      * 自动重连时，搜索次数与间隔的对应关系，first：已尝试次数，second：间隔，单位为毫秒。如搜索了1次，间隔2秒，搜索了5次，间隔30秒等
      */
     @NonNull
-    public List<Pair<Integer, Integer>> scanIntervalPairsInAutoReonnection;
+    public final List<Pair<Integer, Integer>> scanIntervalPairsInAutoReonnection;
     
     public ConnectionConfiguration() {
         scanIntervalPairsInAutoReonnection = new ArrayList<>();
@@ -289,8 +289,9 @@ public class ConnectionConfiguration {
      * 自动重连时，搜索次数与间隔的对应关系，first：已尝试次数，second：间隔，单位为毫秒。如搜索了1次，间隔2秒，搜索了5次，间隔30秒等
      */
     public ConnectionConfiguration setScanIntervalPairsInAutoReonnection(@NonNull List<Pair<Integer, Integer>> pairs) {
-        Objects.requireNonNull(pairs);
-        scanIntervalPairsInAutoReonnection = pairs;
+        Inspector.requireNonNull(pairs, "paris is null");
+        scanIntervalPairsInAutoReonnection.clear();
+        scanIntervalPairsInAutoReonnection.addAll(pairs);
         return this;
     }
 }

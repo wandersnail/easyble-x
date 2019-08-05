@@ -23,6 +23,7 @@ public class EventObservable {
      * @param observer 需要注册的观察者
      */
     void registerObserver(@NonNull EventObserver observer) {
+        Inspector.requireNonNull(observer, "observer is null");
         synchronized (observers) {
             for (WeakReference<EventObserver> it : observers) {
                 if (observer == it.get()) {
