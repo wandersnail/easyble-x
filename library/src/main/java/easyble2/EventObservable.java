@@ -16,7 +16,8 @@ import java.util.List;
  */
 public class EventObservable {
     private final List<WeakReference<EventObserver>> observers = new ArrayList<>();
-
+    Poster poster;
+        
     /**
      * 将观察者添加到注册集合里
      *
@@ -77,7 +78,7 @@ public class EventObservable {
         }
     }
 
-    private EventObserver[] getObservers() {
+    public EventObserver[] getObservers() {
         synchronized (observers) {
             ArrayList<EventObserver> obs = new ArrayList<>();
             Iterator<WeakReference<EventObserver>> iterator = observers.iterator();
@@ -90,7 +91,7 @@ public class EventObservable {
                     obs.add(observer);
                 }
             }
-            return obs.toArray(new EventObserver[0]);
+            return (EventObserver[]) obs.toArray();
         }
     }
 
@@ -103,7 +104,7 @@ public class EventObservable {
     public void notifyObservers(@NonNull String methodName, @Nullable TypeValuePair... pairs) {
         EventObserver[] obs = getObservers();
         for (EventObserver observer : obs) {
-            EasyBLE.instance.runnablePoster.post(observer, methodName, pairs);
+            poster.post(observer, methodName, pairs);
         }
     }
 
@@ -115,7 +116,7 @@ public class EventObservable {
     public void notifyObservers(@NonNull MethodInfo info) {
         EventObserver[] obs = getObservers();
         for (EventObserver observer : obs) {
-            EasyBLE.instance.runnablePoster.post(observer, info);
+            poster.post(observer, info);
         }
     }    
 }

@@ -36,22 +36,22 @@ import java.util.Set;
  * author: zengfansheng
  */
 class Scanner {
-    private ScanConfiguration configation;
-    private BluetoothAdapter bluetoothAdapter;
-    private Handler mainHandler;
+    private final ScanConfiguration configation;
+    private final BluetoothAdapter bluetoothAdapter;
+    private final Handler mainHandler;
     private boolean isScanning;
-    private BluetoothLeScanner bleScanner;
-    private List<ScanListener> scanListeners = new ArrayList<>();
-    private SparseArray<BluetoothProfile> proxyBluetoothProfiles = new SparseArray<>();
-    private Logger logger;
-    private DeviceCreator deviceCreator;
+    private final BluetoothLeScanner bleScanner;
+    private final List<ScanListener> scanListeners = new ArrayList<>();
+    private final SparseArray<BluetoothProfile> proxyBluetoothProfiles = new SparseArray<>();;
+    private final Logger logger;
+    private final DeviceCreator deviceCreator;
     
-    Scanner(BluetoothAdapter bluetoothAdapter) {
+    Scanner(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter) {
         this.bluetoothAdapter = bluetoothAdapter;
-        this.configation = EasyBLE.instance.scanConfiguration;
+        this.configation = easyBle.scanConfiguration;
         mainHandler = new Handler(Looper.getMainLooper());
-        logger = EasyBLE.instance.logger;
-        deviceCreator = EasyBLE.instance.deviceCreator;
+        logger = easyBle.logger;
+        deviceCreator = easyBle.deviceCreator;
         bleScanner = bluetoothAdapter.getBluetoothLeScanner();
     }
 
