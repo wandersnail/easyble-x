@@ -5,7 +5,7 @@ apply plugin: 'maven'
 def lib_version = '1.1.0'
 def lib_group = 'com.github.wandersnail'
 def lib_artifact = 'easyble2'
-def lib_packaging = 'jar'
+def lib_packaging = 'aar'
 def lib_description = 'A framework for Android Bluetooth Low Energy (BLE)'
 group = lib_group
 version = lib_version
