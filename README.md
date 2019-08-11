@@ -35,7 +35,7 @@ android {
 	}
 }
 
-//有kotlin的项目可在project的build.gradle里添加
+//有kotlin的项目还需要在project的build.gradle里添加
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 	sourceCompatibility = JavaVersion.VERSION_1_8
 	targetCompatibility = JavaVersion.VERSION_1_8
