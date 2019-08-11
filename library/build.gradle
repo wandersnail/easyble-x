@@ -27,7 +27,7 @@ android {
     }
     lintOptions {
         abortOnError false
-        disable 'TypographyFractions','TypographyQuotes'
+        disable 'TypographyFractions', 'TypographyQuotes'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -131,7 +131,7 @@ afterEvaluate { project ->
     }
 
     task classJar(type: Jar, dependsOn: ['assembleRelease', 'sourcesJar']) {
-        from (project.zipTree("${project.buildDir.absolutePath}/intermediates/packaged-classes/release/classes.jar"))
+        from(project.zipTree("${project.buildDir.absolutePath}/intermediates/packaged-classes/release/classes.jar"))
         exclude '**/R.class', '**/R$*.class', '**/**/BuildConfig.class', '**/**/BuildConfig$*.class'
     }
 
