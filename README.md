@@ -25,13 +25,29 @@
 
 ## 配置
 
-1. module的build.gradle中的添加依赖，自行修改为最新版本，同步后通常就可以用了：
+1. 因为使用了jdk8的一些特性，需要在module的build.gradle里添加如下配置：
 ```
-compileOptions {
-	sourceCompatibility JavaVersion.VERSION_1_8
-	targetCompatibility JavaVersion.VERSION_1_8
+//纯java的项目
+android {
+	compileOptions {
+		sourceCompatibility JavaVersion.VERSION_1_8
+		targetCompatibility JavaVersion.VERSION_1_8
+	}
 }
 
+//有kotlin的项目
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
+
+	kotlinOptions {
+		jvmTarget = '1.8'
+	}
+}
+```
+
+2. module的build.gradle中的添加依赖，自行修改为最新版本，同步后通常就可以用了：
+```
 dependencies {
 	...
 	implementation 'com.github.wandersnail:easyble2:latestVersion'
@@ -43,7 +59,7 @@ dependencies {
 }
 ```
 
-2. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，有时jitpack会抽风，同步不下来。添加完再次同步即可。
+3. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，有时jitpack会抽风，同步不下来。添加完再次同步即可。
 ```
 allprojects {
 	repositories {
