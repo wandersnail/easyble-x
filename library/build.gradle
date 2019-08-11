@@ -61,7 +61,7 @@ if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUploa
             pom {
                 //noinspection GroovyAssignabilityCheck
                 project {
-                    name "easyble2"
+                    name lib_artifact
                     artifactId lib_artifact
                     packaging lib_packaging
                     description lib_description
