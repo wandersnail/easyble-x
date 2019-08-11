@@ -5,10 +5,12 @@ import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanSettings;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
+import android.bluetooth.le.BluetoothLeScanner;
 import java.util.List;
 
 /**
+ * 搜索配置
+ * 
  * date: 2019/8/3 15:31
  * author: zengfansheng
  */
@@ -66,7 +68,7 @@ public class ScanConfiguration {
     }
 
     /**
-     * {@link android.bluetooth.le.BluetoothLeScanner}的搜索设置
+     * {@link BluetoothLeScanner}的搜索设置
      */
     public ScanConfiguration setScanSettings(@NonNull ScanSettings scanSettings) {
         Inspector.requireNonNull(scanSettings, "scanSettings is null");
@@ -91,7 +93,7 @@ public class ScanConfiguration {
     }
 
     /**
-     * 搜索过滤器。{@link android.bluetooth.le.BluetoothLeScanner#startScan(List, ScanSettings, ScanCallback)}
+     * 搜索过滤器。{@link BluetoothLeScanner#startScan(List, ScanSettings, ScanCallback)}
      */
     public ScanConfiguration setFilters(@Nullable List<ScanFilter> filters) {
         this.filters = filters;

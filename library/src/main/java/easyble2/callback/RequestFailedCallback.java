@@ -1,8 +1,8 @@
 package easyble2.callback;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import easyble2.Connection;
-import easyble2.Device;
 import easyble2.Request;
 
 /**
@@ -13,9 +13,9 @@ public interface RequestFailedCallback extends RequestCallback {
     /**
      * 请求失败
      *
-     * @param device   设备
-     * @param request  请求实例
+     * @param request  请求
      * @param failType 失败类型。{@link Connection#REQUEST_FAIL_TYPE_GATT_IS_NULL}等
+     * @param value    请求时带的数据，可能为null
      */
-    void onRequestFailed(@NonNull Device device, @NonNull Request request, int failType);
+    void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value);
 }

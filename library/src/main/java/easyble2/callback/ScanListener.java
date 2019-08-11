@@ -12,7 +12,7 @@ import easyble2.Device;
  */
 public interface ScanListener {
     /**
-     * 缺少定位权限 {@link Manifest.permission#ACCESS_COARSE_LOCATION} 或者 {@link Manifest.permission#ACCESS_FINE_LOCATION}
+     * 缺少定位权限。 {@link Manifest.permission#ACCESS_COARSE_LOCATION} 或者 {@link Manifest.permission#ACCESS_FINE_LOCATION}
      */
     int ERROR_LACK_LOCATION_PERMISSION = 0;
     /**

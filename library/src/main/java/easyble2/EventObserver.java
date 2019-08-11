@@ -1,7 +1,7 @@
 package easyble2;
 
 import android.bluetooth.BluetoothAdapter;
-import androidx.annotation.IntRange;
+import android.bluetooth.BluetoothDevice;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -19,124 +19,100 @@ public interface EventObserver {
      *
      * @param state {@link BluetoothAdapter#STATE_OFF}等
      */
-    void onBluetoothAdapterStateChanged(int state);
+    default void onBluetoothAdapterStateChanged(int state) {
+    }
 
     /**
      * 读取到特征值
      *
-     * @param tag         请求标识
-     * @param device      设备
-     * @param serviceUuid 服务UUID
-     * @param characUuid  特征UUID
-     * @param value       读取到的数据
+     * @param request 请求
+     * @param value   读取到的数据
      */
-    void onCharacteristicRead(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull byte[] value);
+    default void onCharacteristicRead(@NonNull Request request, @NonNull byte[] value) {
+    }
 
     /**
      * 特征值变化
      *
-     * @param device      设备
-     * @param serviceUuid 服务UUID
-     * @param characUuid  特征UUID
-     * @param value       数据
+     * @param device         设备
+     * @param service        服务UUID
+     * @param characteristic 特征UUID
+     * @param value          数据
      */
-    void onCharacteristicChanged(@NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull byte[] value);
+    default void onCharacteristicChanged(@NonNull Device device, @NonNull UUID service, @NonNull UUID characteristic,
+                                         @NonNull byte[] value) {
+    }
 
     /**
-     * 读取到特征值
+     * 成功写入特征值
      *
-     * @param tag         请求标识
-     * @param device      设备
-     * @param serviceUuid 服务UUID
-     * @param characUuid  特征UUID
-     * @param value       读取到的数据
+     * @param request 请求
+     * @param value   写入的数据
      */
-    void onCharacteristicWrite(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull byte[] value);
+    default void onCharacteristicWrite(@NonNull Request request, @NonNull byte[] value) {
+    }
 
     /**
      * 读取到设备的信号强度
      *
-     * @param tag    请求标识
-     * @param device 设备
-     * @param ssid   信号强度
+     * @param request 请求
+     * @param rssi    信号强度
      */
-    void onRemoteRssiRead(@Nullable String tag, @NonNull Device device, int ssid);
+    default void onRssiRead(@NonNull Request request, int rssi) {
+    }
 
     /**
      * 读取到描述符值
      *
-     * @param tag            请求标识
-     * @param device         设备
-     * @param serviceUuid    服务UUID
-     * @param characUuid     特征UUID
-     * @param descriptorUuid 描述符UUID
-     * @param value          读取到的数据
+     * @param request 请求
+     * @param value   读取到的数据
      */
-    void onDescriptorRead(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid,
-                          @NonNull UUID descriptorUuid, @NonNull byte[] value);
+    default void onDescriptorRead(@NonNull Request request, @NonNull byte[] value) {
+    }
 
     /**
-     * 通知开关变化
+     * 通知开关变化 / Indication开关变化
      *
-     * @param tag            请求标识
-     * @param device         设备
-     * @param serviceUuid    服务UUID
-     * @param characUuid     特征UUID
-     * @param descriptorUuid 描述符UUID
-     * @param isEnabled      开启或关闭
+     * @param request   请求
+     * @param isEnabled 开启或关闭
      */
-    void onNotificationChanged(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid,
-                               @NonNull UUID descriptorUuid, boolean isEnabled);
-
-    /**
-     * 描述符开关变化
-     *
-     * @param tag            请求标识
-     * @param device         设备
-     * @param serviceUuid    服务UUID
-     * @param characUuid     特征UUID
-     * @param descriptorUuid 描述符UUID
-     * @param isEnabled      开启或关闭
-     */
-    void onIndicationChanged(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid,
-                             @NonNull UUID descriptorUuid, boolean isEnabled);
+    default void onNotificationChanged(@NonNull Request request, boolean isEnabled) {
+    }
 
     /**
      * 最大传输单元变化
      *
-     * @param tag    请求标识
-     * @param device 设备
-     * @param mtu    最大传输单元新的值
+     * @param request 请求
+     * @param mtu     最大传输单元新的值
      */
-    void onMtuChanged(@Nullable String tag, @NonNull Device device, @IntRange(from = 23, to = 517) int mtu);
+    default void onMtuChanged(@NonNull Request request, int mtu) {
+    }
 
     /**
-     * @param tag    请求标识
-     * @param device 设备
+     * @param request 请求
+     * @param txPhy   物理层发送器偏好。{@link BluetoothDevice#PHY_LE_1M_MASK}等
+     * @param rxPhy   物理层接收器偏好。{@link BluetoothDevice#PHY_LE_1M_MASK}等
      */
-    void onPhyRead(@Nullable String tag, @NonNull Device device, int txPhy, int rxPhy);
-
-    /**
-     * @param tag    请求标识
-     * @param device 设备
-     */
-    void onPhyUpdate(@Nullable String tag, @NonNull Device device, int txPhy, int rxPhy);
+    default void onPhyChange(@NonNull Request request, int txPhy, int rxPhy) {
+    }
 
     /**
      * 请求失败
      *
-     * @param device   设备
-     * @param request  请求实例
+     * @param request  请求
      * @param failType 失败类型。{@link Connection#REQUEST_FAIL_TYPE_GATT_IS_NULL}等
+     * @param value    请求时带的数据，可能为null
      */
-    void onRequestFailed(@NonNull Device device, @NonNull Request request, int failType);
+    default void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value) {
+    }
 
     /**
      * 连接状态变化
      *
-     * @param device 设备。状态{@link Device#connectionState}，可能的值{@link Connection#STATE_CONNECTED}等
+     * @param device 设备。状态{@link Device#getConnectionState()}，可能的值{@link Connection#STATE_CONNECTED}等
      */
-    void onConnectionStateChanged(@NonNull Device device);
+    default void onConnectionStateChanged(@NonNull Device device) {
+    }
 
     /**
      * 连接失败
@@ -144,7 +120,8 @@ public interface EventObserver {
      * @param device   设备
      * @param failType 失败类型。{@link Connection#CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION}等
      */
-    void onConnectFailed(@NonNull Device device, int failType);
+    default void onConnectFailed(@NonNull Device device, int failType) {
+    }
 
     /**
      * 连接超时
@@ -152,5 +129,6 @@ public interface EventObserver {
      * @param device 设备
      * @param type   原因。{@link Connection#TIMEOUT_TYPE_CANNOT_CONNECT}
      */
-    void onConnectTimeout(@NonNull Device device, int type);
+    default void onConnectTimeout(@NonNull Device device, int type) {
+    }
 }

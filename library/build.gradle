@@ -2,8 +2,12 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'maven'
 
-def lib_version = '1.0.1'
-group = "com.github.wandersnail"
+def lib_version = '1.1.0'
+def lib_group = 'com.github.wandersnail'
+def lib_artifact = 'easyble2'
+def lib_packaging = 'jar'
+def lib_description = 'A framework for Android Bluetooth Low Energy (BLE)'
+group = lib_group
 version = lib_version
 
 android {
@@ -23,20 +27,27 @@ android {
     }
     lintOptions {
         abortOnError false
+        disable 'TypographyFractions','TypographyQuotes'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
 dependencies {
     compileOnly deps.appcompat
+    compileOnly deps.wandersnail.commons_utils
+    compileOnly deps.wandersnail.commons_method_poster
 }
 
 publish {
-    repoName="android"//仓库名
+    repoName = "android"//仓库名
     userOrg = 'wandersnail' //bintray.com用户名  
-    groupId = 'com.github.wandersnail' //jcenter上的路径  
-    artifactId = 'easyble2' //项目名称  
-    publishVersion = "$lib_version" //版本号  
-    desc = 'A framework for Android Bluetooth Low Energy (BLE)'
+    groupId = lib_group //jcenter上的路径  
+    artifactId = lib_artifact //项目名称  
+    publishVersion = lib_version //版本号  
+    desc = lib_description
     website = 'https://github.com/wandersnail/easyble2'
 }
 
@@ -51,9 +62,9 @@ if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUploa
                 //noinspection GroovyAssignabilityCheck
                 project {
                     name "easyble2"
-                    artifactId 'easyble2'
-                    packaging 'aar'
-                    description 'A framework for Android Bluetooth Low Energy (BLE)'
+                    artifactId lib_artifact
+                    packaging lib_packaging
+                    description lib_description
                     url 'https://github.com/wandersnail'
                     version lib_version
 
@@ -80,5 +91,63 @@ if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUploa
                 }
             }.writeTo("build/publications/release/pom-default.xml")
         }
+    }
+}
+
+afterEvaluate { project ->
+    uploadArchives {
+        //加载资源
+        Properties properties = new Properties()
+        InputStream inputStream = rootProject.file('local.properties').newDataInputStream()
+        properties.load(inputStream)
+        //读取本地maven的url
+        def localMavenBaseUrl = properties.containsKey('maven.local.url.base') ? properties['maven.local.url.base']
+                : rootProject['maven.local.url.base']
+        def username = properties.containsKey('nexus.username') ? properties['nexus.username'] : rootProject['nexus.username']
+        def password = properties.containsKey('nexus.password') ? properties['nexus.password'] : rootProject['nexus.password']
+        repositories {
+            mavenDeployer {
+                repository(url: "${localMavenBaseUrl}repository/maven-releases") {
+                    authentication(userName: username, password: password)
+                }
+
+                snapshotRepository(url: "${localMavenBaseUrl}repository/maven-snapshots") {
+                    authentication(userName: username, password: password)
+                }
+                pom.project {
+                    groupId lib_group
+                    artifactId lib_artifact
+                    version lib_version
+                    packaging lib_packaging
+                    description lib_description
+                }
+            }
+        }
+    }
+
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.srcDirs
+    }
+
+    task classJar(type: Jar, dependsOn: ['assembleRelease', 'sourcesJar']) {
+        from (project.zipTree("${project.buildDir.absolutePath}/intermediates/packaged-classes/release/classes.jar"))
+        exclude '**/R.class', '**/R$*.class', '**/**/BuildConfig.class', '**/**/BuildConfig$*.class'
+    }
+
+    task javadoc(type: Javadoc) {
+        source = android.sourceSets.main.java.srcDirs
+        classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+        archives classJar
     }
 }

@@ -19,17 +19,17 @@ import java.util.Objects;
 public class Device implements Comparable<Device>, Cloneable, Parcelable {
     private final BluetoothDevice originDevice;
     @Nullable
-    public ScanResult scanResult;
+    private ScanResult scanResult;
     @NonNull
-    public String name;
+    String name;
     @NonNull
-    public final String address;
-    public int rssi;
-    public int connectionState;
+    final String address;
+    int rssi;
+    int connectionState;
 
     public Device(@NonNull BluetoothDevice originDevice) {
         this.originDevice = originDevice;
-        this.name = originDevice.getName();
+        this.name = originDevice.getName() == null ? "" : originDevice.getName();
         this.address = originDevice.getAddress();
     }
 
@@ -157,7 +157,8 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     protected Device(Parcel in) {
         this.originDevice = in.readParcelable(BluetoothDevice.class.getClassLoader());
         this.scanResult = in.readParcelable(ScanResult.class.getClassLoader());
-        this.name = Objects.requireNonNull(in.readString());
+        String inName = in.readString();
+        this.name = inName == null ? "" : inName;
         this.address = Objects.requireNonNull(in.readString());
         this.rssi = in.readInt();
         this.connectionState = in.readInt();

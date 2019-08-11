@@ -23,6 +23,10 @@ android {
     packagingOptions {
         exclude 'META-INF/library_release.kotlin_module'
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
@@ -33,7 +37,6 @@ dependencies {
     implementation deps.wandersnail.commons_android
     implementation deps.wandersnail.treeadapter
     implementation deps.wandersnail.widgets
-    implementation deps.eventbus
     implementation deps.avi_loading
     implementation project(':library')
 }
