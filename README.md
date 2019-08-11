@@ -158,7 +158,7 @@ EasyBLE.getInstance().removeScanListener(scanListener);
 
 ```
 public class MainActivity extends AppCompatActivity implements EventObserver {
-/**
+    /**
      * 使用{@link Observe}确定要接收消息，并在主线程执行方法
      */
     @Observe(ThreadMode.MAIN)
@@ -175,17 +175,7 @@ public class MainActivity extends AppCompatActivity implements EventObserver {
                 break;
         }
     }
-
-	@Override
-	public void onConnectFailed(@NonNull Device device, int failType) {
-
-	}
-
-	@Override
-	public void onConnectTimeout(@NonNull Device device, int type) {
-
-	}
-
+	
     /**
      * 使用{@link Observe}确定要接收消息，方法在{@link EasyBLEBuilder#setMethodDefaultThreadMode(ThreadMode)}指定的线程执行
      */
