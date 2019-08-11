@@ -158,23 +158,23 @@ EasyBLE.getInstance().removeScanListener(scanListener);
 
 ```
 public class MainActivity extends AppCompatActivity implements EventObserver {
-	/**
+/**
      * 使用{@link Observe}确定要接收消息，并在主线程执行方法
      */
     @Observe(ThreadMode.MAIN)
-	@Override
-	public void onConnectionStateChanged(@NonNull Device device) {
-		switch(device.connectionState) {
-			case Connection.STATE_SCANNING:				
-				break;
-			case Connection.STATE_CONNECTING:
-				break;
-			case Connection.STATE_DISCONNECTED:
-				break;
-			case Connection.STATE_SERVICE_DISCOVERED:
-				break;
-		}
-	}
+    @Override
+    public void onConnectionStateChanged(@NonNull Device device) {
+        switch (device.getConnectionState()) {
+            case Connection.STATE_SCANNING:
+                break;
+            case Connection.STATE_CONNECTING:
+                break;
+            case Connection.STATE_DISCONNECTED:
+                break;
+            case Connection.STATE_SERVICE_DISCOVERED:
+                break;
+        }
+    }
 
 	@Override
 	public void onConnectFailed(@NonNull Device device, int failType) {
