@@ -9,8 +9,12 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.Pair;
-import easyble2.callback.*;
-import easyble2.util.BleUtils;
+import com.snail.commons.methodpost.MethodInfo;
+import com.snail.commons.methodpost.PosterDispatcher;
+import com.snail.commons.util.MathUtils;
+import com.snail.commons.util.StringUtils;
+import easyble2.callback.RequestCallback;
+import easyble2.callback.ScanListener;
 import easyble2.util.Logger;
 
 import java.lang.ref.WeakReference;
@@ -42,13 +46,12 @@ class ConnectionImpl implements Connection, ScanListener {
     private final Device device;
     private final ConnectionConfiguration configuration;//连接配置
     private BluetoothGatt bluetoothGatt;
-    private final List<Request> requestQueue = new ArrayList<>();//请求队列
-    private Request currentRequest;//当前的请求
+    private final List<GenericRequest> requestQueue = new ArrayList<>();//请求队列
+    private GenericRequest currentRequest;//当前的请求
     private BluetoothGattCharacteristic pendingCharacteristic;
-    private ConnectionStateChangeListener stateChangeListener;//连接状态监听器
+    private EventObserver observer;//伴生观察者
     private boolean isReleased;//连接是否已释放
     private final Handler connHandler;//用于操作连接的Handler，运行在主线程
-    private CharacteristicChangedCallback characChangedCallback;//特征值变化回调
     private long connStartTime; //用于连接超时计时
     private int refreshCount;//刷新（清缓存）计数，在发现服务后清零
     private int tryReconnectCount;//尝试重连计数
@@ -59,11 +62,13 @@ class ConnectionImpl implements Connection, ScanListener {
     private long lastScanStopTime;//上次搜索停止时间
     private final Logger logger;
     private final EventObservable observable;
-    private final Poster poster;
+    private final PosterDispatcher posterDispatcher;
     private final BluetoothGattCallback gattCallback = new BleGattCallback();
     private final EasyBLE easyBle;
 
-    ConnectionImpl(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration, int connectDelay, ConnectionStateChangeListener listener) {
+    ConnectionImpl(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration,
+                   int connectDelay, EventObserver observer) {
+        this.easyBle = easyBle;
         this.bluetoothAdapter = bluetoothAdapter;
         this.device = device;
         //如果没有配置
@@ -72,12 +77,11 @@ class ConnectionImpl implements Connection, ScanListener {
         } else {
             this.configuration = configuration;
         }
-        this.easyBle = easyBle;
-        logger = easyBle.logger;
-        observable = easyBle.eventObservable;
-        poster = easyBle.poster;
+        this.observer = observer;
+        logger = easyBle.getLogger();
+        observable = easyBle.getEventObservable();
+        posterDispatcher = easyBle.getPosterDispatcher();
         connHandler = new ConnHandler(this);
-        stateChangeListener = listener;
         connStartTime = System.currentTimeMillis();
         connHandler.sendEmptyMessageDelayed(MSG_CONNECT, connectDelay); //执行连接
         connHandler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay); //启动定时器
@@ -128,10 +132,9 @@ class ConnectionImpl implements Connection, ScanListener {
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             if (currentRequest != null) {
-                if (currentRequest.type == Request.RequestType.READ_CHARACTERISTIC) {
-                    Request request = currentRequest;
+                if (currentRequest.type == RequestType.READ_CHARACTERISTIC) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
-                        notifyCharacteristicRead(request.callback, request.tag, characteristic);
+                        notifyCharacteristicRead(currentRequest, characteristic.getValue());
                     } else {
                         handleGattStatusFailed();
                     }
@@ -142,22 +145,22 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            if (currentRequest != null && currentRequest.waitWriteResult && currentRequest.type == Request.RequestType.WRITE_CHARACTERISTIC) {
+            if (currentRequest != null && currentRequest.type == RequestType.WRITE_CHARACTERISTIC &&
+                    currentRequest.writeOptions.isWaitWriteResult) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     if (currentRequest.remainQueue == null || currentRequest.remainQueue.isEmpty()) {
-                        Request request = currentRequest;
-                        notifyCharacteristicWrite(request.callback, request.tag, characteristic.getService().getUuid(),
-                                characteristic.getUuid(), characteristic.getValue());
+                        notifyCharacteristicWrite(currentRequest, characteristic.getValue());
                         executeNextRequest();
                     } else {
                         connHandler.removeMessages(MSG_REQUEST_TIMEOUT);
-                        connHandler.sendMessageDelayed(Message.obtain(connHandler, MSG_REQUEST_TIMEOUT, currentRequest), configuration.requestTimeoutMillis);
-                        Request req = currentRequest;
-                        int delay = currentRequest.writeDelay;
+                        connHandler.sendMessageDelayed(Message.obtain(connHandler, MSG_REQUEST_TIMEOUT, currentRequest),
+                                configuration.requestTimeoutMillis);
+                        GenericRequest req = currentRequest;
+                        int delay = currentRequest.writeOptions.packageWriteDelayMillis;
                         if (delay > 0) {
                             try {
                                 Thread.sleep(delay);
-                            } catch (InterruptedException ignored) {
+                            } catch (InterruptedException ignore) {
                             }
                             if (req != currentRequest) {
                                 return;
@@ -175,8 +178,8 @@ class ConnectionImpl implements Connection, ScanListener {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             notifyCharacteristicChanged(characteristic);
-            if (characChangedCallback != null) {
-                poster.post(characChangedCallback, MethodInfoGenerator.onCharacteristicChanged(device,
+            if (observer != null) {
+                posterDispatcher.post(observer, MethodInfoGenerator.onCharacteristicChanged(device,
                         characteristic.getService().getUuid(), characteristic.getUuid(), characteristic.getValue()));
             }
         }
@@ -184,10 +187,9 @@ class ConnectionImpl implements Connection, ScanListener {
         @Override
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
             if (currentRequest != null) {
-                if (currentRequest.type == Request.RequestType.READ_RSSI) {
+                if (currentRequest.type == RequestType.READ_RSSI) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
-                        Request request = currentRequest;
-                        notifyReadRemoteRssi(request.callback, request.tag, rssi);
+                        notifyRssiRead(currentRequest, rssi);
                     } else {
                         handleGattStatusFailed();
                     }
@@ -201,25 +203,21 @@ class ConnectionImpl implements Connection, ScanListener {
             if (currentRequest != null) {
                 BluetoothGattCharacteristic charac = descriptor.getCharacteristic();
                 switch (currentRequest.type) {
-                    case ENABLE_NOTIFICATION:
-                    case DISABLE_NOTIFICATION:
-                    case ENABLE_INDICATION:
-                    case DISABLE_INDICATION:
+                    case SET_NOTIFICATION:
+                    case SET_INDICATION:
                         if (status != BluetoothGatt.GATT_SUCCESS) {
                             handleGattStatusFailed();
                         } else if (charac.getService().getUuid() == pendingCharacteristic.getService().getUuid() &&
                                 charac.getUuid() == pendingCharacteristic.getUuid()) {
-                            boolean isEnableNotify = currentRequest.type == Request.RequestType.ENABLE_NOTIFICATION;
-                            if (enableNotificationOrIndicationFail(isEnableNotify || currentRequest.type == Request.RequestType.ENABLE_INDICATION,
-                                    isEnableNotify, charac)) {
+                            if (enableNotificationOrIndicationFail(((int) currentRequest.value) == 1,
+                                    currentRequest.type == RequestType.SET_NOTIFICATION, charac)) {
                                 handleGattStatusFailed();
                             }
                         }
                         break;
                     case READ_DESCRIPTOR:
                         if (status == BluetoothGatt.GATT_SUCCESS) {
-                            Request request = currentRequest;
-                            notifyDescriptorRead(request.callback, request.tag, descriptor);
+                            notifyDescriptorRead(currentRequest, descriptor.getValue());
                         } else {
                             handleGattStatusFailed();
                         }
@@ -232,24 +230,16 @@ class ConnectionImpl implements Connection, ScanListener {
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             if (currentRequest != null) {
-                if (currentRequest.type == Request.RequestType.ENABLE_NOTIFICATION || currentRequest.type == Request.RequestType.DISABLE_NOTIFICATION ||
-                        currentRequest.type == Request.RequestType.ENABLE_INDICATION || currentRequest.type == Request.RequestType.DISABLE_INDICATION) {
+                if (currentRequest.type == RequestType.SET_NOTIFICATION || currentRequest.type == RequestType.SET_INDICATION) {
                     BluetoothGattDescriptor localDescriptor = getDescriptor(descriptor.getCharacteristic().getService().getUuid(),
                             descriptor.getCharacteristic().getUuid(), clientCharacteristicConfig);
-                    Request request = currentRequest;
                     if (status != BluetoothGatt.GATT_SUCCESS) {
                         handleGattStatusFailed();
                         if (localDescriptor != null) {
-                            localDescriptor.setValue(currentRequest.value);
+                            localDescriptor.setValue(currentRequest.descriptorTemp);
                         }
                     } else {
-                        boolean isEnabled = currentRequest.type == Request.RequestType.ENABLE_NOTIFICATION ||
-                                currentRequest.type == Request.RequestType.ENABLE_INDICATION;
-                        if (request.type == Request.RequestType.ENABLE_NOTIFICATION || request.type == Request.RequestType.DISABLE_NOTIFICATION) {
-                            notifyNotificationChanged(request.callback, request.tag, descriptor, isEnabled);
-                        } else {
-                            notifyIndicationChanged(request.callback, request.tag, descriptor, isEnabled);
-                        }
+                        notifyNotificationChanged(currentRequest, ((int) currentRequest.value) == 1);
                     }
                     executeNextRequest();
                 }
@@ -259,10 +249,9 @@ class ConnectionImpl implements Connection, ScanListener {
         @Override
         public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
             if (currentRequest != null) {
-                if (currentRequest.type == Request.RequestType.CHANGE_MTU) {
-                    Request request = currentRequest;
+                if (currentRequest.type == RequestType.CHANGE_MTU) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
-                        notifyMtuChanged(request.callback, request.tag, mtu);
+                        notifyMtuChanged(currentRequest, mtu);
                     } else {
                         handleGattStatusFailed();
                     }
@@ -273,12 +262,12 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onPhyRead(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
-            handlePhyReadOrUpdate(true, txPhy, rxPhy, status);
+            handlePhyChange(true, txPhy, rxPhy, status);
         }
 
         @Override
         public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
-            handlePhyReadOrUpdate(false, txPhy, rxPhy, status);
+            handlePhyChange(false, txPhy, rxPhy, status);
         }
     }
 
@@ -288,7 +277,7 @@ class ConnectionImpl implements Connection, ScanListener {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     String msg = String.format(Locale.US, "connected! [name: %s, addr: %s]", device.name, device.address);
                     logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
-                    device.connectionState = STATE_CONNECTED;
+                    device.setConnectionState(STATE_CONNECTED);
                     sendConnectionCallback();
                     // 延时一会再去发现服务
                     connHandler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, configuration.discoverServicesDelayMillis);
@@ -300,7 +289,8 @@ class ConnectionImpl implements Connection, ScanListener {
                     notifyDisconnected();
                 }
             } else {
-                String msg = String.format(Locale.US, "GATT error! [status: %d, name: %s, addr: %s]", status, device.name, device.address);
+                String msg = String.format(Locale.US, "GATT error! [status: %d, name: %s, addr: %s]",
+                        status, device.name, device.address);
                 logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, msg);
                 if (status == 133) {
                     doClearTaskAndRefresh();
@@ -325,12 +315,13 @@ class ConnectionImpl implements Connection, ScanListener {
                     refreshCount = 0;
                     tryReconnectCount = 0;
                     reconnectImmediatelyCount = 0;
-                    device.connectionState = STATE_SERVICE_DISCOVERED;
+                    device.setConnectionState(STATE_SERVICE_DISCOVERED);
                     sendConnectionCallback();
                 }
             } else {
                 doClearTaskAndRefresh();
-                String msg = String.format(Locale.US, "GATT error! [status: %d, name: %s, addr: %s]", status, device.name, device.address);
+                String msg = String.format(Locale.US, "GATT error! [status: %d, name: %s, addr: %s]",
+                        status, device.name, device.address);
                 logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, msg);
             }
         }
@@ -339,7 +330,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private void doDiscoverServices() {
         if (bluetoothGatt != null) {
             bluetoothGatt.discoverServices();
-            device.connectionState = STATE_SERVICE_DISCOVERING;
+            device.setConnectionState(STATE_SERVICE_DISCOVERING);
             sendConnectionCallback();
         } else {
             notifyDisconnected();
@@ -369,16 +360,16 @@ class ConnectionImpl implements Connection, ScanListener {
                                 break;
                         }
                         observable.notifyObservers(MethodInfoGenerator.onConnectTimeout(device, type));
-                        if (stateChangeListener != null) {
-                            stateChangeListener.onConnectTimeout(device, type);
+                        if (observer != null) {
+                            posterDispatcher.post(observer, MethodInfoGenerator.onConnectTimeout(device, type));
                         }
                         boolean infinite = configuration.tryReconnectMaxTimes == ConnectionConfiguration.TRY_RECONNECT_TIMES_INFINITE;
-                        if (configuration.isAutoReconnect && (infinite || tryReconnectCount < configuration.tryReconnectMaxTimes)) {
+                        if (configuration.isAutoReconnect && (infinite || tryReconnectCount < configuration.connectTimeoutMillis)) {
                             doDisconnect(true, true, false);
                         } else {
                             doDisconnect(false, true, false);
-                            if (stateChangeListener != null) {
-                                stateChangeListener.onConnectFailed(device, CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION);
+                            if (observer != null) {
+                                posterDispatcher.post(observer, MethodInfoGenerator.onConnectFailed(device, CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION));
                             }
                             observable.notifyObservers(MethodInfoGenerator.onConnectFailed(device, CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION));
                             String message = String.format(Locale.US, "connect failed! [type: maximun reconnection, name: %s, addr: %s]",
@@ -415,7 +406,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private void doConnect() {
         cancelRefreshState();
-        device.connectionState = STATE_CONNECTING;
+        device.setConnectionState(STATE_CONNECTING);
         sendConnectionCallback();
         String msg = String.format(Locale.US, "connecting [name: %s, addr: %s]", device.name, device.address);
         logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
@@ -437,9 +428,9 @@ class ConnectionImpl implements Connection, ScanListener {
             closeGatt(bluetoothGatt);
             bluetoothGatt = null;
         }
-        device.connectionState = STATE_DISCONNECTED;
+        device.setConnectionState(STATE_DISCONNECTED);
         if (release) {
-            device.connectionState = STATE_RELEASED;
+            device.setConnectionState(STATE_RELEASED);
             String msg = String.format(Locale.US, "connection released! [name: %s, addr: %s]", device.name, device.address);
             logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
             finalRelease();
@@ -471,7 +462,7 @@ class ConnectionImpl implements Connection, ScanListener {
         if (bluetoothGatt != null) {
             try {
                 bluetoothGatt.disconnect();
-            } catch (Exception ignored) {
+            } catch (Exception ignore) {
             }
 
             if (isAuto) {
@@ -483,12 +474,7 @@ class ConnectionImpl implements Connection, ScanListener {
                 refreshing = doRefresh();
             }
             if (refreshing) {
-                connHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        cancelRefreshState();
-                    }
-                }, 2000);
+                connHandler.postDelayed(this::cancelRefreshState, 2000);
             } else if (bluetoothGatt != null) {
                 closeGatt(bluetoothGatt);
                 bluetoothGatt = null;
@@ -512,7 +498,7 @@ class ConnectionImpl implements Connection, ScanListener {
             connStartTime = System.currentTimeMillis();
             easyBle.stopScan();
             //搜索设备，搜索到才执行连接
-            device.connectionState = STATE_SCANNING;
+            device.setConnectionState(STATE_SCANNING);
             String msg = String.format(Locale.US, "scanning for reconnection [name: %s, addr: %s]", device.name, device.address);
             logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
             easyBle.startScan();
@@ -521,16 +507,13 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private boolean canScanReconnect() {
         long duration = System.currentTimeMillis() - lastScanStopTime;
-        List<Pair<Integer, Integer>> pairs = configuration.scanIntervalPairsInAutoReonnection;
-        Collections.sort(pairs, new Comparator<Pair<Integer, Integer>>() {
-            @Override
-            public int compare(Pair<Integer, Integer> o1, Pair<Integer, Integer> o2) {
-                if (o1 == null || o1.first == null) return 1;
-                if (o2 == null || o2.first == null) return -1;
-                return o2.first.compareTo(o1.first);
-            }
+        List<Pair<Integer, Integer>> parameters = configuration.scanIntervalPairsInAutoReonnection;
+        Collections.sort(parameters, (o1, o2) -> {
+            if (o1 == null || o1.first == null) return 1;
+            if (o2 == null || o2.first == null) return -1;
+            return o2.first.compareTo(o1.first);
         });
-        for (Pair<Integer, Integer> pair : pairs) {
+        for (Pair<Integer, Integer> pair : parameters) {
             if (pair.first != null && pair.second != null && tryReconnectCount >= pair.first && duration >= pair.second) {
                 return true;
             }
@@ -541,34 +524,35 @@ class ConnectionImpl implements Connection, ScanListener {
     private void closeGatt(BluetoothGatt gatt) {
         try {
             gatt.disconnect();
-        } catch (Exception ignored) {
+        } catch (Exception ignore) {
         }
         try {
             gatt.close();
-        } catch (Exception ignored) {
+        } catch (Exception ignore) {
         }
     }
 
     private void notifyDisconnected() {
-        device.connectionState = STATE_DISCONNECTED;
+        device.setConnectionState(STATE_DISCONNECTED);
         sendConnectionCallback();
     }
 
     private void sendConnectionCallback() {
         if (lastConnectionState != device.connectionState) {
             lastConnectionState = device.connectionState;
-            if (stateChangeListener != null) {
-                stateChangeListener.onConnectionStateChanged(device);
+            if (observer != null) {
+                posterDispatcher.post(observer, MethodInfoGenerator.onConnectionStateChanged(device));
             }
             observable.notifyObservers(MethodInfoGenerator.onConnectionStateChanged(device));
         }
     }
 
-    private boolean write(Request request, BluetoothGattCharacteristic characteristic, byte[] value) {
+    private boolean write(GenericRequest request, BluetoothGattCharacteristic characteristic, byte[] value) {
         characteristic.setValue(value);
-        Integer writeType = configuration.getWriteType(characteristic.getService().getUuid(), characteristic.getUuid());
-        if (writeType != null && (writeType == BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT || writeType == BluetoothGattCharacteristic.WRITE_TYPE_SIGNED ||
-                writeType == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)) {
+        int writeType = request.writeOptions.writeType;
+        if ((writeType == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE ||
+                writeType == BluetoothGattCharacteristic.WRITE_TYPE_SIGNED || 
+                writeType == BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)) {
             characteristic.setWriteType(writeType);
         }
         if (bluetoothGatt == null) {
@@ -582,14 +566,15 @@ class ConnectionImpl implements Connection, ScanListener {
         return true;
     }
 
-    private void handleWriteFailed(Request request) {
+    private void handleWriteFailed(GenericRequest request) {
         connHandler.removeMessages(MSG_REQUEST_TIMEOUT);
         request.remainQueue = null;
         handleFailedCallback(request, REQUEST_FAIL_TYPE_REQUEST_FAILED, true);
     }
 
     private boolean enableNotificationOrIndicationFail(boolean enable, boolean notification, BluetoothGattCharacteristic characteristic) {
-        if (!bluetoothAdapter.isEnabled() || bluetoothGatt == null || !bluetoothGatt.setCharacteristicNotification(characteristic, enable)) {
+        if (!bluetoothAdapter.isEnabled() || bluetoothGatt == null || !bluetoothGatt
+                .setCharacteristicNotification(characteristic, enable)) {
             return true;
         }
         BluetoothGattDescriptor descriptor = characteristic.getDescriptor(clientCharacteristicConfig);
@@ -598,13 +583,16 @@ class ConnectionImpl implements Connection, ScanListener {
         }
         byte[] oriaValue = descriptor.getValue();
         if (currentRequest != null) {
-            if (currentRequest.type == Request.RequestType.DISABLE_NOTIFICATION || currentRequest.type == Request.RequestType.ENABLE_NOTIFICATION ||
-                    currentRequest.type == Request.RequestType.DISABLE_INDICATION || currentRequest.type == Request.RequestType.ENABLE_INDICATION) {
-                currentRequest.value = oriaValue;
+            if (currentRequest.type == RequestType.SET_NOTIFICATION || currentRequest.type == RequestType.SET_INDICATION) {
+                currentRequest.descriptorTemp = oriaValue;
             }
         }
         if (enable) {
-            descriptor.setValue(notification ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+            if (notification) {
+                descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+            } else {
+                descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+            }
         } else {
             descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
         }
@@ -638,7 +626,7 @@ class ConnectionImpl implements Connection, ScanListener {
                 }
                 switch (msg.what) {
                     case MSG_REQUEST_TIMEOUT:
-                        Request request = (Request) msg.obj;
+                        GenericRequest request = (GenericRequest) msg.obj;
                         if (connection.currentRequest != null && connection.currentRequest == request) {
                             connection.handleFailedCallback(request, REQUEST_FAIL_TYPE_REQUEST_TIMEOUT, false);
                             connection.executeNextRequest();
@@ -683,7 +671,7 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
 
-    private void enqueue(Request request) {
+    private void enqueue(GenericRequest request) {
         if (isReleased) {
             handleFailedCallback(request, REQUEST_FAIL_TYPE_CONNECTION_RELEASED, false);
         } else {
@@ -694,7 +682,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     //根据优化级将请求插入队列中
                     int index = -1;
                     for (int i = 0; i < requestQueue.size(); i++) {
-                        Request req = requestQueue.get(i);
+                        GenericRequest req = requestQueue.get(i);
                         if (req.priority >= request.priority) {
                             if (i < requestQueue.size() - 1) {
                                 if (requestQueue.get(i + 1).priority < request.priority) {
@@ -729,7 +717,7 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
 
-    private void executeRequest(Request request) {
+    private void executeRequest(GenericRequest request) {
         currentRequest = request;
         connHandler.sendMessageDelayed(Message.obtain(connHandler, MSG_REQUEST_TIMEOUT, request), configuration.requestTimeoutMillis);
         if (bluetoothAdapter.isEnabled()) {
@@ -741,7 +729,7 @@ class ConnectionImpl implements Connection, ScanListener {
                         }
                         break;
                     case CHANGE_MTU:
-                        if (!bluetoothGatt.requestMtu((int) BleUtils.bytesToNumber(false, request.value))) {
+                        if (!bluetoothGatt.requestMtu((int) request.value)) {
                             handleFailedCallback(request, REQUEST_FAIL_TYPE_REQUEST_FAILED, true);
                         }
                         break;
@@ -752,22 +740,18 @@ class ConnectionImpl implements Connection, ScanListener {
                         break;
                     case SET_PREFERRED_PHY:
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            int txPhy = (int) BleUtils.bytesToNumber(false, Arrays.copyOfRange(request.value, 0, 4));
-                            int rxPhy = (int) BleUtils.bytesToNumber(false, Arrays.copyOfRange(request.value, 4, 8));
-                            int phyOptions = (int) BleUtils.bytesToNumber(false, Arrays.copyOfRange(request.value, 8, 12));
-                            bluetoothGatt.setPreferredPhy(txPhy, rxPhy, phyOptions);
+                            int[] optins = (int[]) request.value;
+                            bluetoothGatt.setPreferredPhy(optins[0], optins[1], optins[2]);
                         }
                         break;
                     default:
-                        BluetoothGattService gattService = bluetoothGatt.getService(request.serviceUuid);
+                        BluetoothGattService gattService = bluetoothGatt.getService(request.service);
                         if (gattService != null) {
-                            BluetoothGattCharacteristic characteristic = gattService.getCharacteristic(request.characUuid);
+                            BluetoothGattCharacteristic characteristic = gattService.getCharacteristic(request.characteristic);
                             if (characteristic != null) {
                                 switch (request.type) {
-                                    case ENABLE_NOTIFICATION:
-                                    case DISABLE_NOTIFICATION:
-                                    case ENABLE_INDICATION:
-                                    case DISABLE_INDICATION:
+                                    case SET_NOTIFICATION:
+                                    case SET_INDICATION:
                                         executeIndicationOrNotification(request, characteristic);
                                         break;
                                     case READ_CHARACTERISTIC:
@@ -781,10 +765,10 @@ class ConnectionImpl implements Connection, ScanListener {
                                         break;
                                 }
                             } else {
-                                handleFailedCallback(request, REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC, true);
+                                handleFailedCallback(request, REQUEST_FAIL_TYPE_CHARACTERISTIC_NOT_EXIST, true);
                             }
                         } else {
-                            handleFailedCallback(request, REQUEST_FAIL_TYPE_NULL_SERVICE, true);
+                            handleFailedCallback(request, REQUEST_FAIL_TYPE_SERVICE_NOT_EXIST, true);
                         }
                         break;
                 }
@@ -796,31 +780,30 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
 
-    private void executeWriteCharacteristic(Request request, BluetoothGattCharacteristic characteristic) {
+    private void executeWriteCharacteristic(GenericRequest request, BluetoothGattCharacteristic characteristic) {
         try {
-            request.waitWriteResult = configuration.isWaitWriteResult;
-            request.writeDelay = configuration.packageWriteDelayMillis;
-            int requestWriteDelayMillis = configuration.requestWriteDelayMillis;
-            int reqDelay = requestWriteDelayMillis > 0 ? requestWriteDelayMillis : request.writeDelay;
+            byte[] value = (byte[]) request.value;
+            WriteOptions options = request.writeOptions;
+            int reqDelay = options.requestWriteDelayMillis > 0 ? options.requestWriteDelayMillis : options.packageWriteDelayMillis;
             if (reqDelay > 0) {
                 try {
                     Thread.sleep(reqDelay);
-                } catch (InterruptedException ignored) {
+                } catch (InterruptedException ignore) {
                 }
                 if (request != currentRequest) {
                     return;
                 }
             }
-            if (request.value.length > configuration.packageSize) {
-                List<byte[]> list = BleUtils.splitPackage(request.value, configuration.packageSize);
-                if (!request.waitWriteResult) { //without waiting
-                    int delay = request.writeDelay;
+            if (value.length > options.packageSize) {
+                List<byte[]> list = MathUtils.splitPackage(value, options.packageSize);
+                if (!options.isWaitWriteResult) { //不等待写入回调，直接写入下一包数据
+                    int delay = options.packageWriteDelayMillis;
                     for (int i = 0; i < list.size(); i++) {
                         byte[] bytes = list.get(i);
                         if (i > 0 && delay > 0) {
                             try {
                                 Thread.sleep(delay);
-                            } catch (InterruptedException ignored) {
+                            } catch (InterruptedException ignore) {
                             }
                             if (request != currentRequest) {
                                 return;
@@ -839,13 +822,13 @@ class ConnectionImpl implements Connection, ScanListener {
                     }
                 }
             } else {
-                request.sendingBytes = request.value;
-                if (!write(request, characteristic, request.value)) {
+                request.sendingBytes = value;
+                if (!write(request, characteristic, value)) {
                     return;
                 }
             }
-            if (!request.waitWriteResult) {
-                notifyCharacteristicWrite(request.callback, request.tag, characteristic.getService().getUuid(), characteristic.getUuid(), request.value);
+            if (!options.isWaitWriteResult) {
+                notifyCharacteristicWrite(request, value);
                 executeNextRequest();
             }
         } catch (Exception e) {
@@ -853,24 +836,24 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
 
-    private void executeReadDescriptor(Request request, BluetoothGattCharacteristic characteristic) {
-        BluetoothGattDescriptor gattDescriptor = characteristic.getDescriptor(request.descriptorUuid);
+    private void executeReadDescriptor(GenericRequest request, BluetoothGattCharacteristic characteristic) {
+        BluetoothGattDescriptor gattDescriptor = characteristic.getDescriptor(request.descriptor);
         if (gattDescriptor != null) {
             if (!bluetoothGatt.readDescriptor(gattDescriptor)) {
                 handleFailedCallback(request, REQUEST_FAIL_TYPE_REQUEST_FAILED, true);
             }
         } else {
-            handleFailedCallback(request, REQUEST_FAIL_TYPE_NULL_DESCRIPTOR, true);
+            handleFailedCallback(request, REQUEST_FAIL_TYPE_DESCRIPTOR_NOT_EXIST, true);
         }
     }
 
-    private void executeReadCharacteristic(Request request, BluetoothGattCharacteristic characteristic) {
+    private void executeReadCharacteristic(GenericRequest request, BluetoothGattCharacteristic characteristic) {
         if (!bluetoothGatt.readCharacteristic(characteristic)) {
             handleFailedCallback(request, REQUEST_FAIL_TYPE_REQUEST_FAILED, true);
         }
     }
 
-    private void executeIndicationOrNotification(Request request, BluetoothGattCharacteristic characteristic) {
+    private void executeIndicationOrNotification(GenericRequest request, BluetoothGattCharacteristic characteristic) {
         pendingCharacteristic = characteristic;
         BluetoothGattDescriptor gattDescriptor = pendingCharacteristic.getDescriptor(clientCharacteristicConfig);
         if (gattDescriptor == null || !bluetoothGatt.readDescriptor(gattDescriptor)) {
@@ -878,12 +861,11 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
 
-    private void handlePhyReadOrUpdate(boolean read, int txPhy, int rxPhy, int status) {
+    private void handlePhyChange(boolean read, int txPhy, int rxPhy, int status) {
         if (currentRequest != null) {
-            if ((read && currentRequest.type == Request.RequestType.READ_PHY) || ((!read && currentRequest.type == Request.RequestType.SET_PREFERRED_PHY))) {
-                Request request = currentRequest;
+            if ((read && currentRequest.type == RequestType.READ_PHY) || ((!read && currentRequest.type == RequestType.SET_PREFERRED_PHY))) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    notifyPhyReadOrUpdate(request.callback, request.tag, read, txPhy, rxPhy);
+                    notifyPhyChange(currentRequest, txPhy, rxPhy);
                 } else {
                     handleGattStatusFailed();
                 }
@@ -898,7 +880,7 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
 
-    private void handleFailedCallback(Request request, int failType, boolean executeNext) {
+    private void handleFailedCallback(GenericRequest request, int failType, boolean executeNext) {
         notifyRequestFialed(request, failType);
         if (executeNext) {
             executeNextRequest();
@@ -906,34 +888,66 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     private String toHex(byte[] bytes) {
-        return BleUtils.bytesToHex(bytes);
+        return StringUtils.toHex(bytes, " ");
     }
 
     private String substringUuid(UUID uuid) {
-        return uuid.toString().substring(0, 8);
+        return uuid == null ? "null" : uuid.toString().substring(0, 8);
     }
 
-    private void notifyRequestFialed(Request request, int failType) {
-        MethodInfo info = MethodInfoGenerator.onRequestFailed(device, request, failType);
-        if (request.callback != null) {//回调方式
-            poster.post(request.callback, info);
+    private void handleCallbacks(RequestCallback callback, MethodInfo info) {
+        if (observer != null) {
+            posterDispatcher.post(observer, info);//通知伴生观察者
+        }
+        if (callback != null) {//回调方式
+            posterDispatcher.post(callback, info);
         } else {//观察者模式
             observable.notifyObservers(info);
         }
-        String msg = String.format(Locale.US, "request failed! [addr: %s, tag: $tag, failType: %d", device.address, failType);
+    }
+    
+    private void notifyRequestFialed(GenericRequest request, int failType) {
+        MethodInfo info = MethodInfoGenerator.onRequestFailed(request, failType, request.value);
+        handleCallbacks(request.callback, info);
+        String type = "null";
+        switch(request.type) {
+            case SET_NOTIFICATION:
+                type = "SET_NOTIFICATION";
+                break;
+            case SET_INDICATION:
+                type = "SET_INDICATION";
+                break;
+            case READ_CHARACTERISTIC:
+                type = "READ_CHARACTERISTIC";
+                break;
+            case READ_DESCRIPTOR:
+                type = "READ_DESCRIPTOR";
+                break;
+            case READ_RSSI:
+                type = "READ_RSSI";
+                break;
+            case WRITE_CHARACTERISTIC:
+                type = "WRITE_CHARACTERISTIC";
+                break;
+            case CHANGE_MTU:
+                type = "CHANGE_MTU";
+                break;
+            case READ_PHY:
+                type = "READ_PHY";
+                break;
+            case SET_PREFERRED_PHY:
+                type = "SET_PREFERRED_PHY";
+                break;
+        }
+        String msg = String.format(Locale.US, "request failed! [requestType: %s, addr: %s, failType: %d", type, device.address, failType);
         logger.log(Log.DEBUG, Logger.TYPE_REQUEST_FIALED, msg);
     }
 
-    private void notifyCharacteristicRead(RequestCallback callback, String tag, BluetoothGattCharacteristic characteristic) {
-        MethodInfo info = MethodInfoGenerator.onCharacteristicRead(tag, device, characteristic.getService().getUuid(),
-                characteristic.getUuid(), characteristic.getValue());
-        if (callback != null) {//回调方式
-            poster.post(callback, info);
-        } else {//观察者模式
-            observable.notifyObservers(info);
-        }
+    private void notifyCharacteristicRead(GenericRequest request, byte[] value) {
+        MethodInfo info = MethodInfoGenerator.onCharacteristicRead(request, value);
+        handleCallbacks(request.callback, info);
         String msg = String.format(Locale.US, "characteristic read! [UUID: %s, addr: %s, value: %s]",
-                substringUuid(characteristic.getUuid()), device.address, toHex(characteristic.getValue()));
+                substringUuid(request.characteristic), device.address, toHex(value));
         logger.log(Log.DEBUG, Logger.TYPE_CHARACTERISTIC_READ, msg);
     }
 
@@ -941,110 +955,64 @@ class ConnectionImpl implements Connection, ScanListener {
         MethodInfo info = MethodInfoGenerator.onCharacteristicChanged(device, characteristic.getService().getUuid(),
                 characteristic.getUuid(), characteristic.getValue());
         observable.notifyObservers(info);
+        if (observer != null) {
+            posterDispatcher.post(observer, info);
+        }
         String msg = String.format(Locale.US, "characteristic change! [UUID: %s, addr: %s, value: %s]",
                 substringUuid(characteristic.getUuid()), device.address, toHex(characteristic.getValue()));
         logger.log(Log.INFO, Logger.TYPE_CHARACTERISTIC_CHANGED, msg);
     }
 
-    private void notifyReadRemoteRssi(RequestCallback callback, String tag, int rssi) {
-        MethodInfo info = MethodInfoGenerator.onRemoteRssiRead(tag, device, rssi);
-        if (callback != null) {//回调方式
-            poster.post(callback, info);
-        } else {//观察者模式
-            observable.notifyObservers(info);
-        }
+    private void notifyRssiRead(GenericRequest request, int rssi) {
+        MethodInfo info = MethodInfoGenerator.onRssiRead(request, rssi);
+        handleCallbacks(request.callback, info);
         String msg = String.format(Locale.US, "rssi read! [addr: %s, rssi: %d]", device.address, rssi);
         logger.log(Log.DEBUG, Logger.TYPE_READ_REMOTE_RSSI, msg);
     }
 
-    private void notifyMtuChanged(RequestCallback callback, String tag, int mtu) {
-        MethodInfo info = MethodInfoGenerator.onMtuChanged(tag, device, mtu);
-        if (callback != null) {//回调方式
-            poster.post(callback, info);
-        } else {//观察者模式
-            observable.notifyObservers(info);
-        }
+    private void notifyMtuChanged(GenericRequest request, int mtu) {
+        MethodInfo info = MethodInfoGenerator.onMtuChanged(request, mtu);
+        handleCallbacks(request.callback, info);
         String msg = String.format(Locale.US, "mtu change! [addr: %s, mtu: %d]", device.address, mtu);
         logger.log(Log.DEBUG, Logger.TYPE_MTU_CHANGED, msg);
     }
 
-    private void notifyDescriptorRead(RequestCallback callback, String tag, BluetoothGattDescriptor descriptor) {
-        BluetoothGattCharacteristic charac = descriptor.getCharacteristic();
-        MethodInfo info = MethodInfoGenerator.onDescriptorRead(tag, device, charac.getService().getUuid(),
-                charac.getUuid(), descriptor.getUuid(), descriptor.getValue());
-        if (callback != null) {//回调方式
-            poster.post(callback, info);
-        } else {//观察者模式
-            observable.notifyObservers(info);
-        }
+    private void notifyDescriptorRead(GenericRequest request, byte[] value) {
+        MethodInfo info = MethodInfoGenerator.onDescriptorRead(request, value);
+        handleCallbacks(request.callback, info);
         String msg = String.format(Locale.US, "descriptor read! [UUID: %s, addr: %s, value: %s]",
-                substringUuid(charac.getUuid()), device.address, toHex(charac.getValue()));
+                substringUuid(request.characteristic), device.address, toHex(value));
         logger.log(Log.DEBUG, Logger.TYPE_DESCRIPTOR_READ, msg);
     }
 
-    private void notifyNotificationChanged(RequestCallback callback, String tag, BluetoothGattDescriptor descriptor, boolean isEnabled) {
-        BluetoothGattCharacteristic characteristic = descriptor.getCharacteristic();
-        MethodInfo info = MethodInfoGenerator.onNotificationChanged(tag, device, characteristic.getService().getUuid(),
-                characteristic.getUuid(), descriptor.getUuid(), isEnabled);
-        if (callback != null) {//回调方式
-            poster.post(callback, info);
-        } else {//观察者模式
-            observable.notifyObservers(info);
-        }
-        String msg = String.format(Locale.US, "%s [UUID: %s, addr: %s]", isEnabled ? "notification enabled!" : "notification disabled!",
-                substringUuid(characteristic.getUuid()), device.address);
-        logger.log(Log.DEBUG, Logger.TYPE_NOTIFICATION_CHANGED, msg);
-    }
-
-    private void notifyIndicationChanged(RequestCallback callback, String tag, BluetoothGattDescriptor descriptor, boolean isEnabled) {
-        BluetoothGattCharacteristic characteristic = descriptor.getCharacteristic();
-        MethodInfo info = MethodInfoGenerator.onIndicationChanged(tag, device, characteristic.getService().getUuid(),
-                characteristic.getUuid(), descriptor.getUuid(), isEnabled);
-        if (callback != null) {//回调方式
-            poster.post(callback, info);
-        } else {//观察者模式
-            observable.notifyObservers(info);
-        }
-        String msg = String.format(Locale.US, "%s [UUID: %s, addr: %s]", isEnabled ? "indication enabled!" : "indication disabled!",
-                substringUuid(characteristic.getUuid()), device.address);
-        logger.log(Log.DEBUG, Logger.TYPE_INDICATION_CHANGED, msg);
-    }
-
-    private void notifyCharacteristicWrite(RequestCallback callback, String tag, UUID serviceUuid, UUID characteristicUuid, byte[] value) {
-        MethodInfo info = MethodInfoGenerator.onCharacteristicWrite(tag, device, serviceUuid, characteristicUuid, value);
-        if (callback != null) {//回调方式
-            poster.post(callback, info);
+    private void notifyNotificationChanged(GenericRequest request, boolean isEnabled) {
+        MethodInfo info = MethodInfoGenerator.onNotificationChanged(request, isEnabled);
+        handleCallbacks(request.callback, info);
+        if (request.type == RequestType.SET_NOTIFICATION) {
+            String msg = String.format(Locale.US, "%s [UUID: %s, addr: %s]", isEnabled ? "notification enabled!" :
+                    "notification disabled!", substringUuid(request.characteristic), device.address);
+            logger.log(Log.DEBUG, Logger.TYPE_NOTIFICATION_CHANGED, msg);
         } else {
-            observable.notifyObservers(info);
+            String msg = String.format(Locale.US, "%s [UUID: %s, addr: %s]", isEnabled ? "indication enabled!" :
+                    "indication disabled!", substringUuid(request.characteristic), device.address);
+            logger.log(Log.DEBUG, Logger.TYPE_INDICATION_CHANGED, msg);
         }
+    }
+
+    private void notifyCharacteristicWrite(GenericRequest request, byte[] value) {
+        MethodInfo info = MethodInfoGenerator.onCharacteristicWrite(request, value);
+        handleCallbacks(request.callback, info);
         String msg = String.format(Locale.US, "write success! [UUID: %s, addr: %s, value: %s]",
-                substringUuid(characteristicUuid), device.address, toHex(value));
+                substringUuid(request.characteristic), device.address, toHex(value));
         logger.log(Log.DEBUG, Logger.TYPE_CHARACTERISTIC_WRITE, msg);
     }
 
-    private void notifyPhyReadOrUpdate(RequestCallback callback, String tag, boolean read, int txPhy, int rxPhy) {
-        if (read) {
-            MethodInfo info = MethodInfoGenerator.onPhyRead(tag, device, txPhy, rxPhy);
-            if (callback != null) {//回调方式
-                poster.post(callback, info);
-            } else {//观察者模式
-                observable.notifyObservers(info);
-            }
-            logger.log(Log.DEBUG, Logger.TYPE_PHY_READ, "phy read! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]");
-        } else {
-            MethodInfo info = MethodInfoGenerator.onPhyUpdate(tag, device, txPhy, rxPhy);
-            if (callback != null) {//回调方式
-                poster.post(callback, info);
-            } else {//观察者模式
-                observable.notifyObservers(info);
-            }
-            logger.log(Log.DEBUG, Logger.TYPE_PHY_UPDATE, "phy update! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]");
-        }
-    }
-
-    @Override
-    public void setCharacteristicChangedCallback(CharacteristicChangedCallback callback) {
-        characChangedCallback = callback;
+    private void notifyPhyChange(GenericRequest request, int txPhy, int rxPhy) {
+        MethodInfo info = MethodInfoGenerator.onPhyChange(request, txPhy, rxPhy);
+        handleCallbacks(request.callback, info);
+        String event = request.type == RequestType.READ_PHY ? "phy read!" : "phy update!";
+        String msg = String.format(Locale.US, "%s [addr: %s, tvPhy: %s, rxPhy: %s]", event, device.address, txPhy, rxPhy);
+        logger.log(Log.DEBUG, Logger.TYPE_PHY_READ, msg);
     }
 
     @NonNull
@@ -1077,7 +1045,7 @@ class ConnectionImpl implements Connection, ScanListener {
         try {
             Method localMethod = bluetoothGatt.getClass().getMethod("refresh");
             return (boolean) localMethod.invoke(bluetoothGatt);
-        } catch (Exception ignored) {
+        } catch (Exception ignore) {
         }
         return false;
     }
@@ -1100,12 +1068,12 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     @Override
-    public void releaseNoEvnet() {
+    public void releaseNoEvent() {
         Message.obtain(connHandler, MSG_RELEASE_CONNECTION, MSG_ARG_NONE, MSG_ARG_RELEASE).sendToTarget();
     }
 
     @Override
-    public int getConnctionState() {
+    public int getConnectionState() {
         return device.connectionState;
     }
 
@@ -1129,11 +1097,11 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     @Override
-    public void clearRequestQueueByType(@Nullable Request.RequestType type) {
+    public void clearRequestQueueByType(@Nullable RequestType type) {
         synchronized (this) {
-            Iterator<Request> it = requestQueue.iterator();
+            Iterator<GenericRequest> it = requestQueue.iterator();
             while (it.hasNext()) {
-                Request request = it.next();
+                GenericRequest request = it.next();
                 if (request.type == type) {
                     it.remove();
                 }
@@ -1149,7 +1117,7 @@ class ConnectionImpl implements Connection, ScanListener {
      */
     private void clearRequestQueueAndNotify() {
         synchronized (this) {
-            for (Request request : requestQueue) {
+            for (GenericRequest request : requestQueue) {
                 handleFailedCallback(request, REQUEST_FAIL_TYPE_CONNECTION_DISCONNECTED, false);
             }
             if (currentRequest != null) {
@@ -1167,20 +1135,20 @@ class ConnectionImpl implements Connection, ScanListener {
 
     @Nullable
     @Override
-    public BluetoothGattService getService(@NonNull UUID serviceUuid) {
-        if (bluetoothGatt != null) {
-            return bluetoothGatt.getService(serviceUuid);
+    public BluetoothGattService getService(UUID service) {
+        if (service != null && bluetoothGatt != null) {
+            return bluetoothGatt.getService(service);
         }
         return null;
     }
 
     @Nullable
     @Override
-    public BluetoothGattCharacteristic getCharacteristic(@NonNull UUID serviceUuid, @NonNull UUID characteristicUuid) {
-        if (bluetoothGatt != null) {
-            BluetoothGattService service = bluetoothGatt.getService(serviceUuid);
-            if (service != null) {
-                return service.getCharacteristic(characteristicUuid);
+    public BluetoothGattCharacteristic getCharacteristic(UUID service, UUID characteristic) {
+        if (service != null && characteristic != null && bluetoothGatt != null) {
+            BluetoothGattService gattService = bluetoothGatt.getService(service);
+            if (gattService != null) {
+                return gattService.getCharacteristic(characteristic);
             }
         }
         return null;
@@ -1188,13 +1156,13 @@ class ConnectionImpl implements Connection, ScanListener {
 
     @Nullable
     @Override
-    public BluetoothGattDescriptor getDescriptor(@NonNull UUID serviceUuid, @NonNull UUID characteristicUuid, @NonNull UUID descriptorUuid) {
-        if (bluetoothGatt != null) {
-            BluetoothGattService service = bluetoothGatt.getService(serviceUuid);
-            if (service != null) {
-                BluetoothGattCharacteristic characteristic = service.getCharacteristic(characteristicUuid);
-                if (characteristic != null) {
-                    return characteristic.getDescriptor(descriptorUuid);
+    public BluetoothGattDescriptor getDescriptor(UUID service, UUID characteristic, UUID descriptor) {
+        if (service != null && characteristic != null && descriptor != null && bluetoothGatt != null) {
+            BluetoothGattService gattService = bluetoothGatt.getService(service);
+            if (gattService != null) {
+                BluetoothGattCharacteristic gattCharacteristic = gattService.getCharacteristic(characteristic);
+                if (gattCharacteristic != null) {
+                    return gattCharacteristic.getDescriptor(descriptor);
                 }
             }
         }
@@ -1202,14 +1170,14 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     //检查uuid是否存在，存在则将请求加入队列，不存在则失败回调或通知观察者
-    private void checkUuidExistsAndEnqueue(Request request, UUID... uuids) {
+    private void checkUuidExistsAndEnqueue(GenericRequest request, int uuidNum) {
         boolean exists = false;
-        if (uuids.length > 2) {
-            exists = checkDescriptoreExists(request, uuids[0], uuids[1], uuids[2]);
-        } else if (uuids.length > 1) {
-            exists = checkCharacteristicExists(request, uuids[0], uuids[1]);
-        } else if (uuids.length == 1) {
-            exists = checkServiceExists(request, uuids[0]);
+        if (uuidNum > 2) {
+            exists = checkDescriptoreExists(request, request.service, request.characteristic, request.descriptor);
+        } else if (uuidNum > 1) {
+            exists = checkCharacteristicExists(request, request.service, request.characteristic);
+        } else if (uuidNum == 1) {
+            exists = checkServiceExists(request, request.service);
         }
         if (exists) {
             enqueue(request);
@@ -1217,19 +1185,19 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     //检查服务是否存在
-    private boolean checkServiceExists(Request request, UUID uuid) {
+    private boolean checkServiceExists(GenericRequest request, UUID uuid) {
         if (getService(uuid) == null) {
-            handleFailedCallback(request, REQUEST_FAIL_TYPE_NULL_SERVICE, false);
+            handleFailedCallback(request, REQUEST_FAIL_TYPE_SERVICE_NOT_EXIST, false);
             return false;
         }
         return true;
     }
 
     //检查特征是否存在
-    private boolean checkCharacteristicExists(Request request, UUID service, UUID characteristic) {
+    private boolean checkCharacteristicExists(GenericRequest request, UUID service, UUID characteristic) {
         if (checkServiceExists(request, service)) {
             if (getCharacteristic(service, characteristic) == null) {
-                handleFailedCallback(request, REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC, false);
+                handleFailedCallback(request, REQUEST_FAIL_TYPE_CHARACTERISTIC_NOT_EXIST, false);
                 return false;
             }
             return true;
@@ -1238,261 +1206,38 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     //检查Descriptore是否存在
-    private boolean checkDescriptoreExists(Request request, UUID service, UUID characteristic, UUID descriptor) {
+    private boolean checkDescriptoreExists(GenericRequest request, UUID service, UUID characteristic, UUID descriptor) {
         if (checkServiceExists(request, service) && checkCharacteristicExists(request, service, characteristic)) {
             if (getDescriptor(service, characteristic, descriptor) == null) {
-                handleFailedCallback(request, REQUEST_FAIL_TYPE_NULL_DESCRIPTOR, false);
+                handleFailedCallback(request, REQUEST_FAIL_TYPE_DESCRIPTOR_NOT_EXIST, false);
                 return false;
             }
             return true;
         }
         return false;
     }
-    
-    @Override
-    public void changeMtu(@Nullable String tag, int mtu) {
-        enqueue(Request.newChangeMtuRequest(tag, mtu, 0, null));
-    }
+
 
     @Override
-    public void changeMtu(@Nullable String tag, int mtu, @NonNull MtuChangedCallback callback) {
-        enqueue(Request.newChangeMtuRequest(tag, mtu, 0, callback));
-    }
-
-    @Override
-    public void changeMtu(@Nullable String tag, int mtu, int priority) {
-        enqueue(Request.newChangeMtuRequest(tag, mtu, priority, null));
-    }
-
-    @Override
-    public void changeMtu(@Nullable String tag, int mtu, int priority, @NonNull MtuChangedCallback callback) {
-        enqueue(Request.newChangeMtuRequest(tag, mtu, priority, callback));
-    }
-
-    @Override
-    public void readRssi(@Nullable String tag) {
-        enqueue(Request.newReadRssiRequest(tag, 0, null));
-    }
-
-    @Override
-    public void readRssi(@Nullable String tag, @NonNull RemoteRssiReadCallback callback) {
-        enqueue(Request.newReadRssiRequest(tag, 0, callback));
-    }
-
-    @Override
-    public void readRssi(@Nullable String tag, int priority) {
-        enqueue(Request.newReadRssiRequest(tag, priority, null));
-    }
-
-    @Override
-    public void readRssi(@Nullable String tag, int priority, @NonNull RemoteRssiReadCallback callback) {
-        enqueue(Request.newReadRssiRequest(tag, priority, callback));
-    }
-
-    @Override
-    public void readPhy(@Nullable String tag) {
-        enqueue(Request.newReadPhyRequest(tag, 0, null));
-    }
-
-    @Override
-    public void readPhy(@Nullable String tag, @NonNull PhyReadCallback callback) {
-        enqueue(Request.newReadPhyRequest(tag, 0, callback));
-    }
-
-    @Override
-    public void readPhy(@Nullable String tag, int priority) {
-        enqueue(Request.newReadPhyRequest(tag, priority, null));
-    }
-
-    @Override
-    public void readPhy(@Nullable String tag, int priority, @NonNull PhyReadCallback callback) {
-        enqueue(Request.newReadPhyRequest(tag, priority, callback));
-    }
-
-    @Override
-    public void setPreferredPhy(@Nullable String tag, int txPhy, int rxPhy, int phyOptions) {
-        enqueue(Request.newSetPreferredPhyRequest(tag, txPhy, rxPhy, phyOptions, 0, null));
-    }
-
-    @Override
-    public void setPreferredPhy(@Nullable String tag, int txPhy, int rxPhy, int phyOptions, @NonNull PhyUpdateCallback callback) {
-        enqueue(Request.newSetPreferredPhyRequest(tag, txPhy, rxPhy, phyOptions, 0, callback));
-    }
-
-    @Override
-    public void setPreferredPhy(@Nullable String tag, int txPhy, int rxPhy, int phyOptions, int priority) {
-        enqueue(Request.newSetPreferredPhyRequest(tag, txPhy, rxPhy, phyOptions, priority, null));
-    }
-
-    @Override
-    public void setPreferredPhy(@Nullable String tag, int txPhy, int rxPhy, int phyOptions, int priority, @NonNull PhyUpdateCallback callback) {
-        enqueue(Request.newSetPreferredPhyRequest(tag, txPhy, rxPhy, phyOptions, priority, callback));
-    }
-
-    @Override
-    public void readCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic) {
-        Request request = Request.newReadCharacteristicRequest(tag, service, characteristic, 0, null);
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void readCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, int priority) {
-        Request request = Request.newReadCharacteristicRequest(tag, service, characteristic, priority, null);
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void readCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull CharacteristicReadCallback callback) {
-        Request request = Request.newReadCharacteristicRequest(tag, service, characteristic, 0, callback);
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void readCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, int priority, @NonNull CharacteristicReadCallback callback) {
-        Request request = Request.newReadCharacteristicRequest(tag, service, characteristic, priority, callback);
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void writeCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull byte[] value) {
-        Inspector.requireNonNull(value, "value is null");
-        Request request = Request.newWriteCharacteristicRequest(tag, service, characteristic, value, 0, null);
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void writeCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull byte[] value, int priority) {
-        Inspector.requireNonNull(value, "value is null");
-        Request request = Request.newWriteCharacteristicRequest(tag, service, characteristic, value, priority, null);
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void writeCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull byte[] value, @NonNull CharacteristicWriteCallback callback) {
-        Inspector.requireNonNull(value, "value is null");
-        Request request = Request.newWriteCharacteristicRequest(tag, service, characteristic, value, 0, callback);
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void writeCharacteristic(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull byte[] value, int priority, @NonNull CharacteristicWriteCallback callback) {
-        Inspector.requireNonNull(value, "value is null");
-        Request request = Request.newWriteCharacteristicRequest(tag, service, characteristic, value, priority, callback);
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void setNotificationEnabled(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, boolean isEnabled) {
-        Request request;
-        if (isEnabled) {
-            request = Request.newEnableNotificationRequest(tag, service, characteristic, 0, null);
-        } else {
-            request = Request.newDisableNotificationRequest(tag, service, characteristic, 0, null);
-        }
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void setNotificationEnabled(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, boolean isEnabled, int priority) {
-        Request request;
-        if (isEnabled) {
-            request = Request.newEnableNotificationRequest(tag, service, characteristic, priority, null);
-        } else {
-            request = Request.newDisableNotificationRequest(tag, service, characteristic, priority, null);
-        }
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void setNotificationEnabled(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, boolean isEnabled, @NonNull NotificationChangedCallback callback) {
-        Request request;
-        if (isEnabled) {
-            request = Request.newEnableNotificationRequest(tag, service, characteristic, 0, callback);
-        } else {
-            request = Request.newDisableNotificationRequest(tag, service, characteristic, 0, callback);
-        }
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void setNotificationEnabled(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, boolean isEnabled, int priority, @NonNull NotificationChangedCallback callback) {
-        Request request;
-        if (isEnabled) {
-            request = Request.newEnableNotificationRequest(tag, service, characteristic, priority, callback);
-        } else {
-            request = Request.newDisableNotificationRequest(tag, service, characteristic, priority, callback);
-        }
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void setIndicationEnabled(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, boolean isEnabled) {
-        Inspector.requireNonNull(service, "service' uuid is null");
-        Inspector.requireNonNull(characteristic, "characteristic' uuid is null");
-        Request request;
-        if (isEnabled) {
-            request = Request.newEnableIndicationRequest(tag, service, characteristic, 0, null);
-        } else {
-            request = Request.newDisableIndicationRequest(tag, service, characteristic, 0, null);
-        }
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void setIndicationEnabled(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, boolean isEnabled, int priority) {
-        Request request;
-        if (isEnabled) {
-            request = Request.newEnableIndicationRequest(tag, service, characteristic, priority, null);
-        } else {
-            request = Request.newDisableIndicationRequest(tag, service, characteristic, priority, null);
-        }
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void setIndicationEnabled(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, boolean isEnabled, @NonNull IndicationChangedCallback callback) {
-        Request request;
-        if (isEnabled) {
-            request = Request.newEnableIndicationRequest(tag, service, characteristic, 0, callback);
-        } else {
-            request = Request.newDisableIndicationRequest(tag, service, characteristic, 0, callback);
-        }
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void setIndicationEnabled(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, boolean isEnabled, int priority, @NonNull IndicationChangedCallback callback) {
-        Request request;
-        if (isEnabled) {
-            request = Request.newEnableIndicationRequest(tag, service, characteristic, priority, callback);
-        } else {
-            request = Request.newDisableIndicationRequest(tag, service, characteristic, priority, callback);
-        }
-        checkUuidExistsAndEnqueue(request, service, characteristic);
-    }
-
-    @Override
-    public void readDescriptor(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull UUID descriptor) {
-        Request request = Request.newReadDescriptorRequest(tag, service, characteristic, descriptor, 0, null);
-        checkUuidExistsAndEnqueue(request, service, characteristic, descriptor);
-    }
-
-    @Override
-    public void readDescriptor(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull UUID descriptor, int priority) {
-        Request request = Request.newReadDescriptorRequest(tag, service, characteristic, descriptor, priority, null);
-        checkUuidExistsAndEnqueue(request, service, characteristic, descriptor);
-    }
-
-    @Override
-    public void readDescriptor(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull UUID descriptor, @NonNull DescriptorReadCallback callback) {
-        Request request = Request.newReadDescriptorRequest(tag, service, characteristic, descriptor, 0, callback);
-        checkUuidExistsAndEnqueue(request, service, characteristic, descriptor);
-    }
-
-    @Override
-    public void readDescriptor(@Nullable String tag, @NonNull UUID service, @NonNull UUID characteristic, @NonNull UUID descriptor, int priority, @NonNull DescriptorReadCallback callback) {
-        Request request = Request.newReadDescriptorRequest(tag, service, characteristic, descriptor, priority, callback);
-        checkUuidExistsAndEnqueue(request, service, characteristic, descriptor);
+    public void execute(@NonNull Request request) {
+        if (request instanceof GenericRequest) {
+            GenericRequest req = (GenericRequest) request;
+            req.device = device;
+            switch (req.type) {
+                case SET_NOTIFICATION:
+                case SET_INDICATION:
+                case READ_CHARACTERISTIC:
+                case WRITE_CHARACTERISTIC:
+                    checkUuidExistsAndEnqueue(req, 2);
+                    break;
+                case READ_DESCRIPTOR:
+                    checkUuidExistsAndEnqueue(req, 3);
+                    break;
+                default:
+                    enqueue(req);
+                    break;
+            }
+        }        
     }
 
     @Override
@@ -1504,7 +1249,7 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     @Override
-    public boolean isNotificationOrIndicationEnabled(@NonNull UUID service, @NonNull UUID characteristic) {
+    public boolean isNotificationOrIndicationEnabled(UUID service, UUID characteristic) {
         BluetoothGattCharacteristic c = getCharacteristic(service, characteristic);
         if (c != null) {
             return isNotificationOrIndicationEnabled(c);

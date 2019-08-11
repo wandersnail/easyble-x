@@ -1,8 +1,9 @@
 package easyble2;
 
 import androidx.annotation.NonNull;
+import com.snail.commons.methodpost.ThreadMode;
 import easyble2.util.Logger;
-
+import easyble2.annotation.Observe;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -19,6 +20,7 @@ public class EasyBLEBuilder {
     EventObservable eventObservable;
     ScanConfiguration scanConfiguration;    
     Logger logger;
+    boolean isObserveAnnotationRequired = true;
     
     EasyBLEBuilder() {        
     }
@@ -83,6 +85,14 @@ public class EasyBLEBuilder {
     public EasyBLEBuilder setLogger(@NonNull Logger logger) {
         Inspector.requireNonNull(logger, "logger is null");
         this.logger = logger;
+        return this;
+    }
+
+    /**
+     * 是否强制使用{@link Observe}注解才会收到被观察者的消息。强制使用的话，性能会好一些
+     */
+    public EasyBLEBuilder setObserveAnnotationRequired(boolean observeAnnotationRequired) {
+        isObserveAnnotationRequired = observeAnnotationRequired;
         return this;
     }
 

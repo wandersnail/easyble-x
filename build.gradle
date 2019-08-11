@@ -20,6 +20,7 @@ buildscript {
 allprojects {
     repositories {
         addRepos(repositories)
+        maven { url 'http://localhost:8081/repository/maven-releases' }
     }
 
     // 指定编码

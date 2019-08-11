@@ -31,27 +31,27 @@ import java.util.Set;
 
 /**
  * 蓝牙搜索器
- * 
+ * <p>
  * date: 2019/8/3 12:30
  * author: zengfansheng
  */
 class Scanner {
-    private final ScanConfiguration configation;
+    private final ScanConfiguration configuration;
     private final BluetoothAdapter bluetoothAdapter;
     private final Handler mainHandler;
     private boolean isScanning;
     private final BluetoothLeScanner bleScanner;
     private final List<ScanListener> scanListeners = new ArrayList<>();
-    private final SparseArray<BluetoothProfile> proxyBluetoothProfiles = new SparseArray<>();;
+    private final SparseArray<BluetoothProfile> proxyBluetoothProfiles = new SparseArray<>();
     private final Logger logger;
     private final DeviceCreator deviceCreator;
-    
+
     Scanner(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter) {
         this.bluetoothAdapter = bluetoothAdapter;
-        this.configation = easyBle.scanConfiguration;
+        this.configuration = easyBle.scanConfiguration;
         mainHandler = new Handler(Looper.getMainLooper());
-        logger = easyBle.logger;
-        deviceCreator = easyBle.deviceCreator;
+        logger = easyBle.getLogger();
+        deviceCreator = easyBle.getDeviceCreator();
         bleScanner = bluetoothAdapter.getBluetoothLeScanner();
     }
 
@@ -88,23 +88,20 @@ class Scanner {
 
     //处理搜索回调
     private void handleScanCallback(final boolean start, @Nullable final Device device, final int errorCode, final String errorMsg) {
-        mainHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                for (ScanListener listener : scanListeners) {
-                    if (device != null) {
-                        listener.onScanResult(device);
-                    } else if (start) {
-                        listener.onScanStart();
-                    } else if (errorCode >= 0) {
-                        listener.onScanError(errorCode, errorMsg);
-                    } else {
-                        listener.onScanStop();
-                    }
+        mainHandler.post(() -> {
+            for (ScanListener listener : scanListeners) {
+                if (device != null) {
+                    listener.onScanResult(device);
+                } else if (start) {
+                    listener.onScanStart();
+                } else if (errorCode >= 0) {
+                    listener.onScanError(errorCode, errorMsg);
+                } else {
+                    listener.onScanStop();
                 }
             }
         });
-    }  
+    }
 
     //如果系统已配对连接，那么是无法搜索到的，所以尝试获取已连接的设备
     @SuppressWarnings("all")
@@ -124,13 +121,13 @@ class Scanner {
                     }
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception ignore) {
         }
         //遍历支持的，获取所有连接的
         for (int i = 1; i <= 21; i++) {
             try {
                 getSystemConnectedDevices(context, i);
-            } catch (Exception ignored) {
+            } catch (Exception ignore) {
             }
         }
     }
@@ -149,7 +146,7 @@ class Scanner {
                     for (BluetoothDevice device : devices) {
                         parseScanResult(device, null);
                     }
-                } catch (Exception ignored) {
+                } catch (Exception ignore) {
                 }
             }
 
@@ -159,28 +156,28 @@ class Scanner {
             }
         }, profile);
     }
-    
+
     private void parseScanResult(BluetoothDevice device, @Nullable ScanResult result) {
-        if ((configation.onlyAcceptBleDevice && device.getType() != BluetoothDevice.DEVICE_TYPE_LE) ||
+        if ((configuration.onlyAcceptBleDevice && device.getType() != BluetoothDevice.DEVICE_TYPE_LE) ||
                 !device.getAddress().matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
             return;
         }
         int rssi = result == null ? -120 : result.getRssi();
         String name = device.getName() == null ? "" : device.getName();
-        if (configation.rssiLowLimit <= rssi) {
+        if (configuration.rssiLowLimit <= rssi) {
             //通过构建器实例化Device
             Device dev = deviceCreator.create(device, result);
             if (dev != null) {
-                dev.name = TextUtils.isEmpty(dev.name) ? name : dev.name;
-                dev.rssi = rssi;
-                dev.scanResult = result;
+                dev.setName(TextUtils.isEmpty(dev.getName()) ? name : dev.getName());
+                dev.setRssi(rssi);
+                dev.setScanResult(result);
                 handleScanCallback(false, dev, -1, "");
             }
         }
         String msg = String.format(Locale.US, "found device! [name: %s, addr: %s", name.isEmpty() ? "N/A" : name, device.getAddress());
         logger.log(Log.DEBUG, Logger.TYPE_SCAN_STATE, msg);
     }
-    
+
     private ScanCallback scanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
@@ -196,7 +193,7 @@ class Scanner {
     };
 
     void startScan(Context context) {
-        synchronized(this) {
+        synchronized (this) {
             if (!bluetoothAdapter.isEnabled() || isScanning) {
                 return;
             }
@@ -214,11 +211,11 @@ class Scanner {
             isScanning = true;
         }
         handleScanCallback(true, null, -1, "");
-        if (configation.acceptSysConnectedDevice) {
+        if (configuration.acceptSysConnectedDevice) {
             getSystemConnectedDevices(context);
         }
-        bleScanner.startScan(configation.filters, configation.scanSettings, scanCallback);
-        mainHandler.postDelayed(stopScanRunnable, configation.scanPeriodMillis);
+        bleScanner.startScan(configuration.filters, configuration.scanSettings, scanCallback);
+        mainHandler.postDelayed(stopScanRunnable, configuration.scanPeriodMillis);
     }
 
     void stopScan(boolean quietly) {
@@ -227,7 +224,7 @@ class Scanner {
         for (int i = 0; i < size; i++) {
             try {
                 bluetoothAdapter.closeProfileProxy(proxyBluetoothProfiles.keyAt(i), proxyBluetoothProfiles.valueAt(i));
-            } catch (Exception ignored) {
+            } catch (Exception ignore) {
             }
         }
         proxyBluetoothProfiles.clear();
@@ -241,17 +238,12 @@ class Scanner {
         }
     }
 
-    private Runnable stopScanRunnable = new Runnable() {
-        @Override
-        public void run() {
-            stopScan(false);
-        }
-    };
+    private Runnable stopScanRunnable = () -> stopScan(false);
 
     boolean isScanning() {
         return isScanning;
     }
-    
+
     void onBluethoothOff() {
         isScanning = false;
         handleScanCallback(false, null, -1, "");

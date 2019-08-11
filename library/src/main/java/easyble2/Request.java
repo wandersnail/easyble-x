@@ -1,148 +1,273 @@
 package easyble2;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import easyble2.callback.RequestCallback;
-import easyble2.util.BleUtils;
+import android.bluetooth.BluetoothDevice;
+import android.os.Build;
 
-import java.util.Arrays;
-import java.util.Queue;
+import com.snail.commons.methodpost.RunOn;
+
 import java.util.UUID;
 
+import androidx.annotation.IntRange;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import easyble2.annotation.Observe;
+import easyble2.callback.MtuChangeCallback;
+import easyble2.callback.NotificationChangeCallback;
+import easyble2.callback.PhyChangeCallback;
+import easyble2.callback.ReadCharacteristicCallback;
+import easyble2.callback.ReadRssiCallback;
+import easyble2.callback.RequestCallback;
+import easyble2.callback.WriteCharacteristicCallback;
+
 /**
- * date: 2019/8/3 13:44
+ * date: 2019/8/11 15:34
  * author: zengfansheng
  */
-public class Request implements Comparable<Request> {
-    String tag;
-    RequestType type;
-    UUID serviceUuid;
-    UUID characUuid;
-    UUID descriptorUuid;
-    byte[] value;
-    int priority;
-    RequestCallback callback;
-    
-    boolean waitWriteResult;
-    int writeDelay;
-    //---------  分包发送相关  ---------
-    Queue<byte[]> remainQueue;
-    byte[] sendingBytes;
-    //--------------------------------
-
-    private Request(String tag, RequestType type, UUID serviceUuid, UUID characUuid, UUID descriptorUuid, byte[] value, int priority, RequestCallback callback) {
-        this.tag = tag;
-        this.type = type;
-        this.serviceUuid = serviceUuid;
-        this.characUuid = characUuid;
-        this.descriptorUuid = descriptorUuid;
-        this.value = value;
-        this.priority = priority;
-        this.callback = callback;
-    }
-
-    @Override
-    public int compareTo(@NonNull Request other) {
-        return Integer.compare(other.priority, priority);
-    }
+public interface Request {
+    /**
+     * 设备
+     */
+    @NonNull
+    Device getDevice();
 
     /**
      * 请求类型
      */
     @NonNull
-    public RequestType getType() {
-        return type;
+    RequestType getType();
+
+    /**
+     * 请求标识
+     */
+    @Nullable
+    String getTag();
+
+    /**
+     * 服务UUID
+     */
+    @Nullable
+    UUID getService();
+
+    /**
+     * 特征UUID
+     */
+    @Nullable
+    UUID getCharacteristic();
+
+    /**
+     * 描述符UUID
+     */
+    @Nullable
+    UUID getDescriptor();
+
+    /**
+     * 执行请求
+     *
+     * @param connection 请求执行的连接
+     */
+    void execute(Connection connection);
+
+    class Builder<T extends RequestCallback> {
+        String tag;
+        RequestType type;
+        UUID service;
+        UUID characteristic;
+        UUID descriptor;
+        Object value;
+        int priority;
+        RequestCallback callback;
+        WriteOptions writeOptions;
+
+        private Builder(RequestType type) {
+            this.type = type;
+        }
+
+        /**
+         * @param tag 请求标识，用于标识每次请求，规则自定。可以用来区分相同类型的不同批次请求
+         */
+        public Builder<T> setTag(String tag) {
+            this.tag = tag;
+            return this;
+        }
+
+        /**
+         * @param priority 请求优先级，值越大，优先级越高，用于请求队列中插队
+         */
+        public Builder<T> setPriority(int priority) {
+            this.priority = priority;
+            return this;
+        }
+
+        /**
+         * 如果设置了回调，则观察者不会收到此次请求的消息；不设置则使用观察者接收请求结果。
+         * <br>回调方法使用{@link RunOn}注解指定执行线程，观察者方法使用{@link Observe}注解指定执行线程
+         */
+        public Builder<T> setCallback(T callback) {
+            this.callback = callback;
+            return this;
+        }
+
+        public Request build() {
+            if (type == RequestType.WRITE_CHARACTERISTIC && writeOptions == null) {
+                writeOptions = new WriteOptions.Builder().build();
+            }
+            return new GenericRequest(this);
+        }
+    }
+
+    final class WriteCharacteristicBuilder extends Builder<WriteCharacteristicCallback> {
+        private WriteCharacteristicBuilder() {
+            super(RequestType.WRITE_CHARACTERISTIC);
+        }
+
+        @Override
+        public WriteCharacteristicBuilder setTag(String tag) {
+            super.setTag(tag);
+            return this;
+        }
+
+        @Override
+        public WriteCharacteristicBuilder setPriority(int priority) {
+            super.setPriority(priority);
+            return this;
+        }
+
+        @Override
+        public WriteCharacteristicBuilder setCallback(WriteCharacteristicCallback callback) {
+            super.setCallback(callback);
+            return this;
+        }
+
+        /**
+         * 设置此次请求的写入设置
+         */
+        public WriteCharacteristicBuilder setWriteOptions(WriteOptions writeOptions) {
+            this.writeOptions = writeOptions;
+            return this;
+        }
     }
 
     /**
-     * 请求时设置的标识
+     * 获取修改最大传输单元请求构建器
+     *
+     * @param mtu 要修改成的值
      */
-    @Nullable
-    public String getTag() {
-        return tag;
-    }
-
-    @Nullable
-    public UUID getServiceUuid() {
-        return serviceUuid;
-    }
-
-    @Nullable
-    public UUID getCharacUuid() {
-        return characUuid;
-    }
-
-    @Nullable
-    public UUID getDescriptorUuid() {
-        return descriptorUuid;
-    }
-
-    /**
-     * 请求时携带的数据
-     */
-    @Nullable
-    public byte[] getValue() {
-        return Arrays.copyOf(value, value.length);
-    }
-    
-    static Request newChangeMtuRequest(String tag, int mtu, int priority, RequestCallback callback) {
+    static Builder<MtuChangeCallback> getChangeMtuBuilder(@IntRange(from = 23, to = 517) int mtu) {
         if (mtu < 23) {
             mtu = 23;
         } else if (mtu > 517) {
             mtu = 517;
         }
-        byte[] src = BleUtils.numberToBytes(false, mtu, 4);
-        return new Request(tag, RequestType.CHANGE_MTU, null, null, null, src, priority, callback);
-    }
-    
-    static Request newReadCharacteristicRequest(String tag, UUID serviceUuid, UUID characUuid, int priority, RequestCallback callback) {
-        return new Request(tag, RequestType.READ_CHARACTERISTIC, serviceUuid, characUuid, null, null, priority, callback);
-    }
-    
-    static Request newEnableNotificationRequest(String tag, UUID serviceUuid, UUID characUuid, int priority, RequestCallback callback) {
-        return new Request(tag, RequestType.ENABLE_NOTIFICATION, serviceUuid, characUuid, null, null, priority, callback);
+        Builder<MtuChangeCallback> builder = new Builder<>(RequestType.CHANGE_MTU);
+        builder.value = mtu;
+        return builder;
     }
 
-    static Request newDisableNotificationRequest(String tag, UUID serviceUuid, UUID characUuid, int priority, RequestCallback callback) {
-        return new Request(tag, RequestType.DISABLE_NOTIFICATION, serviceUuid, characUuid, null, null, priority, callback);
+    /**
+     * 获取读取蓝牙设备的特征请求构建器
+     *
+     * @param service        服务UUID
+     * @param characteristic 特征UUID
+     */
+    static Builder<ReadCharacteristicCallback> getReadCharacteristicBuilder(@NonNull UUID service, @NonNull UUID characteristic) {
+        Builder<ReadCharacteristicCallback> builder = new Builder<>(RequestType.READ_CHARACTERISTIC);
+        builder.service = service;
+        builder.characteristic = characteristic;
+        return builder;
     }
 
-    static Request newEnableIndicationRequest(String tag, UUID serviceUuid, UUID characUuid, int priority, RequestCallback callback) {
-        return new Request(tag, RequestType.ENABLE_INDICATION, serviceUuid, characUuid, null, null, priority, callback);
+    /**
+     * 获取开关数据通知请求构建器
+     *
+     * @param service        服务UUID
+     * @param characteristic 特征UUID
+     * @param enable         开启或关闭
+     */
+    static Builder<NotificationChangeCallback> getSetNotificationBuilder(@NonNull UUID service, @NonNull UUID characteristic,
+                                                                         boolean enable) {
+        Builder<NotificationChangeCallback> builder = new Builder<>(RequestType.SET_NOTIFICATION);
+        builder.service = service;
+        builder.characteristic = characteristic;
+        builder.value = enable ? 1 : 0;
+        return builder;
     }
 
-    static Request newDisableIndicationRequest(String tag, UUID serviceUuid, UUID characUuid, int priority, RequestCallback callback) {
-        return new Request(tag, RequestType.DISABLE_INDICATION, serviceUuid, characUuid, null, null, priority, callback);
+    /**
+     * 获取开关Indication请求构建器
+     *
+     * @param service        服务UUID
+     * @param characteristic 特征UUID
+     * @param enable         开启或关闭
+     */
+    static Builder<NotificationChangeCallback> getSetIndicationBuilder(@NonNull UUID service, @NonNull UUID characteristic,
+                                                                       boolean enable) {
+        Builder<NotificationChangeCallback> builder = new Builder<>(RequestType.SET_INDICATION);
+        builder.service = service;
+        builder.characteristic = characteristic;
+        builder.value = enable ? 1 : 0;
+        return builder;
     }
 
-    static Request newReadDescriptorRequest(String tag, UUID serviceUuid, UUID characUuid, UUID descriptorUuid, int priority, RequestCallback callback) {
-        return new Request(tag, RequestType.READ_DESCRIPTOR, serviceUuid, characUuid, descriptorUuid, null, priority, callback);
+    /**
+     * 获取读取描述符的值请求构建器
+     *
+     * @param service        服务UUID
+     * @param characteristic 特征UUID
+     * @param descriptor     描述符UUID
+     */
+    static Builder<NotificationChangeCallback> getReadDescriptorBuilder(@NonNull UUID service, @NonNull UUID characteristic,
+                                                                        @NonNull UUID descriptor) {
+        Builder<NotificationChangeCallback> builder = new Builder<>(RequestType.READ_DESCRIPTOR);
+        builder.service = service;
+        builder.characteristic = characteristic;
+        builder.descriptor = descriptor;
+        return builder;
     }
 
-    static Request newWriteCharacteristicRequest(String tag, UUID serviceUuid, UUID characUuid, byte[] value, int priority, RequestCallback callback) {
-        return new Request(tag, RequestType.WRITE_CHARACTERISTIC, serviceUuid, characUuid, null, value, priority, callback);
+    /**
+     * 获取向特征写入请求构建器
+     *
+     * @param service        服务UUID
+     * @param characteristic 特征UUID
+     * @param value          要写入特征的值
+     */
+    static WriteCharacteristicBuilder getWriteCharacteristicBuilder(@NonNull UUID service, @NonNull UUID characteristic,
+                                                                    @NonNull byte[] value) {
+        Inspector.requireNonNull(value, "value is null");
+        WriteCharacteristicBuilder builder = new WriteCharacteristicBuilder();
+        builder.service = service;
+        builder.characteristic = characteristic;
+        builder.value = value;
+        return builder;
     }
 
-    static Request newReadRssiRequest(String tag, int priority, RequestCallback callback) {
-        return new Request(tag, RequestType.READ_RSSI, null, null, null, null, priority, callback);
+    /**
+     * 获取读取已连接的蓝牙设备的信号强度请求构建器
+     */
+    static Builder<ReadRssiCallback> getReadRssiBuilder() {
+        return new Builder<>(RequestType.READ_RSSI);
     }
 
-    static Request newReadPhyRequest(String tag, int priority, RequestCallback callback) {
-        return new Request(tag, RequestType.READ_PHY, null, null, null, null, priority, callback);
+    /**
+     * 获取读取物理层发送器和接收器请求构建器
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    static Builder<PhyChangeCallback> getReadPhyBuilder() {
+        return new Builder<>(RequestType.READ_PHY);
     }
 
-    static Request newSetPreferredPhyRequest(String tag, int txPhy, int rxPhy, int phyOptions, int priority, RequestCallback callback) {
-        byte[] tx = BleUtils.numberToBytes(false, txPhy, 4);
-        byte[] rx = BleUtils.numberToBytes(false, rxPhy, 4);
-        byte[] options = BleUtils.numberToBytes(false, phyOptions, 4);
-        byte[] value = Arrays.copyOf(tx, 12);
-        System.arraycopy(rx, 0, value, 4, 4);
-        System.arraycopy(options, 0, value, 8, 4);
-        return new Request(tag, RequestType.SET_PREFERRED_PHY, null, null, null, value, priority, callback);
-    }
-
-    public enum RequestType {
-        ENABLE_NOTIFICATION, ENABLE_INDICATION, DISABLE_NOTIFICATION, DISABLE_INDICATION, READ_CHARACTERISTIC, 
-        READ_DESCRIPTOR, READ_RSSI, WRITE_CHARACTERISTIC, CHANGE_MTU, READ_PHY, SET_PREFERRED_PHY
+    /**
+     * 获取设置物理层发送器和接收器偏好请求构建器
+     *
+     * @param txPhy      物理层发送器偏好。{@link BluetoothDevice#PHY_LE_1M_MASK}等
+     * @param rxPhy      物理层接收器偏好。{@link BluetoothDevice#PHY_LE_1M_MASK}等
+     * @param phyOptions 物理层BLE首选传输编码。{@link BluetoothDevice#PHY_OPTION_NO_PREFERRED}等
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    static Builder<PhyChangeCallback> getSetPreferredPhyBuilder(int txPhy, int rxPhy, int phyOptions) {
+        Builder<PhyChangeCallback> builder = new Builder<>(RequestType.SET_PREFERRED_PHY);
+        builder.value = new int[]{txPhy, rxPhy, phyOptions};
+        return builder;
     }
 }

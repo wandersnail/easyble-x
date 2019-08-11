@@ -1,7 +1,6 @@
 package easyble2;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import com.snail.commons.methodpost.MethodInfo;
 
 import java.util.UUID;
 
@@ -11,79 +10,66 @@ import java.util.UUID;
  */
 class MethodInfoGenerator {
     static MethodInfo onBluetoothAdapterStateChanged(int state) {
-        return new MethodInfo("onBluetoothAdapterStateChanged", new TypeValuePair(int.class, state));
+        return new MethodInfo("onBluetoothAdapterStateChanged", new MethodInfo.Parameter(int.class, state));
     }
 
-    static MethodInfo onConnectionStateChanged(@NonNull Device device) {
-        return new MethodInfo("onConnectionStateChanged", new TypeValuePair(Device.class, device));
+    static MethodInfo onConnectionStateChanged(Device device) {
+        return new MethodInfo("onConnectionStateChanged", new MethodInfo.Parameter(Device.class, device));
     }
 
-    static MethodInfo onConnectFailed(@NonNull Device device, int failType) {
-        return new MethodInfo("onConnectFailed", new TypeValuePair(Device.class, device), new TypeValuePair(int.class, failType));
+    static MethodInfo onConnectFailed(Device device, int failType) {
+        return new MethodInfo("onConnectFailed", new MethodInfo.Parameter(Device.class, device),
+                new MethodInfo.Parameter(int.class, failType));
     }
 
-    static MethodInfo onConnectTimeout(@NonNull Device device, int type) {
-        return new MethodInfo("onConnectTimeout", new TypeValuePair(Device.class, device), new TypeValuePair(int.class, type));
-    }
-    
-    static MethodInfo onCharacteristicChanged(@NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull byte[] value) {
-        return new MethodInfo("onCharacteristicChanged", new TypeValuePair(Device.class, device), new TypeValuePair(UUID.class, serviceUuid),
-                new TypeValuePair(UUID.class, characUuid), new TypeValuePair(byte[].class, value));
+    static MethodInfo onConnectTimeout(Device device, int type) {
+        return new MethodInfo("onConnectTimeout", new MethodInfo.Parameter(Device.class, device),
+                new MethodInfo.Parameter(int.class, type));
     }
 
-    static MethodInfo onCharacteristicRead(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull byte[] value) {
-        return new MethodInfo("onCharacteristicRead", new TypeValuePair(String.class, tag), new TypeValuePair(Device.class, device),
-                new TypeValuePair(UUID.class, serviceUuid), new TypeValuePair(UUID.class, characUuid), new TypeValuePair(byte[].class, value));
+    static MethodInfo onCharacteristicChanged(Device device, UUID service, UUID characteristic, byte[] value) {
+        return new MethodInfo("onCharacteristicChanged", new MethodInfo.Parameter(Device.class, device),
+                new MethodInfo.Parameter(UUID.class, service), new MethodInfo.Parameter(UUID.class, characteristic), 
+                new MethodInfo.Parameter(byte[].class, value));
     }
 
-    static MethodInfo onCharacteristicWrite(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull byte[] value) {
-        return new MethodInfo("onCharacteristicWrite", new TypeValuePair(String.class, tag), new TypeValuePair(Device.class, device),
-                new TypeValuePair(UUID.class, serviceUuid), new TypeValuePair(UUID.class, characUuid), new TypeValuePair(byte[].class, value));
+    static MethodInfo onCharacteristicRead(Request request, byte[] value) {
+        return new MethodInfo("onCharacteristicRead", new MethodInfo.Parameter(Request.class, request),
+                new MethodInfo.Parameter(byte[].class, value));
     }
 
-    static MethodInfo onRemoteRssiRead(@Nullable String tag, @NonNull Device device, int ssid) {
-        return new MethodInfo("onRemoteRssiRead", new TypeValuePair(String.class, tag), new TypeValuePair(Device.class, device),
-                new TypeValuePair(int.class, ssid));
+    static MethodInfo onCharacteristicWrite(Request request, byte[] value) {
+        return new MethodInfo("onCharacteristicWrite", new MethodInfo.Parameter(Request.class, request),
+                new MethodInfo.Parameter(byte[].class, value));
     }
 
-    static MethodInfo onDescriptorRead(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid,
-                                                  @NonNull UUID descriptorUuid, @NonNull byte[] value) {
-        return new MethodInfo("onDescriptorRead", new TypeValuePair(String.class, tag), new TypeValuePair(Device.class, device),
-                new TypeValuePair(UUID.class, serviceUuid), new TypeValuePair(UUID.class, characUuid), new TypeValuePair(UUID.class, descriptorUuid),
-                new TypeValuePair(byte[].class, value));
+    static MethodInfo onRssiRead(Request request, int rssi) {
+        return new MethodInfo("onRssiRead", new MethodInfo.Parameter(Request.class, request),
+                new MethodInfo.Parameter(int.class, rssi));
     }
 
-    static MethodInfo onNotificationChanged(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid,
-                                                       @NonNull UUID descriptorUuid, boolean isEnabled) {
-        return new MethodInfo("onNotificationChanged", new TypeValuePair(String.class, tag), new TypeValuePair(Device.class, device),
-                new TypeValuePair(UUID.class, serviceUuid), new TypeValuePair(UUID.class, characUuid), new TypeValuePair(UUID.class, descriptorUuid),
-                new TypeValuePair(boolean.class, isEnabled));
+    static MethodInfo onDescriptorRead(Request request, byte[] value) {
+        return new MethodInfo("onDescriptorRead", new MethodInfo.Parameter(Request.class, request),
+                new MethodInfo.Parameter(byte[].class, value));
     }
 
-    static MethodInfo onIndicationChanged(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid,
-                                                     @NonNull UUID descriptorUuid, boolean isEnabled) {
-        return new MethodInfo("onIndicationChanged", new TypeValuePair(String.class, tag), new TypeValuePair(Device.class, device),
-                new TypeValuePair(UUID.class, serviceUuid), new TypeValuePair(UUID.class, characUuid), new TypeValuePair(UUID.class, descriptorUuid),
-                new TypeValuePair(boolean.class, isEnabled));
+    static MethodInfo onNotificationChanged(Request request, boolean isEnabled) {
+        return new MethodInfo("onNotificationChanged", new MethodInfo.Parameter(Request.class, request),
+                new MethodInfo.Parameter(boolean.class, isEnabled));
     }
 
-    static MethodInfo onMtuChanged(@Nullable String tag, @NonNull Device device, int mtu) {
-        return new MethodInfo("onMtuChanged", new TypeValuePair(String.class, tag), new TypeValuePair(Device.class, device),
-                new TypeValuePair(int.class, mtu));
+    static MethodInfo onMtuChanged(Request request, int mtu) {
+        return new MethodInfo("onMtuChanged", new MethodInfo.Parameter(Request.class, request),
+                new MethodInfo.Parameter(int.class, mtu));
     }
 
-    static MethodInfo onPhyRead(@Nullable String tag, @NonNull Device device, int txPhy, int rxPhy) {
-        return new MethodInfo("onPhyRead", new TypeValuePair(String.class, tag), new TypeValuePair(Device.class, device),
-                new TypeValuePair(int.class, txPhy), new TypeValuePair(int.class, rxPhy));
+    static MethodInfo onPhyChange(Request request, int txPhy, int rxPhy) {
+        return new MethodInfo("onPhyChange", new MethodInfo.Parameter(Request.class, request),
+                new MethodInfo.Parameter(int.class, txPhy), new MethodInfo.Parameter(int.class, rxPhy));
     }
 
-    static MethodInfo onPhyUpdate(@Nullable String tag, @NonNull Device device, int txPhy, int rxPhy) {
-        return new MethodInfo("onPhyUpdate", new TypeValuePair(String.class, tag), new TypeValuePair(Device.class, device),
-                new TypeValuePair(int.class, txPhy), new TypeValuePair(int.class, rxPhy));
-    }
-
-    static MethodInfo onRequestFailed(@NonNull Device device, @NonNull Request request, int failType) {
-        return new MethodInfo("onRequestFailed", new TypeValuePair(Device.class, device), new TypeValuePair(Request.class, request),
-                new TypeValuePair(int.class, failType));
+    static MethodInfo onRequestFailed(Request request, int failType, Object value) {
+        return new MethodInfo("onRequestFailed", new MethodInfo.Parameter(Request.class, request),
+                new MethodInfo.Parameter(int.class, failType), new MethodInfo.Parameter(Object.class, value));
     }
 }

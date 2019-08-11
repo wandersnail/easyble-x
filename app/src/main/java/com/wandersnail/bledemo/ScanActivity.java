@@ -10,7 +10,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -18,8 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import com.snail.commons.entity.PermissionsRequester;
+import com.snail.commons.helper.PermissionsRequester;
 import com.snail.widget.listview.BaseListAdapter;
 import com.snail.widget.listview.BaseViewHolder;
 import com.snail.widget.listview.PullRefreshLayout;
@@ -59,34 +57,24 @@ public class ScanActivity extends AppCompatActivity {
         refreshLayout.setColorSchemeColors(ContextCompat.getColor(this, R.color.colorAccent));
         listAdapter = new ListAdapter(this, devList);
         lv.setAdapter(listAdapter);
-        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent intent = new Intent(ScanActivity.this, MainActivity.class);
-                intent.putExtra("device", devList.get(position));
-                startActivity(intent);
-            }
+        lv.setOnItemClickListener((parent, view, position, id) -> {
+            Intent intent = new Intent(ScanActivity.this, MainActivity.class);
+            intent.putExtra("device", devList.get(position));
+            startActivity(intent);
         });
-        refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                if (EasyBLE.getInstance().isInitialized()) {
-                    EasyBLE.getInstance().stopScan();
-                    doStartScan();
-                }
-                refreshLayout.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        refreshLayout.setRefreshing(false);
-                    }
-                }, 500);
+        refreshLayout.setOnRefreshListener(() -> {
+            if (EasyBLE.getInstance().isInitialized()) {
+                EasyBLE.getInstance().stopScan();
+                doStartScan();
             }
+            MyApplication.getInstance().getObservable().nofityTestObserver();
+            refreshLayout.postDelayed(() -> refreshLayout.setRefreshing(false), 500);
         });
     }
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
+        super.onDestroy();        
         EasyBLE.getInstance().release();
         System.exit(0);
     }
@@ -161,11 +149,8 @@ public class ScanActivity extends AppCompatActivity {
     private void initialize() {
         //动态申请权限
         permissionsRequester = new PermissionsRequester(this);
-        permissionsRequester.setOnRequestResultListener(new PermissionsRequester.OnRequestResultListener() {
-            @Override
-            public void onRequestResult(@NotNull List<String> list) {
-                
-            }
+        permissionsRequester.setCallback(list -> {
+            
         });
         permissionsRequester.checkAndRequest(getNeedPermissions());
     }
@@ -200,10 +185,10 @@ public class ScanActivity extends AppCompatActivity {
 
                 @Override
                 public void onBind(Device device, int i) {
-                    rssiViews.put(device.address, tvRssi);
-                    tvName.setText(device.name);
-                    tvAddr.setText(device.address);
-                    tvRssi.setText("" + device.rssi);
+                    rssiViews.put(device.getAddress(), tvRssi);
+                    tvName.setText(device.getName().isEmpty() ? "N/A" : device.getName());
+                    tvAddr.setText(device.getAddress());
+                    tvRssi.setText("" + device.getRssi());
                 }
 
                 @NotNull
@@ -232,24 +217,19 @@ public class ScanActivity extends AppCompatActivity {
                 }
             }
             if (dev == null) {
-                updateTimeMap.put(device.address, System.currentTimeMillis());
+                updateTimeMap.put(device.getAddress(), System.currentTimeMillis());
                 getItems().add(device);
                 notifyDataSetChanged();
             } else {
-                Long time = updateTimeMap.get(device.address);
+                Long time = updateTimeMap.get(device.getAddress());
                 if (time == null || System.currentTimeMillis() - time > 2000) {
-                    updateTimeMap.put(device.address, System.currentTimeMillis());
+                    updateTimeMap.put(device.getAddress(), System.currentTimeMillis());
                     if (dev.getRssi() != device.getRssi()) {
                         dev.setRssi(device.getRssi());
-                        final TextView tvRssi = rssiViews.get(device.address);
-                        tvRssi.setText("" + device.rssi);
+                        final TextView tvRssi = rssiViews.get(device.getAddress());
+                        tvRssi.setText("" + device.getRssi());
                         tvRssi.setTextColor(Color.BLACK);
-                        tvRssi.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                tvRssi.setTextColor(0xFF909090);
-                            }
-                        }, 800);
+                        tvRssi.postDelayed(() -> tvRssi.setTextColor(0xFF909090), 800);
                     }
                 }
             }

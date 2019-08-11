@@ -16,7 +16,7 @@
 - 支持请求延时及发送延时设置
 - 支持分包大小设置、最大传输单元设置
 - 支持观察者监听或回调方式。注意：观察者监听和回调只能取其一！
-- 支持使用注解@RunOn控制回调或观察者的方法执行线程
+- 支持使用注解@RunOn控制回调线程，使用注解@RunOn控制观察者的方法执行线程
 - 支持设置回调或观察者的方法默认执行线程
 - 支持发送设置（是否等待发送结果回调再发送下一包）
 - 支持写入模式设置
@@ -27,9 +27,19 @@
 
 1. module的build.gradle中的添加依赖，自行修改为最新版本，同步后通常就可以用了：
 ```
+compileOptions {
+	sourceCompatibility JavaVersion.VERSION_1_8
+	targetCompatibility JavaVersion.VERSION_1_8
+}
+
 dependencies {
 	...
 	implementation 'com.github.wandersnail:easyble2:latestVersion'
+	//额外两个依赖
+	implementation 'com.github.wandersnail:commons-utils:latestVersion'
+	implementation 'com.github.wandersnail:commons-method-poster:latestVersion'
+	//也可以使用
+	//implementation 'com.github.wandersnail:commons-android:latestVersion'//此依赖包含上面两个
 }
 ```
 
@@ -67,8 +77,9 @@ ScanConfiguration scanConfig = new ScanConfiguration()
 		.setScanPeriodMillis(15000)
 		.setAcceptSysConnectedDevice(true)
 		.setOnlyAcceptBleDevice(true);
-EasyBLE ble = EasyBLE.builder().setScanConfigation(scanConfig)
-		.setMethodDefaultThreadMode(ThreadMode.POSTING)//指定回调的默认线程，接口回调方式和观察者模式都生效
+EasyBLE ble = EasyBLE.getBuilder().setScanConfigation(scanConfig)
+		.setObserveAnnotationRequired(false)//不强制使用{@link Observe}注解才会收到被观察者的消息，强制使用的话，性能会好一些
+		.setMethodDefaultThreadMode(ThreadMode.MAIN)//指定回调方法和观察者方法的默认线程
 		.build();
 ble.initialize(this);
 ```
@@ -143,12 +154,14 @@ EasyBLE.getInstance().removeScanListener(scanListener);
 
 ### 观察者模式数据及事件
 
-1. 定义观察者
+1. 定义观察者。实现EventObserver接口即可：
 
 ```
-private EventObserver observer = new SimpleEventObserver() {
-	//可以使用注解指定回调线程
-	@RunOn(threadMode = ThreadMode.MAIN)
+public class MainActivity extends AppCompatActivity implements EventObserver {
+	/**
+     * 使用{@link Observe}确定要接收消息，并在主线程执行方法
+     */
+    @Observe(ThreadMode.MAIN)
 	@Override
 	public void onConnectionStateChanged(@NonNull Device device) {
 		switch(device.connectionState) {
@@ -173,20 +186,37 @@ private EventObserver observer = new SimpleEventObserver() {
 
 	}
 
-	@Override
-	public void onNotificationChanged(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull UUID descriptorUuid, boolean isEnabled) {
-		if (isEnabled) {
-			Log.d("EasyBLE", "通知开启了");
-		} else {
-			Log.d("EasyBLE", "通知关闭了");
-		}
-	}
+    /**
+     * 使用{@link Observe}确定要接收消息，方法在{@link EasyBLEBuilder#setMethodDefaultThreadMode(ThreadMode)}指定的线程执行
+     */
+    @Observe
+    @Override
+    public void onNotificationChanged(@NonNull Request request, boolean isEnabled) {
+        if (request.getType() == RequestType.SET_NOTIFICATION) {
+            if (isEnabled) {
+                Log.d("EasyBLE", "通知开启了");
+            } else {
+                Log.d("EasyBLE", "通知关闭了");
+            }
+        } else {
+            if (isEnabled) {
+                Log.d("EasyBLE", "Indication开启了");
+            } else {
+                Log.d("EasyBLE", "Indication关闭了");
+            }
+        }
+    }
 
-	@Override
-	public void onCharacteristicWrite(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull byte[] value) {
-		Log.d("EasyBLE", "成功写入：" + BleUtils.bytesToHex(value));
-	}
-};
+    /**
+     * 如果{@link EasyBLEBuilder#setObserveAnnotationRequired(boolean)}设置为false时，无论加不加{@link Observe}注解都会收到消息。
+     * 设置为true时，必须加{@link Observe}才会收到消息。
+     * 默认为false，方法默认执行线程在{@link EasyBLEBuilder#setMethodDefaultThreadMode(ThreadMode)}指定
+     */
+    @Override
+    public void onCharacteristicWrite(@NonNull Request request, @NonNull byte[] value) {
+        Log.d("EasyBLE", "成功写入：" + StringUtils.toHex(value, " "));
+    }
+}
 ```
 
 2. 注册观察者
@@ -215,7 +245,6 @@ config.setRequestTimeoutMillis(1000);
 2. 建立连接
 
 ```
-//connection = EasyBLE.getInstance().connect(device, config, connectionStateChangeListener);//回调监听连接状态
 connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态
 ```
 
@@ -241,56 +270,48 @@ EasyBLE.getInstance().releaseConnection(device);//释放指定连接
 
 ```
 //开关通知
-connection.setNotificationEnabled("toggle nofity", serviceUuid, characteristicUuid, true, new NotificationChangedCallback() {
-	@Override
-	public void onNotificationChanged(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull UUID descriptorUuid, boolean isEnabled) {
-
-	}
-
-	@Override
-	public void onRequestFailed(@NonNull Device device, @NonNull Request request, int failType) {
-
-	}
-});
+boolean isEnabled = connection.isNotificationOrIndicationEnabled(serviceUuid, characteristicUuid);
+Request.Builder<NotificationChangeCallback> builder = Request.getSetNotificationBuilder(serviceUuid, characteristicUuid, !isEnabled);
+//不设置回调，使用观察者模式接收结果
+builder.build().execute(connection);
 
 //读取特征值
-connection.readCharacteristic("read characteristic", serviceUuid, characteristicUuid, new CharacteristicReadCallback() {
+Request.Builder<ReadCharacteristicCallback> builder = Request.getReadCharacteristicBuilder(serviceUuid, characteristicUuid);
+builder.setTag(UUID.randomUUID().toString());
+builder.setPriority(Integer.MAX_VALUE);//设置请求优先级
+//设置了回调则观察者不会收到此次请求的结果消息
+builder.setCallback(new ReadCharacteristicCallback() {
+	//注解可以指定回调线程
+	@RunOn(ThreadMode.BACKGROUND)
 	@Override
-	@RunOn(threadMode = ThreadMode.BACKGROUND)
-	public void onCharacteristicRead(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull byte[] value) {
-		Log.d("onCharacteristicRead", "主线程：" + (Looper.getMainLooper() == Looper.myLooper()));
-		Log.d("onCharacteristicRead", "读取到特征值：" + BleUtils.bytesToHex(value));
+	public void onCharacteristicRead(@NonNull Request request, @NonNull byte[] value) {
+		Log.d("EasyBLE", "主线程：" + (Looper.getMainLooper() == Looper.myLooper()));
+		Log.d("EasyBLE", "读取到特征值：" + StringUtils.toHex(value, " "));
 	}
 
+	//不使用注解指定线程的话，使用构建器设置的默认线程
 	@Override
-	public void onRequestFailed(@NonNull Device device, @NonNull Request request, int failType) {
+	public void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value) {
 
 	}
 });
+builder.build().execute(connection);
 
 //写特征值
-connection.writeCharacteristic("write characteristic", serviceUuid, characteristicUuid, "test write".getBytes(), new CharacteristicWriteCallback() {
-	@Override
-	public void onCharacteristicWrite(@Nullable String tag, @NonNull Device device, @NonNull UUID serviceUuid, @NonNull UUID characUuid, @NonNull byte[] value) {
-		
-	}
-
-	@Override
-	public void onRequestFailed(@NonNull Device device, @NonNull Request request, int failType) {
-
-	}
-});
+Request.WriteCharacteristicBuilder builder = Request.getWriteCharacteristicBuilder(serviceUuid, characteristicUuid, "test write".getBytes());
+//根据需要设置写入配置
+builder.setWriteOptions(new WriteOptions.Builder()
+		.setPackageSize(20)
+		.setPackageWriteDelayMillis(5)
+		.setRequestWriteDelayMillis(10)
+		.setWaitWriteResult(true)
+		.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+		.build());
+//不设置回调，使用观察者模式接收结果
+connection.execute(builder.build());
 ```
 
-2. 使用观察者模式接收结果。请求的方法名和接口回调方式一致，只是方法参数少了一个接口的实例。结果接收方法上面有写到。写几个请求的例子：
-
-```
-connection.setNotificationEnabled("toggle nofity", serviceUuid, characteristicUuid, isEnabled);
-
-connection.readCharacteristic("read characteristic", serviceUuid, characteristicUuid);
-
-connection.writeCharacteristic("write characteristic", serviceUuid, characteristicUuid, "test write".getBytes());
-```
+2. 使用观察者模式接收结果。不在请求构建器中设置回调即可
 
 ### 释放SDK，释放后必须重新初始化后方可使用
 
