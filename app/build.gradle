@@ -34,6 +34,7 @@ dependencies {
     implementation deps.appcompat
     implementation deps.mmkv
     implementation deps.kotlin.stdlib
+    implementation deps.magic_indicator
     implementation deps.wandersnail.commons_android
     implementation deps.wandersnail.treeadapter
     implementation deps.wandersnail.widgets
