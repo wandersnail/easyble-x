@@ -185,7 +185,7 @@ public class MainActivity extends AppCompatActivity implements EventObserver {
     @Override
     public void onConnectionStateChanged(@NonNull Device device) {
         switch (device.getConnectionState()) {
-            case SCANNING:
+            case SCANNING_FOR_RECONNECTION:
                 break;
             case CONNECTING:
                 break;
