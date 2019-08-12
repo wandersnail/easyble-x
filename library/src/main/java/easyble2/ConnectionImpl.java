@@ -178,10 +178,6 @@ class ConnectionImpl implements Connection, ScanListener {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             notifyCharacteristicChanged(characteristic);
-            if (observer != null) {
-                posterDispatcher.post(observer, MethodInfoGenerator.onCharacteristicChanged(device,
-                        characteristic.getService().getUuid(), characteristic.getUuid(), characteristic.getValue()));
-            }
         }
 
         @Override

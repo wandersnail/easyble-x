@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'maven'
 
-def lib_version = '1.1.1'
+def lib_version = '1.1.2'
 def lib_group = 'com.github.wandersnail'
 def lib_artifact = 'easyble2'
 def lib_packaging = 'aar'
