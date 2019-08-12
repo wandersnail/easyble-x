@@ -777,8 +777,15 @@ class ConnectionImpl implements Connection, ScanListener {
     }
     
     private void printWriteLog(GenericRequest request, int progress, int total, byte[] value) {
-        logD(Logger.TYPE_CHARACTERISTIC_WRITE, "package %d/%d write success! [UUID: %s, addr: %s, value: %s]",
-                progress, total, substringUuid(request.characteristic), device.address, toHex(value));
+        if (logger.isEnabled()) {
+            String t = String.valueOf(total);
+            StringBuilder sb = new StringBuilder(String.valueOf(progress));
+            while (sb.length() < t.length()) {
+                sb.insert(0, "0");
+            }
+            logD(Logger.TYPE_CHARACTERISTIC_WRITE, "package [%s/%s] write success! [UUID: %s, addr: %s, value: %s]",
+                    sb, t, substringUuid(request.characteristic), device.address, toHex(value));
+        }
     }
 
     private void executeWriteCharacteristic(GenericRequest request, BluetoothGattCharacteristic characteristic) {

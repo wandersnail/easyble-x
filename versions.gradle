@@ -1,10 +1,10 @@
 ext.deps = [:]
 
 def versions = [:]
-versions.dagger = "2.23.2"
+versions.dagger = "2.24"
 versions.glide = "4.9.0"
 versions.kotlin = "1.3.41"
-versions.lifecycle = "2.0.0"
+versions.lifecycle = "2.1.0-rc01"
 versions.exifinterface = "1.0.0"
 versions.navigation = "2.0.0"
 versions.paging = "2.1.0"
@@ -16,14 +16,14 @@ versions.cardview = "1.0.0"
 versions.recyclerview = "1.0.0"
 versions.appcompat = "1.0.2"
 versions.commons_basic = "1.0.2"
-versions.commons_utils = "1.0.5"
+versions.commons_utils = "1.0.6"
 versions.commons_method_poster = "1.0.1"
 versions.commons_helper = "1.0.0"
-versions.commons_android = "1.4.6"
+versions.commons_android = "1.4.7"
 versions.fileselector = "1.2.1"
 versions.widgets = "1.2.2"
-versions.network_requester = "1.3.0"
-versions.easyble = "1.2.6"
+versions.network_requester = "1.3.2"
+versions.easyble2 = "1.1.3"
 versions.swipemenulistview = "1.1.0"
 versions.treeadapter = "1.1.0"
 versions.avi_loading = "2.1.3"
@@ -36,11 +36,15 @@ versions.gson = "2.8.5"
 versions.jsoup = "1.12.1"
 versions.pdf_viewer = "2.8.2"
 versions.mmkv = "1.0.22"
-versions.retrofit2 = "2.6.0"
+versions.retrofit2 = "2.6.1"
 versions.rxandroid = "2.1.1"
-versions.rxkotlin = "2.3.0"
+versions.rxkotlin = "2.4.0"
 versions.fastjson = "1.1.71.android"
-versions.CymChad_BaseRecyclerViewAdapterHelper = "2.9.46"
+versions.CymChad_BaseRecyclerViewAdapterHelper = "2.9.49"
+versions.crashreport = "3.0.0"
+versions.nativecrashreport = "3.7.1"
+versions.magic_indicator = "1.6.0"
+versions.sqlcipher = "4.2.0"
 ext.deps_versions = versions
 
 def deps = [:]
@@ -62,6 +66,8 @@ deps.mmkv = "com.tencent:mmkv:$versions.mmkv"
 deps.fastjson = "com.alibaba:fastjson:$versions.fastjson"
 deps.exifinterface = "androidx.exifinterface:exifinterface:$versions.exifinterface"
 deps.CymChad_BaseRecyclerViewAdapterHelper = "com.github.CymChad:BaseRecyclerViewAdapterHelper:$versions.CymChad_BaseRecyclerViewAdapterHelper"
+deps.magic_indicator = "com.github.hackware1993:MagicIndicator:$versions.magic_indicator"
+deps.sqlcipher = "net.zetetic:android-database-sqlcipher:$versions.sqlcipher"
 
 def room = [:]
 room.runtime = "androidx.room:room-runtime:$versions.room"
@@ -87,6 +93,7 @@ deps.dagger = dagger
 
 def kotlin = [:]
 kotlin.stdlib = "org.jetbrains.kotlin:kotlin-stdlib:$versions.kotlin"
+kotlin.stdlib_jdk8 = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$versions.kotlin"
 kotlin.plugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
 deps.kotlin = kotlin
 
@@ -128,7 +135,7 @@ wandersnail.commons_method_poster = "com.github.wandersnail:commons-method-poste
 wandersnail.fileselector = "com.github.wandersnail:fileselector:$versions.fileselector"
 wandersnail.widgets = "com.github.wandersnail:widgets:$versions.widgets"
 wandersnail.network_requester = "com.github.wandersnail:network-requester:$versions.network_requester"
-wandersnail.easyble = "com.github.wandersnail:easyble:$versions.easyble"
+wandersnail.easyble2 = "com.github.wandersnail:easyble2:$versions.easyble2"
 wandersnail.swipemenulistview = "com.github.wandersnail:swipemenulistview:$versions.swipemenulistview"
 wandersnail.treeadapter = "com.github.wandersnail:treeadapter:$versions.treeadapter"
 deps.wandersnail = wandersnail
@@ -149,9 +156,17 @@ rxjava2.rxandroid = "io.reactivex.rxjava2:rxandroid:$versions.rxandroid"
 rxjava2.rxkotlin = "io.reactivex.rxjava2:rxkotlin:$versions.rxkotlin"
 deps.rxjava2 = rxjava2
 
+def bugly = [:]
+bugly.crashreport = "com.tencent.bugly:crashreport:$versions.crashreport"
+bugly.nativecrashreport = "com.tencent.bugly:nativecrashreport:$versions.nativecrashreport"
+deps.bugly = bugly
+
 ext.deps = deps
 
 static def addRepos(RepositoryHandler handler) {
+    handler.maven { url 'https://maven.aliyun.com/repository/google' }
+    handler.maven { url 'https://maven.aliyun.com/repository/jcenter' }
+    handler.maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
     handler.maven { url 'https://maven.aliyun.com/repository/public' }
     handler.google()
     handler.jcenter()
@@ -160,4 +175,5 @@ static def addRepos(RepositoryHandler handler) {
     handler.maven { url 'https://dl.bintray.com/wandersnail/android/' }
     handler.maven { url 'https://dl.bintray.com/umsdk/release' }
 }
+
 ext.addRepos = this.&addRepos
