@@ -168,13 +168,13 @@ class Scanner {
             //通过构建器实例化Device
             Device dev = deviceCreator.create(device, result);
             if (dev != null) {
-                dev.setName(TextUtils.isEmpty(dev.getName()) ? name : dev.getName());
-                dev.setRssi(rssi);
-                dev.setScanResult(result);
+                dev.name = TextUtils.isEmpty(dev.getName()) ? name : dev.getName();
+                dev.rssi = rssi;
+                dev.scanResult = result;
                 handleScanCallback(false, dev, -1, "");
             }
         }
-        String msg = String.format(Locale.US, "found device! [name: %s, addr: %s", name.isEmpty() ? "N/A" : name, device.getAddress());
+        String msg = String.format(Locale.US, "found device! [name: %s, addr: %s]", name.isEmpty() ? "N/A" : name, device.getAddress());
         logger.log(Log.DEBUG, Logger.TYPE_SCAN_STATE, msg);
     }
 
@@ -244,7 +244,7 @@ class Scanner {
         return isScanning;
     }
 
-    void onBluethoothOff() {
+    void onBluetoothOff() {
         isScanning = false;
         handleScanCallback(false, null, -1, "");
     }

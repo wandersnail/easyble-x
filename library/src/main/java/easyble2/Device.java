@@ -19,13 +19,14 @@ import java.util.Objects;
 public class Device implements Comparable<Device>, Cloneable, Parcelable {
     private final BluetoothDevice originDevice;
     @Nullable
-    private ScanResult scanResult;
+    ScanResult scanResult;
     @NonNull
     String name;
     @NonNull
     final String address;
     int rssi;
-    int connectionState;
+    @NonNull
+    ConnectionState connectionState = ConnectionState.DISCONNECTED;
 
     public Device(@NonNull BluetoothDevice originDevice) {
         this.originDevice = originDevice;
@@ -43,8 +44,8 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         return scanResult;
     }
 
-    public void setScanResult(@Nullable ScanResult scanResult) {
-        this.scanResult = scanResult;
+    public void setRssi(int rssi) {
+        this.rssi = rssi;
     }
 
     @NonNull
@@ -65,16 +66,9 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         return rssi;
     }
 
-    public void setRssi(int rssi) {
-        this.rssi = rssi;
-    }
-
-    public int getConnectionState() {
+    @NonNull
+    public ConnectionState getConnectionState() {
         return connectionState;
-    }
-
-    public void setConnectionState(int connectionState) {
-        this.connectionState = connectionState;
     }
 
     @Nullable
@@ -91,22 +85,22 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
      * 是否已连接并成功发现服务
      */
     public boolean isConnected() {
-        return connectionState == Connection.STATE_SERVICE_DISCOVERED;
+        return connectionState == ConnectionState.SERVICE_DISCOVERED;
     }
 
     /**
      * 是否已断开连接
      */
     public boolean isDisconnected() {
-        return connectionState == Connection.STATE_DISCONNECTED || connectionState == Connection.STATE_RELEASED;
+        return connectionState == ConnectionState.DISCONNECTED || connectionState == ConnectionState.RELEASED;
     }
 
     /**
      * 是否正在连接
      */
     public boolean isConnecting() {
-        return connectionState != Connection.STATE_DISCONNECTED && connectionState != Connection.STATE_SERVICE_DISCOVERED &&
-                connectionState != Connection.STATE_RELEASED;
+        return connectionState != ConnectionState.DISCONNECTED && connectionState != ConnectionState.SERVICE_DISCOVERED &&
+                connectionState != ConnectionState.RELEASED;
     }
 
     @Override
@@ -139,6 +133,15 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         }
     }
 
+    @NonNull
+    @Override
+    public String toString() {
+        return "Device{" +
+                "name='" + name + '\'' +
+                ", address='" + address + '\'' +
+                '}';
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -151,7 +154,12 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         dest.writeString(this.name);
         dest.writeString(this.address);
         dest.writeInt(this.rssi);
-        dest.writeInt(this.connectionState);
+        for (ConnectionState state : ConnectionState.values()) {
+            if (state == connectionState) {
+                dest.writeString(this.connectionState.name());
+                break;
+            }
+        }
     }
 
     protected Device(Parcel in) {
@@ -161,7 +169,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         this.name = inName == null ? "" : inName;
         this.address = Objects.requireNonNull(in.readString());
         this.rssi = in.readInt();
-        this.connectionState = in.readInt();
+        this.connectionState = ConnectionState.valueOf(in.readString());
     }
 
     public static final Parcelable.Creator<Device> CREATOR = new Parcelable.Creator<Device>() {

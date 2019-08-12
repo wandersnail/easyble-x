@@ -227,9 +227,11 @@ public class ScanActivity extends AppCompatActivity {
                     if (dev.getRssi() != device.getRssi()) {
                         dev.setRssi(device.getRssi());
                         final TextView tvRssi = rssiViews.get(device.getAddress());
-                        tvRssi.setText("" + device.getRssi());
-                        tvRssi.setTextColor(Color.BLACK);
-                        tvRssi.postDelayed(() -> tvRssi.setTextColor(0xFF909090), 800);
+                        if (tvRssi != null) {
+                            tvRssi.setText("" + device.getRssi());
+                            tvRssi.setTextColor(Color.BLACK);
+                            tvRssi.postDelayed(() -> tvRssi.setTextColor(0xFF909090), 800);
+                        }
                     }
                 }
             }

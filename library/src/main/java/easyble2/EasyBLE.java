@@ -161,7 +161,7 @@ public class EasyBLE {
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) { //蓝牙关闭
                         logger.log(Log.DEBUG, Logger.TYPE_GENERAL, "蓝牙关闭了");
                         //通知搜索器
-                        scanner.onBluethoothOff();
+                        scanner.onBluetoothOff();
                         //断开所有连接
                         disconnectAllConnections();
                     } else if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_ON) {
@@ -556,7 +556,7 @@ public class EasyBLE {
     public void reconnectAll() {
         if (checkStatus()) {
             for (Connection connection : connectionMap.values()) {
-                if (connection.getConnectionState() != Connection.STATE_SERVICE_DISCOVERED) {
+                if (connection.getConnectionState() != ConnectionState.SERVICE_DISCOVERED) {
                     connection.reconnect();
                 }
             }
@@ -569,7 +569,7 @@ public class EasyBLE {
     public void reconnect(Device device) {
         if (checkStatus() && device != null) {
             Connection connection = connectionMap.get(device.getAddress());
-            if (connection != null && connection.getConnectionState() != Connection.STATE_SERVICE_DISCOVERED) {
+            if (connection != null && connection.getConnectionState() != ConnectionState.SERVICE_DISCOVERED) {
                 connection.reconnect();
             }
         }
