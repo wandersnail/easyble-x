@@ -38,13 +38,12 @@ public interface Logger {
     /**
      * 请求失败
      */
-    int TYPE_REQUEST_FIALED = 7;
+    int TYPE_REQUEST_FAILED = 7;
     int TYPE_DESCRIPTOR_READ = 8;
     int TYPE_NOTIFICATION_CHANGED = 9;
     int TYPE_INDICATION_CHANGED = 10;
     int TYPE_CHARACTERISTIC_WRITE = 11;
-    int TYPE_PHY_READ = 12;
-    int TYPE_PHY_UPDATE = 13;
+    int TYPE_PHY_CHANGE = 12;
 
     /**
      * 打印日志
@@ -69,4 +68,9 @@ public interface Logger {
      * 日志输出控制
      */
     void setEnabled(boolean isEnabled);
+
+    /**
+     * 日志输出是否使能
+     */
+    boolean isEnabled();
 }

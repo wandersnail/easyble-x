@@ -1,11 +1,11 @@
 package easyble2;
 
-import java.util.Queue;
-import java.util.UUID;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import easyble2.callback.RequestCallback;
+
+import java.util.Queue;
+import java.util.UUID;
 
 /**
  * date: 2019/8/3 13:44

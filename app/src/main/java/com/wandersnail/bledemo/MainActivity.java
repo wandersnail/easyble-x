@@ -28,7 +28,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -63,7 +62,7 @@ public class MainActivity extends BaseActivity {
         ConnectionConfiguration config = new ConnectionConfiguration();
         config.setConnectTimeoutMillis(10000);
         config.setRequestTimeoutMillis(1000);
-//        connection = EasyBLE.getInstance().connect(device, config, connectionStateChangeListener);//回调监听连接状态，设置此回调不影响观察者接收连接状态消息
+//        connection = EasyBLE.getInstance().connect(device, config, observer);//回调监听连接状态，设置此回调不影响观察者接收连接状态消息
         connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态         
     }
 
@@ -170,9 +169,8 @@ public class MainActivity extends BaseActivity {
             if (item.hasReadProperty) {
                 menuItems.add("读取特征值");
             }
-            final String writeItem = String.format(Locale.US, "写数据: test write(%s)", StringUtils.toHex("test write".getBytes(), " "));
             if (item.hasWriteProperty) {
-                menuItems.add(writeItem);
+                menuItems.add("写入测试数据");
             }
             new AlertDialog.Builder(MainActivity.this)
                     .setItems(menuItems.toArray(new String[0]), (dialog, which) -> {
@@ -194,7 +192,10 @@ public class MainActivity extends BaseActivity {
     }
 
     private void writeCharacteristic(@NotNull Item item) {
-        Request.WriteCharacteristicBuilder builder = Request.getWriteCharacteristicBuilder(item.service.getUuid(), item.characteristic.getUuid(), "test write".getBytes());
+        Request.WriteCharacteristicBuilder builder = Request.getWriteCharacteristicBuilder(item.service.getUuid(), 
+                item.characteristic.getUuid(), ("Multi-pass deformation also shows that in high-temperature rolling process, " +
+                        "the material will be softened as a result of the recovery and recrystallization, " +
+                        "so the rolling force is reduced and the time interval of the passes of rough rolling should be longer.").getBytes());
         //根据需要设置写入配置
         builder.setWriteOptions(new WriteOptions.Builder()
                 .setPackageSize(20)
