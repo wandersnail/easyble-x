@@ -20,7 +20,7 @@ public class EasyBLEBuilder {
     EventObservable eventObservable;
     ScanConfiguration scanConfiguration;    
     Logger logger;
-    boolean isObserveAnnotationRequired = true;
+    boolean isObserveAnnotationRequired = false;
     
     EasyBLEBuilder() {        
     }

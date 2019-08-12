@@ -55,7 +55,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private long connStartTime; //用于连接超时计时
     private int refreshCount;//刷新（清缓存）计数，在发现服务后清零
     private int tryReconnectCount;//尝试重连计数
-    private int lastConnectionState = -1;//上次连接状态
+    private ConnectionState lastConnectionState;//上次连接状态
     private int reconnectImmediatelyCount = 0; //不搜索直接重连计数
     private boolean refreshing;//是否正在执行清理缓存
     private boolean isActiveDisconnect;//是否主动断开连接
@@ -90,20 +90,19 @@ class ConnectionImpl implements Connection, ScanListener {
 
     @Override
     public void onScanStart() {
-
     }
 
     @Override
     public void onScanStop() {
-        synchronized (ConnectionImpl.this) {
+        synchronized (this) {
             lastScanStopTime = System.currentTimeMillis();
         }
     }
 
     @Override
     public void onScanResult(@NonNull Device device) {
-        synchronized (ConnectionImpl.this) {
-            if (!isReleased && ConnectionImpl.this.device.equals(device) && device.connectionState == STATE_SCANNING) {
+        synchronized (this) {
+            if (!isReleased && this.device.equals(device) && this.device.connectionState == ConnectionState.SCANNING_FOR_RECONNECTION) {
                 connHandler.sendEmptyMessage(MSG_CONNECT);
             }
         }
@@ -273,7 +272,7 @@ class ConnectionImpl implements Connection, ScanListener {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     String msg = String.format(Locale.US, "connected! [name: %s, addr: %s]", device.name, device.address);
                     logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
-                    device.setConnectionState(STATE_CONNECTED);
+                    device.connectionState = ConnectionState.CONNECTED;
                     sendConnectionCallback();
                     // 延时一会再去发现服务
                     connHandler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, configuration.discoverServicesDelayMillis);
@@ -311,7 +310,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     refreshCount = 0;
                     tryReconnectCount = 0;
                     reconnectImmediatelyCount = 0;
-                    device.setConnectionState(STATE_SERVICE_DISCOVERED);
+                    device.connectionState = ConnectionState.SERVICE_DISCOVERED;
                     sendConnectionCallback();
                 }
             } else {
@@ -326,7 +325,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private void doDiscoverServices() {
         if (bluetoothGatt != null) {
             bluetoothGatt.discoverServices();
-            device.setConnectionState(STATE_SERVICE_DISCOVERING);
+            device.connectionState = ConnectionState.SERVICE_DISCOVERING;
             sendConnectionCallback();
         } else {
             notifyDisconnected();
@@ -336,8 +335,8 @@ class ConnectionImpl implements Connection, ScanListener {
     private void doTimer() {
         if (!isReleased) {
             //只处理不是已发现服务并且不在刷新也不是主动断开连接的
-            if (device.connectionState != STATE_SERVICE_DISCOVERED && !refreshing && !isActiveDisconnect) {
-                if (device.connectionState != STATE_DISCONNECTED) {
+            if (device.connectionState != ConnectionState.SERVICE_DISCOVERED && !refreshing && !isActiveDisconnect) {
+                if (device.connectionState != ConnectionState.DISCONNECTED) {
                     //超时
                     if (System.currentTimeMillis() - connStartTime > configuration.connectTimeoutMillis) {
                         connStartTime = System.currentTimeMillis();
@@ -345,10 +344,10 @@ class ConnectionImpl implements Connection, ScanListener {
                         logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, msg);
                         int type;
                         switch (device.connectionState) {
-                            case STATE_SCANNING:
+                            case SCANNING_FOR_RECONNECTION:
                                 type = TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE;
                                 break;
-                            case STATE_CONNECTING:
+                            case CONNECTING:
                                 type = TIMEOUT_TYPE_CANNOT_CONNECT;
                                 break;
                             default:
@@ -402,7 +401,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private void doConnect() {
         cancelRefreshState();
-        device.setConnectionState(STATE_CONNECTING);
+        device.connectionState = ConnectionState.CONNECTING;
         sendConnectionCallback();
         String msg = String.format(Locale.US, "connecting [name: %s, addr: %s]", device.name, device.address);
         logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
@@ -424,9 +423,9 @@ class ConnectionImpl implements Connection, ScanListener {
             closeGatt(bluetoothGatt);
             bluetoothGatt = null;
         }
-        device.setConnectionState(STATE_DISCONNECTED);
+        device.connectionState = ConnectionState.DISCONNECTED;
         if (release) {
-            device.setConnectionState(STATE_RELEASED);
+            device.connectionState = ConnectionState.RELEASED;
             String msg = String.format(Locale.US, "connection released! [name: %s, addr: %s]", device.name, device.address);
             logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
             finalRelease();
@@ -494,7 +493,7 @@ class ConnectionImpl implements Connection, ScanListener {
             connStartTime = System.currentTimeMillis();
             easyBle.stopScan();
             //搜索设备，搜索到才执行连接
-            device.setConnectionState(STATE_SCANNING);
+            device.connectionState = ConnectionState.SCANNING_FOR_RECONNECTION;
             String msg = String.format(Locale.US, "scanning for reconnection [name: %s, addr: %s]", device.name, device.address);
             logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
             easyBle.startScan();
@@ -529,7 +528,7 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     private void notifyDisconnected() {
-        device.setConnectionState(STATE_DISCONNECTED);
+        device.connectionState = ConnectionState.DISCONNECTED;
         sendConnectionCallback();
     }
 
@@ -1068,8 +1067,9 @@ class ConnectionImpl implements Connection, ScanListener {
         Message.obtain(connHandler, MSG_RELEASE_CONNECTION, MSG_ARG_NONE, MSG_ARG_RELEASE).sendToTarget();
     }
 
+    @NonNull
     @Override
-    public int getConnectionState() {
+    public ConnectionState getConnectionState() {
         return device.connectionState;
     }
 

@@ -82,20 +82,20 @@ public class MainActivity extends BaseActivity {
     public void onConnectionStateChanged(@NonNull Device device) {
         Log.d("EasyBLE", "主线程：" + (Looper.getMainLooper() == Looper.myLooper()) + ", 连接状态：" + device.getConnectionState());
         switch (device.getConnectionState()) {
-            case Connection.STATE_SCANNING:
+            case SCANNING_FOR_RECONNECTION:
                 ivDisconnected.setVisibility(View.INVISIBLE);
                 break;
-            case Connection.STATE_CONNECTING:
+            case CONNECTING:
                 layoutConnecting.setVisibility(View.VISIBLE);
                 loadingIndicator.setVisibility(View.VISIBLE);
                 ivDisconnected.setVisibility(View.INVISIBLE);
                 break;
-            case Connection.STATE_DISCONNECTED:
+            case DISCONNECTED:
                 layoutConnecting.setVisibility(View.VISIBLE);
                 loadingIndicator.setVisibility(View.INVISIBLE);
                 ivDisconnected.setVisibility(View.VISIBLE);
                 break;
-            case Connection.STATE_SERVICE_DISCOVERED:
+            case SERVICE_DISCOVERED:
                 layoutConnecting.setVisibility(View.INVISIBLE);
                 loadingIndicator.setVisibility(View.INVISIBLE);
                 itemList.clear();

@@ -185,13 +185,13 @@ public class MainActivity extends AppCompatActivity implements EventObserver {
     @Override
     public void onConnectionStateChanged(@NonNull Device device) {
         switch (device.getConnectionState()) {
-            case Connection.STATE_SCANNING:
+            case SCANNING:
                 break;
-            case Connection.STATE_CONNECTING:
+            case CONNECTING:
                 break;
-            case Connection.STATE_DISCONNECTED:
+            case DISCONNECTED:
                 break;
-            case Connection.STATE_SERVICE_DISCOVERED:
+            case SERVICE_DISCOVERED:
                 break;
         }
     }

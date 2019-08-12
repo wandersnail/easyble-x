@@ -33,27 +33,6 @@ public interface Connection {
     int REQUEST_FAIL_TYPE_CONNECTION_DISCONNECTED = 8;
     int REQUEST_FAIL_TYPE_CONNECTION_RELEASED = 9;
 
-    //----------连接状态-------------  
-    int STATE_DISCONNECTED = 0;
-    int STATE_CONNECTING = 1;
-    int STATE_SCANNING = 2;
-    /**
-     * 已连接，还未执行发现服务
-     */
-    int STATE_CONNECTED = 3;
-    /**
-     * 已连接，正在发现服务
-     */
-    int STATE_SERVICE_DISCOVERING = 4;
-    /**
-     * 已连接，成功发现服务
-     */
-    int STATE_SERVICE_DISCOVERED = 5;
-    /**
-     * 连接已释放
-     */
-    int STATE_RELEASED = 6;
-
     //----------连接超时类型---------
     int TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE = 0;
     /**
@@ -100,7 +79,8 @@ public interface Connection {
     /**
      * 获取连接状态
      */
-    int getConnectionState();
+    @NonNull
+    ConnectionState getConnectionState();
 
     /**
      * 是否开启了自动连接
