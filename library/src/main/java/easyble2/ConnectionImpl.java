@@ -147,8 +147,20 @@ class ConnectionImpl implements Connection, ScanListener {
             if (currentRequest != null && currentRequest.type == RequestType.WRITE_CHARACTERISTIC &&
                     currentRequest.writeOptions.isWaitWriteResult) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
+                    if (logger.isEnabled()) {
+                        byte[] data = (byte[]) currentRequest.value;//完整包数据
+                        int packageSize = currentRequest.writeOptions.packageSize;
+                        int total = data.length / packageSize + (data.length % packageSize == 0 ? 0 : 1);
+                        int progress;
+                        if (currentRequest.remainQueue == null || currentRequest.remainQueue.isEmpty()) {
+                            progress = total;
+                        } else {
+                            progress = data.length / packageSize - currentRequest.remainQueue.size() + 1;                            
+                        }                        
+                        printWriteLog(currentRequest, progress, total, characteristic.getValue());
+                    }
                     if (currentRequest.remainQueue == null || currentRequest.remainQueue.isEmpty()) {
-                        notifyCharacteristicWrite(currentRequest, characteristic.getValue());
+                        notifyCharacteristicWrite(currentRequest, (byte[]) currentRequest.value);
                         executeNextRequest();
                     } else {
                         connHandler.removeMessages(MSG_REQUEST_TIMEOUT);
@@ -270,23 +282,20 @@ class ConnectionImpl implements Connection, ScanListener {
         if (bluetoothGatt != null) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    String msg = String.format(Locale.US, "connected! [name: %s, addr: %s]", device.name, device.address);
-                    logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
+                    logD(Logger.TYPE_CONNECTION_STATE, "connected! [name: %s, addr: %s]", device.name, device.address);
                     device.connectionState = ConnectionState.CONNECTED;
                     sendConnectionCallback();
                     // 延时一会再去发现服务
                     connHandler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, configuration.discoverServicesDelayMillis);
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    String msg = String.format(Locale.US, "disconnected! [name: %s, addr: %s, autoReconnEnable: %s]",
+                    logD(Logger.TYPE_CONNECTION_STATE, "disconnected! [name: %s, addr: %s, autoReconnEnable: %s]",
                             device.name, device.address, configuration.isAutoReconnect);
-                    logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
                     clearRequestQueueAndNotify();
                     notifyDisconnected();
                 }
             } else {
-                String msg = String.format(Locale.US, "GATT error! [status: %d, name: %s, addr: %s]",
+                logE(Logger.TYPE_CONNECTION_STATE, "GATT error! [status: %d, name: %s, addr: %s]",
                         status, device.name, device.address);
-                logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, msg);
                 if (status == 133) {
                     doClearTaskAndRefresh();
                 } else {
@@ -301,9 +310,8 @@ class ConnectionImpl implements Connection, ScanListener {
         if (bluetoothGatt != null) {
             List<BluetoothGattService> services = bluetoothGatt.getServices();
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                String msg = String.format(Locale.US, "services discovered! [name: %s, addr: %s, size: %d]", device.name,
+                logD(Logger.TYPE_CONNECTION_STATE, "services discovered! [name: %s, addr: %s, size: %d]", device.name,
                         device.address, services.size());
-                logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
                 if (services.isEmpty()) {
                     doClearTaskAndRefresh();
                 } else {
@@ -315,9 +323,8 @@ class ConnectionImpl implements Connection, ScanListener {
                 }
             } else {
                 doClearTaskAndRefresh();
-                String msg = String.format(Locale.US, "GATT error! [status: %d, name: %s, addr: %s]",
+                logE(Logger.TYPE_CONNECTION_STATE, "GATT error! [status: %d, name: %s, addr: %s]",
                         status, device.name, device.address);
-                logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, msg);
             }
         }
     }
@@ -340,8 +347,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     //超时
                     if (System.currentTimeMillis() - connStartTime > configuration.connectTimeoutMillis) {
                         connStartTime = System.currentTimeMillis();
-                        String msg = String.format(Locale.US, "connect timeout! [name: %s, addr: %s]", device.name, device.address);
-                        logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, msg);
+                        logE(Logger.TYPE_CONNECTION_STATE, "connect timeout! [name: %s, addr: %s]", device.name, device.address);
                         int type;
                         switch (device.connectionState) {
                             case SCANNING_FOR_RECONNECTION:
@@ -367,9 +373,8 @@ class ConnectionImpl implements Connection, ScanListener {
                                 posterDispatcher.post(observer, MethodInfoGenerator.onConnectFailed(device, CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION));
                             }
                             observable.notifyObservers(MethodInfoGenerator.onConnectFailed(device, CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION));
-                            String message = String.format(Locale.US, "connect failed! [type: maximun reconnection, name: %s, addr: %s]",
+                            logE(Logger.TYPE_CONNECTION_STATE, "connect failed! [type: maximun reconnection, name: %s, addr: %s]",
                                     device.name, device.address);
-                            logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, message);
                         }
                     }
                 } else if (configuration.isAutoReconnect) {
@@ -403,8 +408,7 @@ class ConnectionImpl implements Connection, ScanListener {
         cancelRefreshState();
         device.connectionState = ConnectionState.CONNECTING;
         sendConnectionCallback();
-        String msg = String.format(Locale.US, "connecting [name: %s, addr: %s]", device.name, device.address);
-        logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
+        logD(Logger.TYPE_CONNECTION_STATE, "connecting [name: %s, addr: %s]", device.name, device.address);
         connHandler.postDelayed(connectRunnable, 500);
     }
 
@@ -426,8 +430,7 @@ class ConnectionImpl implements Connection, ScanListener {
         device.connectionState = ConnectionState.DISCONNECTED;
         if (release) {
             device.connectionState = ConnectionState.RELEASED;
-            String msg = String.format(Locale.US, "connection released! [name: %s, addr: %s]", device.name, device.address);
-            logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
+            logD(Logger.TYPE_CONNECTION_STATE, "connection released! [name: %s, addr: %s]", device.name, device.address);
             finalRelease();
         } else if (reconnect) {
             if (reconnectImmediatelyCount < configuration.reconnectImmediatelyMaxTimes) {
@@ -451,8 +454,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     //处理刷新
     private void doRefresh(boolean isAuto) {
-        String msg = String.format(Locale.US, "refresh GATT! [name: %s, addr: %s]", device.name, device.address);
-        logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
+        logD(Logger.TYPE_CONNECTION_STATE, "refresh GATT! [name: %s, addr: %s]", device.name, device.address);
         connStartTime = System.currentTimeMillis();
         if (bluetoothGatt != null) {
             try {
@@ -494,8 +496,7 @@ class ConnectionImpl implements Connection, ScanListener {
             easyBle.stopScan();
             //搜索设备，搜索到才执行连接
             device.connectionState = ConnectionState.SCANNING_FOR_RECONNECTION;
-            String msg = String.format(Locale.US, "scanning for reconnection [name: %s, addr: %s]", device.name, device.address);
-            logger.log(Log.DEBUG, Logger.TYPE_CONNECTION_STATE, msg);
+            logD(Logger.TYPE_CONNECTION_STATE, "scanning for reconnection [name: %s, addr: %s]", device.name, device.address);
             easyBle.startScan();
         }
     }
@@ -774,6 +775,11 @@ class ConnectionImpl implements Connection, ScanListener {
             handleFailedCallback(request, REQUEST_FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED, true);
         }
     }
+    
+    private void printWriteLog(GenericRequest request, int progress, int total, byte[] value) {
+        logD(Logger.TYPE_CHARACTERISTIC_WRITE, "package %d/%d write success! [UUID: %s, addr: %s, value: %s]",
+                progress, total, substringUuid(request.characteristic), device.address, toHex(value));
+    }
 
     private void executeWriteCharacteristic(GenericRequest request, BluetoothGattCharacteristic characteristic) {
         try {
@@ -806,26 +812,27 @@ class ConnectionImpl implements Connection, ScanListener {
                         }
                         if (!write(request, characteristic, bytes)) {
                             return;
+                        } else {
+                            printWriteLog(request, i + 1, list.size(), bytes);
                         }
                     }
+                    printWriteLog(request, list.size(), list.size(), list.get(list.size() - 1));
                 } else { //发送第一包，剩下的加入队列
                     request.remainQueue = new ConcurrentLinkedQueue<>();
                     request.remainQueue.addAll(list);
                     request.sendingBytes = request.remainQueue.remove();
-                    if (!write(request, characteristic, request.sendingBytes)) {
-                        return;
-                    }
+                    write(request, characteristic, request.sendingBytes);
                 }
             } else {
                 request.sendingBytes = value;
-                if (!write(request, characteristic, value)) {
-                    return;
+                if (write(request, characteristic, value)) {
+                    if (!options.isWaitWriteResult) {
+                        notifyCharacteristicWrite(request, value);
+                        printWriteLog(request, 1, 1, value);
+                        executeNextRequest();
+                    }
                 }
-            }
-            if (!options.isWaitWriteResult) {
-                notifyCharacteristicWrite(request, value);
-                executeNextRequest();
-            }
+            }            
         } catch (Exception e) {
             handleWriteFailed(request);
         }
@@ -883,7 +890,7 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     private String toHex(byte[] bytes) {
-        return StringUtils.toHex(bytes, " ");
+        return StringUtils.toHex(bytes);
     }
 
     private String substringUuid(UUID uuid) {
@@ -901,49 +908,30 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
     
+    private void log(int priority, int type, String format, Object... args) {
+        logger.log(priority, type, String.format(Locale.US, format, args));
+    }
+    
+    private void logE(int type, String format, Object... args) {
+        log(Log.ERROR, type, format, args);
+    }
+    
+    private void logD(int type, String format, Object... args) {
+        log(Log.DEBUG, type, format, args);
+    }
+    
     private void notifyRequestFailed(GenericRequest request, int failType) {
         MethodInfo info = MethodInfoGenerator.onRequestFailed(request, failType, request.value);
         handleCallbacks(request.callback, info);
-        String type = "null";
-        switch(request.type) {
-            case SET_NOTIFICATION:
-                type = "SET_NOTIFICATION";
-                break;
-            case SET_INDICATION:
-                type = "SET_INDICATION";
-                break;
-            case READ_CHARACTERISTIC:
-                type = "READ_CHARACTERISTIC";
-                break;
-            case READ_DESCRIPTOR:
-                type = "READ_DESCRIPTOR";
-                break;
-            case READ_RSSI:
-                type = "READ_RSSI";
-                break;
-            case WRITE_CHARACTERISTIC:
-                type = "WRITE_CHARACTERISTIC";
-                break;
-            case CHANGE_MTU:
-                type = "CHANGE_MTU";
-                break;
-            case READ_PHY:
-                type = "READ_PHY";
-                break;
-            case SET_PREFERRED_PHY:
-                type = "SET_PREFERRED_PHY";
-                break;
-        }
-        String msg = String.format(Locale.US, "request failed! [requestType: %s, addr: %s, failType: %d", type, device.address, failType);
-        logger.log(Log.DEBUG, Logger.TYPE_REQUEST_FIALED, msg);
+        logE(Logger.TYPE_REQUEST_FAILED, "request failed! [requestType: %s, addr: %s, failType: %d", 
+                request.type, device.address, failType);
     }
 
     private void notifyCharacteristicRead(GenericRequest request, byte[] value) {
         MethodInfo info = MethodInfoGenerator.onCharacteristicRead(request, value);
         handleCallbacks(request.callback, info);
-        String msg = String.format(Locale.US, "characteristic read! [UUID: %s, addr: %s, value: %s]",
+        logD(Logger.TYPE_CHARACTERISTIC_READ, "characteristic read! [UUID: %s, addr: %s, value: %s]",
                 substringUuid(request.characteristic), device.address, toHex(value));
-        logger.log(Log.DEBUG, Logger.TYPE_CHARACTERISTIC_READ, msg);
     }
 
     private void notifyCharacteristicChanged(BluetoothGattCharacteristic characteristic) {
@@ -953,61 +941,51 @@ class ConnectionImpl implements Connection, ScanListener {
         if (observer != null) {
             posterDispatcher.post(observer, info);
         }
-        String msg = String.format(Locale.US, "characteristic change! [UUID: %s, addr: %s, value: %s]",
+        logD(Logger.TYPE_CHARACTERISTIC_CHANGED, "characteristic change! [UUID: %s, addr: %s, value: %s]",
                 substringUuid(characteristic.getUuid()), device.address, toHex(characteristic.getValue()));
-        logger.log(Log.INFO, Logger.TYPE_CHARACTERISTIC_CHANGED, msg);
     }
 
     private void notifyRssiRead(GenericRequest request, int rssi) {
         MethodInfo info = MethodInfoGenerator.onRssiRead(request, rssi);
         handleCallbacks(request.callback, info);
-        String msg = String.format(Locale.US, "rssi read! [addr: %s, rssi: %d]", device.address, rssi);
-        logger.log(Log.DEBUG, Logger.TYPE_READ_REMOTE_RSSI, msg);
+        logD(Logger.TYPE_READ_REMOTE_RSSI, "rssi read! [addr: %s, rssi: %d]", device.address, rssi);
     }
 
     private void notifyMtuChanged(GenericRequest request, int mtu) {
         MethodInfo info = MethodInfoGenerator.onMtuChanged(request, mtu);
         handleCallbacks(request.callback, info);
-        String msg = String.format(Locale.US, "mtu change! [addr: %s, mtu: %d]", device.address, mtu);
-        logger.log(Log.DEBUG, Logger.TYPE_MTU_CHANGED, msg);
+        logD(Logger.TYPE_MTU_CHANGED, "mtu change! [addr: %s, mtu: %d]", device.address, mtu);
     }
 
     private void notifyDescriptorRead(GenericRequest request, byte[] value) {
         MethodInfo info = MethodInfoGenerator.onDescriptorRead(request, value);
         handleCallbacks(request.callback, info);
-        String msg = String.format(Locale.US, "descriptor read! [UUID: %s, addr: %s, value: %s]",
+        logD(Logger.TYPE_DESCRIPTOR_READ, "descriptor read! [UUID: %s, addr: %s, value: %s]",
                 substringUuid(request.characteristic), device.address, toHex(value));
-        logger.log(Log.DEBUG, Logger.TYPE_DESCRIPTOR_READ, msg);
     }
 
     private void notifyNotificationChanged(GenericRequest request, boolean isEnabled) {
         MethodInfo info = MethodInfoGenerator.onNotificationChanged(request, isEnabled);
         handleCallbacks(request.callback, info);
         if (request.type == RequestType.SET_NOTIFICATION) {
-            String msg = String.format(Locale.US, "%s [UUID: %s, addr: %s]", isEnabled ? "notification enabled!" :
+            logD(Logger.TYPE_NOTIFICATION_CHANGED, "%s [UUID: %s, addr: %s]", isEnabled ? "notification enabled!" :
                     "notification disabled!", substringUuid(request.characteristic), device.address);
-            logger.log(Log.DEBUG, Logger.TYPE_NOTIFICATION_CHANGED, msg);
         } else {
-            String msg = String.format(Locale.US, "%s [UUID: %s, addr: %s]", isEnabled ? "indication enabled!" :
+            logD(Logger.TYPE_INDICATION_CHANGED, "%s [UUID: %s, addr: %s]", isEnabled ? "indication enabled!" :
                     "indication disabled!", substringUuid(request.characteristic), device.address);
-            logger.log(Log.DEBUG, Logger.TYPE_INDICATION_CHANGED, msg);
         }
     }
 
     private void notifyCharacteristicWrite(GenericRequest request, byte[] value) {
         MethodInfo info = MethodInfoGenerator.onCharacteristicWrite(request, value);
-        handleCallbacks(request.callback, info);
-        String msg = String.format(Locale.US, "write success! [UUID: %s, addr: %s, value: %s]",
-                substringUuid(request.characteristic), device.address, toHex(value));
-        logger.log(Log.DEBUG, Logger.TYPE_CHARACTERISTIC_WRITE, msg);
+        handleCallbacks(request.callback, info);        
     }
 
     private void notifyPhyChange(GenericRequest request, int txPhy, int rxPhy) {
         MethodInfo info = MethodInfoGenerator.onPhyChange(request, txPhy, rxPhy);
         handleCallbacks(request.callback, info);
         String event = request.type == RequestType.READ_PHY ? "phy read!" : "phy update!";
-        String msg = String.format(Locale.US, "%s [addr: %s, tvPhy: %s, rxPhy: %s]", event, device.address, txPhy, rxPhy);
-        logger.log(Log.DEBUG, Logger.TYPE_PHY_READ, msg);
+        logD(Logger.TYPE_PHY_CHANGE, "%s [addr: %s, tvPhy: %s, rxPhy: %s]", event, device.address, txPhy, rxPhy);
     }
 
     @NonNull

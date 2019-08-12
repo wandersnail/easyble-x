@@ -21,6 +21,11 @@ public class DefaultLogger implements Logger {
     }
 
     @Override
+    public boolean isEnabled() {
+        return isEnabled;
+    }
+
+    @Override
     public void log(int priority, int type, @NonNull String msg) {
         if (isEnabled) {
             Log.println(priority, tag, msg);

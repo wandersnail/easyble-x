@@ -109,7 +109,7 @@ public interface EventObserver {
     /**
      * 连接状态变化
      *
-     * @param device 设备。状态{@link Device#getConnectionState()}，可能的值{@link Connection#STATE_CONNECTED}等
+     * @param device 设备。状态{@link Device#getConnectionState()}，可能的值{@link ConnectionState#CONNECTED}等
      */
     default void onConnectionStateChanged(@NonNull Device device) {
     }
