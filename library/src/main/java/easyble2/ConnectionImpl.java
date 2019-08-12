@@ -876,7 +876,7 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     private void handleFailedCallback(GenericRequest request, int failType, boolean executeNext) {
-        notifyRequestFialed(request, failType);
+        notifyRequestFailed(request, failType);
         if (executeNext) {
             executeNextRequest();
         }
@@ -901,7 +901,7 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
     
-    private void notifyRequestFialed(GenericRequest request, int failType) {
+    private void notifyRequestFailed(GenericRequest request, int failType) {
         MethodInfo info = MethodInfoGenerator.onRequestFailed(request, failType, request.value);
         handleCallbacks(request.callback, info);
         String type = "null";
