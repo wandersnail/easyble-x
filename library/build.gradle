@@ -102,10 +102,10 @@ afterEvaluate { project ->
         properties.load(inputStream)
         //读取本地maven的url
         def localMavenBaseUrl = properties.containsKey('maven.local.url.base') ? properties['maven.local.url.base']
-                : rootProject['maven.local.url.base']
-        def username = properties.containsKey('nexus.username') ? properties['nexus.username'] : rootProject['nexus.username']
-        def password = properties.containsKey('nexus.password') ? properties['nexus.password'] : rootProject['nexus.password']
+                : rootProject.hasProperty('maven.local.url.base') ? rootProject['maven.local.url.base'] : null
         if (localMavenBaseUrl != null) {
+            def username = properties.containsKey('nexus.username') ? properties['nexus.username'] : rootProject['nexus.username']
+            def password = properties.containsKey('nexus.password') ? properties['nexus.password'] : rootProject['nexus.password']
             repositories {
                 mavenDeployer {
                     repository(url: "${localMavenBaseUrl}repository/maven-releases") {
