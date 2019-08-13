@@ -164,10 +164,6 @@ deps.bugly = bugly
 ext.deps = deps
 
 static def addRepos(RepositoryHandler handler) {
-    handler.maven { url 'https://maven.aliyun.com/repository/google' }
-    handler.maven { url 'https://maven.aliyun.com/repository/jcenter' }
-    handler.maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-    handler.maven { url 'https://maven.aliyun.com/repository/public' }
     handler.google()
     handler.jcenter()
     handler.mavenCentral()
