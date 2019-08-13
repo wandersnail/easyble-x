@@ -105,21 +105,23 @@ afterEvaluate { project ->
                 : rootProject['maven.local.url.base']
         def username = properties.containsKey('nexus.username') ? properties['nexus.username'] : rootProject['nexus.username']
         def password = properties.containsKey('nexus.password') ? properties['nexus.password'] : rootProject['nexus.password']
-        repositories {
-            mavenDeployer {
-                repository(url: "${localMavenBaseUrl}repository/maven-releases") {
-                    authentication(userName: username, password: password)
-                }
+        if (localMavenBaseUrl != null) {
+            repositories {
+                mavenDeployer {
+                    repository(url: "${localMavenBaseUrl}repository/maven-releases") {
+                        authentication(userName: username, password: password)
+                    }
 
-                snapshotRepository(url: "${localMavenBaseUrl}repository/maven-snapshots") {
-                    authentication(userName: username, password: password)
-                }
-                pom.project {
-                    groupId lib_group
-                    artifactId lib_artifact
-                    version lib_version
-                    packaging lib_packaging
-                    description lib_description
+                    snapshotRepository(url: "${localMavenBaseUrl}repository/maven-snapshots") {
+                        authentication(userName: username, password: password)
+                    }
+                    pom.project {
+                        groupId lib_group
+                        artifactId lib_artifact
+                        version lib_version
+                        packaging lib_packaging
+                        description lib_description
+                    }
                 }
             }
         }
