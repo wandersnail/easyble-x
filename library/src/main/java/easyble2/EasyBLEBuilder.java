@@ -73,7 +73,7 @@ public class EasyBLEBuilder {
     /**
      * 搜索配置
      */
-    public EasyBLEBuilder setScanConfigation(@NonNull ScanConfiguration scanConfiguration) {
+    public EasyBLEBuilder setScanConfiguration(@NonNull ScanConfiguration scanConfiguration) {
         Inspector.requireNonNull(scanConfiguration, "scanConfiguration is null");
         this.scanConfiguration = scanConfiguration;
         return this;

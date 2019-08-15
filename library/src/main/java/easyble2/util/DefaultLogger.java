@@ -2,6 +2,7 @@ package easyble2.util;
 
 import android.util.Log;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * date: 2019/8/3 16:24
@@ -33,9 +34,14 @@ public class DefaultLogger implements Logger {
     }
 
     @Override
-    public void log(int priority, int type, @NonNull String msg, @NonNull Throwable th) {
+    public void log(int priority, int type, @Nullable String msg, @NonNull Throwable th) {
         if (isEnabled) {
-            log(priority, type, msg + "\n" + Log.getStackTraceString(th));
+            if (msg != null) {
+                log(priority, type, msg + "\n" + Log.getStackTraceString(th));
+            } else {
+                log(priority, type, Log.getStackTraceString(th));
+            }
         }
+        
     }
 }

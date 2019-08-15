@@ -1,6 +1,7 @@
 package easyble2.util;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * date: 2019/8/2 23:56
@@ -62,7 +63,7 @@ public interface Logger {
      * @param msg      日志内容
      * @param th       异常
      */
-    void log(int priority, int type, @NonNull String msg, @NonNull Throwable th);
+    void log(int priority, int type, @Nullable String msg, @NonNull Throwable th);
 
     /**
      * 日志输出控制
