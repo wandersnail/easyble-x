@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.core.util.Pair;
 import com.snail.commons.methodpost.MethodInfo;
 import com.snail.commons.methodpost.PosterDispatcher;
+import com.snail.commons.observer.Observable;
 import com.snail.commons.util.MathUtils;
 import com.snail.commons.util.StringUtils;
 import easyble2.callback.RequestCallback;
@@ -61,7 +62,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private boolean isActiveDisconnect;//是否主动断开连接
     private long lastScanStopTime;//上次搜索停止时间
     private final Logger logger;
-    private final EventObservable observable;
+    private final Observable observable;
     private final PosterDispatcher posterDispatcher;
     private final BluetoothGattCallback gattCallback = new BleGattCallback();
     private final EasyBLE easyBle;
@@ -79,7 +80,7 @@ class ConnectionImpl implements Connection, ScanListener {
         }
         this.observer = observer;
         logger = easyBle.getLogger();
-        observable = easyBle.getEventObservable();
+        observable = easyBle.getObservable();
         posterDispatcher = easyBle.getPosterDispatcher();
         connHandler = new ConnHandler(this);
         connStartTime = System.currentTimeMillis();

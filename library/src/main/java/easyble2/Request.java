@@ -2,23 +2,15 @@ package easyble2;
 
 import android.bluetooth.BluetoothDevice;
 import android.os.Build;
-
-import com.snail.commons.methodpost.RunOn;
-
-import java.util.UUID;
-
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import easyble2.annotation.Observe;
-import easyble2.callback.MtuChangeCallback;
-import easyble2.callback.NotificationChangeCallback;
-import easyble2.callback.PhyChangeCallback;
-import easyble2.callback.ReadCharacteristicCallback;
-import easyble2.callback.ReadRssiCallback;
-import easyble2.callback.RequestCallback;
-import easyble2.callback.WriteCharacteristicCallback;
+import com.snail.commons.methodpost.RunOn;
+import com.snail.commons.observer.Observe;
+import easyble2.callback.*;
+
+import java.util.UUID;
 
 /**
  * date: 2019/8/11 15:34
