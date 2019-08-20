@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import com.snail.commons.observer.Observer;
 
 import java.util.UUID;
 
@@ -13,7 +14,7 @@ import java.util.UUID;
  * date: 2019/8/3 13:15
  * author: zengfansheng
  */
-public interface EventObserver {
+public interface EventObserver extends Observer {
     /**
      * 蓝牙开关状态变化
      *

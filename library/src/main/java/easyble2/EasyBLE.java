@@ -13,8 +13,9 @@ import android.content.pm.PackageManager;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import com.snail.commons.methodpost.MethodInfo;
 import com.snail.commons.methodpost.PosterDispatcher;
-import com.snail.commons.methodpost.ThreadMode;
+import com.snail.commons.observer.Observable;
 import easyble2.callback.ScanListener;
 import easyble2.util.DefaultLogger;
 import easyble2.util.Logger;
@@ -35,12 +36,10 @@ public class EasyBLE {
     private static final EasyBLEBuilder DEFAULT_BUILDER = new EasyBLEBuilder();
     private final ExecutorService executorService;
     private final PosterDispatcher posterDispatcher;
-    private final ThreadMode methodDefaultThreadMode;
     private final BondController bondController;
     private final DeviceCreator deviceCreator;
-    private final EventObservable eventObservable;
+    private final Observable observable;
     private final Logger logger;
-    private final boolean isObserveAnnotationRequired;
     public final ScanConfiguration scanConfiguration;
     private Scanner scanner;
     private Application application;
@@ -56,15 +55,12 @@ public class EasyBLE {
     EasyBLE(EasyBLEBuilder builder) {
         tryGetApplication();
         executorService = builder.executorService;
-        isObserveAnnotationRequired = builder.isObserveAnnotationRequired;
-        methodDefaultThreadMode = builder.methodDefaultThreadMode;
         bondController = builder.bondController;
         deviceCreator = builder.deviceCreator == null ? new DefaultDeviceCreator() : builder.deviceCreator;
-        eventObservable = builder.eventObservable == null ? new EventObservable() : builder.eventObservable;
         scanConfiguration = builder.scanConfiguration == null ? new ScanConfiguration() : builder.scanConfiguration;
         logger = builder.logger == null ? new DefaultLogger("EasyBLE") : builder.logger;
-        posterDispatcher = new PosterDispatcher(executorService, methodDefaultThreadMode);
-        eventObservable.setEasyBLE(this);
+        posterDispatcher = new PosterDispatcher(executorService, builder.methodDefaultThreadMode);
+        observable = new Observable(posterDispatcher, builder.isObserveAnnotationRequired);        
     }
 
     /**
@@ -120,24 +116,16 @@ public class EasyBLE {
         return posterDispatcher;
     }
 
-    ThreadMode getMethodDefaultThreadMode() {
-        return methodDefaultThreadMode;
-    }
-
     DeviceCreator getDeviceCreator() {
         return deviceCreator;
     }
 
-    EventObservable getEventObservable() {
-        return eventObservable;
+    Observable getObservable() {        
+        return observable;
     }
 
     Logger getLogger() {
         return logger;
-    }
-
-    boolean isObserveAnnotationRequired() {
-        return isObserveAnnotationRequired;
     }
 
     public boolean isInitialized() {
@@ -157,7 +145,7 @@ public class EasyBLE {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) { //蓝牙开关状态变化 
                 if (bluetoothAdapter != null) {
                     //通知观察者蓝牙状态
-                    eventObservable.notifyObservers(MethodInfoGenerator.onBluetoothAdapterStateChanged(bluetoothAdapter.getState()));
+                    observable.notifyObservers(MethodInfoGenerator.onBluetoothAdapterStateChanged(bluetoothAdapter.getState()));
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) { //蓝牙关闭
                         logger.log(Log.DEBUG, Logger.TYPE_GENERAL, "蓝牙关闭了");
                         //通知搜索器
@@ -247,7 +235,7 @@ public class EasyBLE {
             scanner.release();
         }
         releaseAllConnections();
-        eventObservable.unregisterAll();
+        observable.unregisterAll();
         posterDispatcher.clearTasks();
     }
 
@@ -265,24 +253,36 @@ public class EasyBLE {
      * 注册连接状态及数据接收观察者
      */
     public void registerObserver(@NonNull EventObserver observer) {
-        checkStatus();
-        eventObservable.registerObserver(observer);
+        if (checkStatus()) {
+            observable.registerObserver(observer);
+        }
     }
 
     /**
      * 查询观察者是否注册
      */
     public boolean isObserverRegistered(@NonNull EventObserver observer) {
-        return eventObservable.isRegistered(observer);
+        return observable.isRegistered(observer);
     }
 
     /**
      * 取消注册连接状态及数据接收观察者
      */
     public void unregisterObserver(@NonNull EventObserver observer) {
-        eventObservable.unregisterObserver(observer);
+        observable.unregisterObserver(observer);
     }
 
+    /**
+     * 通知所有观察者事件变化
+     *
+     * @param info 方法信息实例
+     */
+    public void notifyObservers(@NonNull MethodInfo info) {
+        if (checkStatus()) {
+            observable.notifyObservers(info);
+        }
+    }
+    
     /**
      * 添加搜索监听器
      */
@@ -463,7 +463,7 @@ public class EasyBLE {
                 if (observer != null) {
                     posterDispatcher.post(observer, MethodInfoGenerator.onConnectFailed(device, Connection.CONNECT_FAIL_TYPE_UNCONNECTABLE));
                 }
-                eventObservable.notifyObservers(MethodInfoGenerator.onConnectFailed(device, Connection.CONNECT_FAIL_TYPE_UNCONNECTABLE));
+                observable.notifyObservers(MethodInfoGenerator.onConnectFailed(device, Connection.CONNECT_FAIL_TYPE_UNCONNECTABLE));
             }
         }
         return null;

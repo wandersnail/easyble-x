@@ -2,8 +2,9 @@ package easyble2;
 
 import androidx.annotation.NonNull;
 import com.snail.commons.methodpost.ThreadMode;
+import com.snail.commons.observer.Observe;
 import easyble2.util.Logger;
-import easyble2.annotation.Observe;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -17,7 +18,6 @@ public class EasyBLEBuilder {
     DeviceCreator deviceCreator;
     ThreadMode methodDefaultThreadMode = ThreadMode.MAIN;
     ExecutorService executorService = DEFAULT_EXECUTOR_SERVICE;
-    EventObservable eventObservable;
     ScanConfiguration scanConfiguration;    
     Logger logger;
     boolean isObserveAnnotationRequired = false;
@@ -58,15 +58,6 @@ public class EasyBLEBuilder {
     public EasyBLEBuilder setMethodDefaultThreadMode(@NonNull ThreadMode mode) {
         Inspector.requireNonNull(mode, "mode is null");
         methodDefaultThreadMode = mode;
-        return this;
-    }
-
-    /**
-     * 被观察者，消息发布者
-     */
-    public EasyBLEBuilder setEventObservable(@NonNull EventObservable eventObservable) {
-        Inspector.requireNonNull(eventObservable, "eventObservable is null");
-        this.eventObservable = eventObservable;
         return this;
     }
 

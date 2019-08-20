@@ -17,9 +17,10 @@ versions.recyclerview = "1.0.0"
 versions.appcompat = "1.0.2"
 versions.commons_basic = "1.0.2"
 versions.commons_utils = "1.0.6"
-versions.commons_method_poster = "1.0.1"
+versions.commons_observer = "1.0.0"
+versions.commons_method_poster = "1.0.2"
 versions.commons_helper = "1.0.0"
-versions.commons_android = "1.4.7"
+versions.commons_android = "1.5.0"
 versions.fileselector = "1.2.1"
 versions.widgets = "1.2.2"
 versions.network_requester = "1.3.2"
@@ -129,6 +130,7 @@ deps.navigation = navigation
 def wandersnail = [:]
 wandersnail.commons_android = "com.github.wandersnail:commons-android:$versions.commons_android"
 wandersnail.commons_basic = "com.github.wandersnail:commons-basic:$versions.commons_basic"
+wandersnail.commons_observer = "com.github.wandersnail:commons-observer:$versions.commons_observer"
 wandersnail.commons_utils = "com.github.wandersnail:commons-utils:$versions.commons_utils"
 wandersnail.commons_helper = "com.github.wandersnail:commons-helper:$versions.commons_helper"
 wandersnail.commons_method_poster = "com.github.wandersnail:commons-method-poster:$versions.commons_method_poster"
@@ -169,7 +171,6 @@ static def addRepos(RepositoryHandler handler) {
     handler.mavenCentral()
     handler.maven { url 'https://jitpack.io' }
     handler.maven { url 'https://dl.bintray.com/wandersnail/android/' }
-    handler.maven { url 'https://dl.bintray.com/umsdk/release' }
 }
 
 ext.addRepos = this.&addRepos

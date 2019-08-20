@@ -67,7 +67,6 @@ public class ScanActivity extends AppCompatActivity {
                 EasyBLE.getInstance().stopScan();
                 doStartScan();
             }
-            MyApplication.getInstance().getObservable().nofityTestObserver();
             refreshLayout.postDelayed(() -> refreshLayout.setRefreshing(false), 500);
         });
     }

@@ -41,7 +41,6 @@ public class DefaultLogger implements Logger {
             } else {
                 log(priority, type, Log.getStackTraceString(th));
             }
-        }
-        
+        }        
     }
 }
