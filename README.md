@@ -2,7 +2,7 @@
 
 ## 最新版本
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x/badge.svg)](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x)
-[![Download](https://api.bintray.com/packages/wandersnail/android/easyble-x/images/download.svg) ](https://bintray.com/wandersnail/android/easyble-x/_latestVersion)
+[![Download](https://api.bintray.com/packages/wandersnail/androidx/easyble-x/images/download.svg)](https://bintray.com/wandersnail/androidx/easyble-x/_latestVersion)
 
 ## 功能
 - 支持多设备同时连接
