@@ -69,7 +69,7 @@ allprojects {
 	repositories {
 		...
 		mavenCentral()
-		maven { url 'https://dl.bintray.com/wandersnail/android/' }
+		maven { url 'https://dl.bintray.com/wandersnail/androidx/' }
 	}
 }
 ```
