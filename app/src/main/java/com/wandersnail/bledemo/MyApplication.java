@@ -3,11 +3,10 @@ package com.wandersnail.bledemo;
 import android.app.Application;
 import android.bluetooth.le.ScanSettings;
 
-import com.snail.commons.AppHolder;
-import com.snail.commons.methodpost.ThreadMode;
-
-import easyble2.EasyBLE;
-import easyble2.ScanConfiguration;
+import cn.wandersnail.ble.EasyBLE;
+import cn.wandersnail.ble.ScanConfiguration;
+import cn.wandersnail.commons.base.AppHolder;
+import cn.wandersnail.commons.poster.ThreadMode;
 
 /**
  * date: 2019/8/4 15:14

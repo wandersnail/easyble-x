@@ -3,11 +3,13 @@ package com.wandersnail.bledemo;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import com.snail.commons.observer.Observe;
-import com.snail.commons.util.ToastUtils;
-import easyble2.EasyBLE;
+
+import cn.wandersnail.ble.EasyBLE;
+import cn.wandersnail.commons.observer.Observe;
+import cn.wandersnail.commons.util.ToastUtils;
 
 /**
  * date: 2019/8/11 09:42

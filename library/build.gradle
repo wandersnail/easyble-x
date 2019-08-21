@@ -2,19 +2,19 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'maven'
 
-def lib_version = '1.2.0'
-def lib_group = 'com.github.wandersnail'
-def lib_artifact = 'easyble2'
+def lib_version = '1.0.0'
+def lib_group = 'cn.wandersnail'
+def lib_artifact = 'easyble-x'
 def lib_packaging = 'aar'
 def lib_description = 'A framework for Android Bluetooth Low Energy (BLE)'
 group = lib_group
 version = lib_version
 
 android {
-    compileSdkVersion build_versions.target_sdk
+    compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
-        minSdkVersion build_versions.min_sdk
-        targetSdkVersion build_versions.target_sdk
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "$lib_version"
     }
@@ -36,14 +36,14 @@ android {
 }
 
 dependencies {
-    compileOnly deps.appcompat
-    compileOnly deps.wandersnail.commons_utils
-    compileOnly deps.wandersnail.commons_observer
-    compileOnly deps.wandersnail.commons_method_poster
+    compileOnly 'androidx.appcompat:appcompat:1.0.2'
+    compileOnly 'cn.wandersnail:common-utils:1.0.0'
+    compileOnly 'cn.wandersnail:common-observer:1.0.0'
+    compileOnly 'cn.wandersnail:common-poster:1.0.0'
 }
 
 task sourcesJar(type: Jar) {
-    classifier = 'sources'
+    archiveClassifier.set('sources')
     from android.sourceSets.main.java.srcDirs
 }
 
@@ -58,7 +58,7 @@ task javadoc(type: Javadoc) {
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier.set('javadoc')
     from javadoc.destinationDir
 }
 
@@ -69,13 +69,13 @@ artifacts {
 }
 
 publish {
-    repoName = "android"//仓库名
+    repoName = "androidx"//仓库名
     userOrg = 'wandersnail' //bintray.com用户名  
     groupId = lib_group //jcenter上的路径  
     artifactId = lib_artifact //项目名称  
     publishVersion = lib_version //版本号  
     desc = lib_description
-    website = 'https://github.com/wandersnail/easyble2'
+    website = 'https://github.com/wandersnail/easyble-x'
 }
 
 if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUpload') }) {
@@ -96,9 +96,9 @@ if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUploa
                     version lib_version
 
                     scm {
-                        url 'https://github.com/wandersnail/easyble2'
-                        connection 'scm:git:https://github.com/wandersnail/easyble2.git'
-                        developerConnection 'scm:git:https://github.com/wandersnail/easyble2.git'
+                        url 'https://github.com/wandersnail/easyble-x'
+                        connection 'scm:git:https://github.com/wandersnail/easyble-x.git'
+                        developerConnection 'scm:git:https://github.com/wandersnail/easyble-x.git'
                     }
 
                     licenses {

@@ -13,22 +13,26 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-import com.snail.commons.helper.PermissionsRequester;
+
 import com.snail.widget.listview.BaseListAdapter;
 import com.snail.widget.listview.BaseViewHolder;
 import com.snail.widget.listview.PullRefreshLayout;
-import easyble2.Device;
-import easyble2.EasyBLE;
-import easyble2.callback.ScanListener;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import cn.wandersnail.ble.Device;
+import cn.wandersnail.ble.EasyBLE;
+import cn.wandersnail.ble.callback.ScanListener;
+import cn.wandersnail.commons.helper.PermissionsRequester;
 
 /**
  * date: 2019/8/4 15:13

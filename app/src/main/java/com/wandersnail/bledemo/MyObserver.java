@@ -1,6 +1,6 @@
 package com.wandersnail.bledemo;
 
-import easyble2.EventObserver;
+import cn.wandersnail.ble.EventObserver;
 
 /**
  * date: 2019/8/11 00:32

@@ -1,9 +1,8 @@
 # Android BLE开发框架
 
 ## 最新版本
-[![](https://jitpack.io/v/wandersnail/easyble2.svg)](https://jitpack.io/#wandersnail/easyble2)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.wandersnail/easyble2/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.wandersnail/easyble2)
-[![Download](https://api.bintray.com/packages/wandersnail/android/easyble2/images/download.svg) ](https://bintray.com/wandersnail/android/easyble2/_latestVersion)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x/badge.svg)](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x)
+[![Download](https://api.bintray.com/packages/wandersnail/android/easyble-x/images/download.svg) ](https://bintray.com/wandersnail/android/easyble-x/_latestVersion)
 
 ## 功能
 - 支持多设备同时连接
@@ -54,21 +53,22 @@ allprojects {
 ```
 dependencies {
 	...
-	implementation 'com.github.wandersnail:easyble2:latestVersion'
-	//额外两个依赖
-	implementation 'com.github.wandersnail:commons-utils:latestVersion'
-	implementation 'com.github.wandersnail:commons-method-poster:latestVersion'
+	implementation 'cn.wandersnail:easyble-x:latestVersion'
+	//额外三个依赖
+	implementation 'cn.wandersnail:common-utils:latestVersion'
+	implementation 'cn.wandersnail:common-observer:latestVersion'
+	implementation 'cn.wandersnail:common-poster:latestVersion'
 	//也可以使用
-	//implementation 'com.github.wandersnail:commons-android:latestVersion'//此依赖包含上面两个
+	//implementation 'cn.wandersnail:common-full:latestVersion'//此依赖包含上面三个
 }
 ```
 
-3. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，有时jitpack会抽风，同步不下来。添加完再次同步即可。
+3. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，添加完再次同步即可。
 ```
 allprojects {
 	repositories {
 		...
-		maven { url 'https://jitpack.io' }
+		mavenCentral()
 		maven { url 'https://dl.bintray.com/wandersnail/android/' }
 	}
 }
@@ -97,7 +97,7 @@ ScanConfiguration scanConfig = new ScanConfiguration()
 		.setScanPeriodMillis(15000)
 		.setAcceptSysConnectedDevice(true)
 		.setOnlyAcceptBleDevice(true);
-EasyBLE ble = EasyBLE.getBuilder().setScanConfigation(scanConfig)
+EasyBLE ble = EasyBLE.getBuilder().setScanConfiguration(scanConfig)
 		.setObserveAnnotationRequired(false)//不强制使用{@link Observe}注解才会收到被观察者的消息，强制使用的话，性能会好一些
 		.setMethodDefaultThreadMode(ThreadMode.MAIN)//指定回调方法和观察者方法的默认线程
 		.build();

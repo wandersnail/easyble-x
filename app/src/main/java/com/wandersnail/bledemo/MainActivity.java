@@ -10,25 +10,36 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import com.snail.commons.methodpost.RunOn;
-import com.snail.commons.methodpost.ThreadMode;
-import com.snail.commons.observer.Observe;
-import com.snail.commons.util.StringUtils;
-import com.snail.commons.util.ToastUtils;
+
 import com.snail.treeadapter.Node;
 import com.snail.treeadapter.TreeAdapter;
 import com.wang.avi.AVLoadingIndicatorView;
-import easyble2.*;
-import easyble2.callback.NotificationChangeCallback;
-import easyble2.callback.ReadCharacteristicCallback;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import cn.wandersnail.ble.Connection;
+import cn.wandersnail.ble.ConnectionConfiguration;
+import cn.wandersnail.ble.Device;
+import cn.wandersnail.ble.EasyBLE;
+import cn.wandersnail.ble.EasyBLEBuilder;
+import cn.wandersnail.ble.Request;
+import cn.wandersnail.ble.RequestType;
+import cn.wandersnail.ble.WriteOptions;
+import cn.wandersnail.ble.callback.NotificationChangeCallback;
+import cn.wandersnail.ble.callback.ReadCharacteristicCallback;
+import cn.wandersnail.commons.observer.Observe;
+import cn.wandersnail.commons.poster.RunOn;
+import cn.wandersnail.commons.poster.ThreadMode;
+import cn.wandersnail.commons.util.StringUtils;
+import cn.wandersnail.commons.util.ToastUtils;
 
 /**
  * date: 2019/8/2 23:33
