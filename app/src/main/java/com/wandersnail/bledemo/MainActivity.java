@@ -15,8 +15,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
-import com.snail.treeadapter.Node;
-import com.snail.treeadapter.TreeAdapter;
 import com.wang.avi.AVLoadingIndicatorView;
 
 import org.jetbrains.annotations.NotNull;
@@ -25,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import cn.wandersnail.adapter.tree.Node;
+import cn.wandersnail.adapter.tree.TreeListAdapter;
 import cn.wandersnail.ble.Connection;
 import cn.wandersnail.ble.ConnectionConfiguration;
 import cn.wandersnail.ble.Device;
@@ -113,18 +113,14 @@ public class MainActivity extends BaseActivity {
                 List<BluetoothGattService> services = connection.getGatt().getServices();
                 for (BluetoothGattService service : services) {
                     int pid = id;
-                    Item item = new Item();
-                    item.setId(pid);
+                    Item item = new Item(pid, 0, 0);
                     item.isService = true;
                     item.service = service;
                     itemList.add(item);
                     id++;
                     List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
                     for (BluetoothGattCharacteristic characteristic : characteristics) {
-                        Item i = new Item();
-                        i.setId(id++);
-                        i.setPId(pid);
-                        i.setLevel(1);
+                        Item i = new Item(id++, pid, 1);
                         i.service = service;
                         i.characteristic = characteristic;
                         itemList.add(i);
@@ -171,7 +167,6 @@ public class MainActivity extends BaseActivity {
 
     private void initViews() {
         adapter = new ListViewAdapter(lv, itemList);
-        lv.setAdapter(adapter);
         adapter.setOnInnerItemClickListener((item, adapterView, view, i) -> {
             final List<String> menuItems = new ArrayList<>();
             if (item.hasNotifyProperty) {
@@ -249,8 +244,8 @@ public class MainActivity extends BaseActivity {
         builder.build().execute(connection);
     }
 
-    private class ListViewAdapter extends TreeAdapter<Item> {
-        ListViewAdapter(@NotNull ListView lv, @NotNull List<? extends Item> nodes) {
+    private class ListViewAdapter extends TreeListAdapter<Item> {
+        ListViewAdapter(@NotNull ListView lv, @NotNull List<Item> nodes) {
             super(lv, nodes);
         }
 
@@ -265,7 +260,7 @@ public class MainActivity extends BaseActivity {
                     private TextView tvUuid;
 
                     @Override
-                    public void setData(Item item, int position) {
+                    public void onBind(Item item, int position) {
                         iv.setVisibility(item.hasChild() ? View.VISIBLE : View.INVISIBLE);
                         iv.setBackgroundResource(item.isExpand() ? R.drawable.expand : R.drawable.fold);
                         tvUuid.setText(item.service.getUuid().toString());
@@ -273,7 +268,7 @@ public class MainActivity extends BaseActivity {
 
                     @NotNull
                     @Override
-                    protected View createConvertView() {
+                    public View createView() {
                         View view = View.inflate(MainActivity.this, R.layout.item_service, null);
                         iv = view.findViewById(R.id.ivIcon);
                         tvUuid = view.findViewById(R.id.tvUuid);
@@ -286,7 +281,7 @@ public class MainActivity extends BaseActivity {
                     private TextView tvProperty;
 
                     @Override
-                    public void setData(Item item, int i) {
+                    public void onBind(Item item, int i) {
                         tvUuid.setText(item.characteristic.getUuid().toString());
                         //获取权限列表
                         tvProperty.setText(getPropertiesString(item));
@@ -294,7 +289,7 @@ public class MainActivity extends BaseActivity {
 
                     @NotNull
                     @Override
-                    protected View createConvertView() {
+                    public View createView() {
                         View view = View.inflate(MainActivity.this, R.layout.item_characteristic, null);
                         tvUuid = view.findViewById(R.id.tvUuid);
                         tvProperty = view.findViewById(R.id.tvProperty);
@@ -349,5 +344,9 @@ public class MainActivity extends BaseActivity {
         boolean hasNotifyProperty;
         boolean hasWriteProperty;
         boolean hasReadProperty;
+
+        Item(int id, int pId, int level) {
+            super(id, pId, level);
+        }
     }
 }
