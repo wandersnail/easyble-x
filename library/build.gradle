@@ -2,11 +2,13 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'maven'
 
-def lib_version = '1.0.0'
+def lib_version = '1.0.1'
+def user_name = 'wandersnail'
 def lib_group = 'cn.wandersnail'
 def lib_artifact = 'easyble-x'
 def lib_packaging = 'aar'
 def lib_description = 'A framework for Android Bluetooth Low Energy (BLE)'
+def lib_website = 'https://github.com/wandersnail/easyble-x'
 group = lib_group
 version = lib_version
 
@@ -70,12 +72,12 @@ artifacts {
 
 publish {
     repoName = "androidx"//仓库名
-    userOrg = 'wandersnail' //bintray.com用户名  
+    userOrg = user_name //bintray.com用户名  
     groupId = lib_group //jcenter上的路径  
     artifactId = lib_artifact //项目名称  
     publishVersion = lib_version //版本号  
     desc = lib_description
-    website = 'https://github.com/wandersnail/easyble-x'
+    website = lib_website
 }
 
 if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUpload') }) {
@@ -92,13 +94,13 @@ if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUploa
                     artifactId lib_artifact
                     packaging lib_packaging
                     description lib_description
-                    url 'https://github.com/wandersnail'
                     version lib_version
+                    url lib_website
 
                     scm {
-                        url 'https://github.com/wandersnail/easyble-x'
-                        connection 'scm:git:https://github.com/wandersnail/easyble-x.git'
-                        developerConnection 'scm:git:https://github.com/wandersnail/easyble-x.git'
+                        url lib_website
+                        connection "scm:git:${lib_website}.git"
+                        developerConnection "scm:git:${lib_website}.git"
                     }
 
                     licenses {
@@ -110,7 +112,7 @@ if (project.getGradle().startParameter.taskNames.any { it.contains('bintrayUploa
 
                     developers {
                         developer {
-                            id 'wandersnail'
+                            id user_name
                             name 'Zeng Fansheng'
                             email 'bingmo977@qq.com'
                         }

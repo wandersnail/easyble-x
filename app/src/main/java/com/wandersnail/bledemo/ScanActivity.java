@@ -19,10 +19,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import com.snail.widget.listview.BaseListAdapter;
-import com.snail.widget.listview.BaseViewHolder;
-import com.snail.widget.listview.PullRefreshLayout;
-
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -33,6 +29,9 @@ import cn.wandersnail.ble.Device;
 import cn.wandersnail.ble.EasyBLE;
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.commons.helper.PermissionsRequester;
+import cn.wandersnail.widget.listview.BaseListAdapter;
+import cn.wandersnail.widget.listview.BaseViewHolder;
+import cn.wandersnail.widget.listview.PullRefreshLayout;
 
 /**
  * date: 2019/8/4 15:13
@@ -197,7 +196,7 @@ public class ScanActivity extends AppCompatActivity {
                 @NotNull
                 @Override
                 public View createView() {
-                    View view = View.inflate(getContext(), R.layout.item_scan, null);
+                    View view = View.inflate(context, R.layout.item_scan, null);
                     tvName = view.findViewById(R.id.tvName);
                     tvAddr = view.findViewById(R.id.tvAddr);
                     tvRssi = view.findViewById(R.id.tvRssi);
