@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="#fff">
 
-    <com.snail.widget.listview.PullRefreshLayout
+    <cn.wandersnail.widget.listview.PullRefreshLayout
         android:id="@+id/refreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -14,7 +14,7 @@
             android:id="@+id/lv"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
-    </com.snail.widget.listview.PullRefreshLayout>
+    </cn.wandersnail.widget.listview.PullRefreshLayout>
 
     <LinearLayout
         android:id="@+id/layoutEmpty"

@@ -85,7 +85,7 @@ public class EasyBLEBuilder {
     /**
      * 被观察者，消息发布者。
      * <br>如果观察者被设置，{@link #setMethodDefaultThreadMode(ThreadMode)}、
-     * {@link #setObserveAnnotationRequired(boolean)}将不起作用
+     * {@link #setObserveAnnotationRequired(boolean)}、{@link #setExecutorService(ExecutorService)}将不起作用
      */
     public EasyBLEBuilder setObservable(@NonNull Observable observable) {
         Inspector.requireNonNull(observable, "observable is null");

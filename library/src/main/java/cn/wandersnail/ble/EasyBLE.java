@@ -56,13 +56,19 @@ public class EasyBLE {
 
     EasyBLE(EasyBLEBuilder builder) {
         tryGetApplication();
-        executorService = builder.executorService;
         bondController = builder.bondController;
         deviceCreator = builder.deviceCreator == null ? new DefaultDeviceCreator() : builder.deviceCreator;
         scanConfiguration = builder.scanConfiguration == null ? new ScanConfiguration() : builder.scanConfiguration;
         logger = builder.logger == null ? new DefaultLogger("EasyBLE") : builder.logger;
-        posterDispatcher = new PosterDispatcher(executorService, builder.methodDefaultThreadMode);
-        observable = new Observable(posterDispatcher, builder.isObserveAnnotationRequired);        
+        if (builder.observable != null) {
+            observable = builder.observable;
+            posterDispatcher = observable.getPosterDispatcher();
+            executorService = posterDispatcher.getExecutorService();
+        } else {
+            executorService = builder.executorService;
+            posterDispatcher = new PosterDispatcher(executorService, builder.methodDefaultThreadMode);
+            observable = new Observable(posterDispatcher, builder.isObserveAnnotationRequired);
+        }    
     }
 
     /**
