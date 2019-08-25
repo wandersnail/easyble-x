@@ -46,12 +46,23 @@ public interface Connection {
     int TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES = 2;
 
     //-------------连接失败类型-------------------
+    /**
+     * 达到最大重连次数限制
+     */
     int CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION = 1;
-    int CONNECT_FAIL_TYPE_UNCONNECTABLE = 2;
+    /**
+     * 不支持连接
+     */
+    int CONNECT_FAIL_TYPE_CONNECTION_IS_UNSUPPORTED = 2;
 
     @NonNull
     Device getDevice();
 
+    /**
+     * 获取当前设置的最大传输单元
+     */
+    int getMtu();
+    
     /**
      * 重连
      */

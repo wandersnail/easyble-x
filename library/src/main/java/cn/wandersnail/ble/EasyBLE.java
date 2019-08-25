@@ -178,7 +178,7 @@ public class EasyBLE {
         if (isInitialized()) {
             return;
         }
-        Inspector.requireNonNull(application, "application is null");
+        Inspector.requireNonNull(application, "application can't be");
         this.application = application;
         //检查是否支持BLE
         if (!application.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -196,8 +196,7 @@ public class EasyBLE {
             IntentFilter filter = new IntentFilter();
             filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
             application.registerReceiver(broadcastReceiver, filter);
-        }
-        scanner = new Scanner(this, bluetoothAdapter);
+        }        
         isInitialized = true;
     }
 
@@ -291,10 +290,22 @@ public class EasyBLE {
         }
     }
     
+    //检查并实例化搜索器
+    private void checkAndInstanceScanner() {
+        if (scanner == null) {
+            synchronized (this) {
+                if (bluetoothAdapter != null && scanner == null) {
+                    scanner = new Scanner(this, bluetoothAdapter);
+                }
+            }
+        }        
+    }
+    
     /**
      * 添加搜索监听器
      */
     public void addScanListener(@NonNull ScanListener listener) {
+        checkAndInstanceScanner();
         if (checkStatus() && scanner != null) {
             scanner.addScanListener(listener);
         }
@@ -320,6 +331,7 @@ public class EasyBLE {
      * 搜索BLE设备
      */
     public void startScan() {
+        checkAndInstanceScanner();
         if (checkStatus() && scanner != null) {
             scanner.startScan(application);
         }
@@ -390,7 +402,7 @@ public class EasyBLE {
     public Connection connect(@NonNull String address, @Nullable ConnectionConfiguration configuration,
                               @Nullable EventObserver observer) {
         if (checkStatus()) {
-            Inspector.requireNonNull(address, "address is null");
+            Inspector.requireNonNull(address, "address can't be");
             BluetoothDevice remoteDevice = bluetoothAdapter.getRemoteDevice(address);
             if (remoteDevice != null) {
                 return connect(new Device(remoteDevice), configuration, observer);
@@ -446,7 +458,7 @@ public class EasyBLE {
     public synchronized Connection connect(@NonNull final Device device, @Nullable ConnectionConfiguration configuration,
                                            @Nullable final EventObserver observer) {
         if (checkStatus()) {
-            Inspector.requireNonNull(device, "device is null");
+            Inspector.requireNonNull(device, "device can't be");
             Connection connection = connectionMap.remove(device.getAddress());
             //如果连接已存在，先释放掉
             if (connection != null) {
@@ -469,9 +481,9 @@ public class EasyBLE {
                         device.getName(), device.getAddress());
                 logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, message);
                 if (observer != null) {
-                    posterDispatcher.post(observer, MethodInfoGenerator.onConnectFailed(device, Connection.CONNECT_FAIL_TYPE_UNCONNECTABLE));
+                    posterDispatcher.post(observer, MethodInfoGenerator.onConnectFailed(device, Connection.CONNECT_FAIL_TYPE_CONNECTION_IS_UNSUPPORTED));
                 }
-                observable.notifyObservers(MethodInfoGenerator.onConnectFailed(device, Connection.CONNECT_FAIL_TYPE_UNCONNECTABLE));
+                observable.notifyObservers(MethodInfoGenerator.onConnectFailed(device, Connection.CONNECT_FAIL_TYPE_CONNECTION_IS_UNSUPPORTED));
             }
         }
         return null;
