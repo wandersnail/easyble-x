@@ -4,17 +4,21 @@ import android.bluetooth.BluetoothDevice;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.util.Pair;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * date: 2019/8/3 17:06
  * author: zengfansheng
  */
-public class ConnectionConfiguration {    
+public class ConnectionConfiguration {
     /**
      * 无限重连
      */
@@ -30,15 +34,16 @@ public class ConnectionConfiguration {
     @RequiresApi(Build.VERSION_CODES.O)
     int phy = BluetoothDevice.PHY_LE_1M_MASK;
     @NonNull
-    final List<Pair<Integer, Integer>> scanIntervalPairsInAutoReonnection;
-    
+    final List<Pair<Integer, Integer>> scanIntervalPairsInAutoReconnection;
+    private final Map<String, WriteOptions> defaultWriteOptionsMap = new HashMap<>();
+
     public ConnectionConfiguration() {
-        scanIntervalPairsInAutoReonnection = new ArrayList<>();
-        scanIntervalPairsInAutoReonnection.add(Pair.create(0, 2000));
-        scanIntervalPairsInAutoReonnection.add(Pair.create(1, 5000));
-        scanIntervalPairsInAutoReonnection.add(Pair.create(3, 10000));
-        scanIntervalPairsInAutoReonnection.add(Pair.create(5, 30000));
-        scanIntervalPairsInAutoReonnection.add(Pair.create(10, 60000));
+        scanIntervalPairsInAutoReconnection = new ArrayList<>();
+        scanIntervalPairsInAutoReconnection.add(Pair.create(0, 2000));
+        scanIntervalPairsInAutoReconnection.add(Pair.create(1, 5000));
+        scanIntervalPairsInAutoReconnection.add(Pair.create(3, 10000));
+        scanIntervalPairsInAutoReconnection.add(Pair.create(5, 30000));
+        scanIntervalPairsInAutoReconnection.add(Pair.create(10, 60000));
     }
 
     /**
@@ -116,10 +121,30 @@ public class ConnectionConfiguration {
     /**
      * 自动重连时，搜索次数与间隔的对应关系，first：已尝试次数，second：间隔，单位为毫秒。如搜索了1次，间隔2秒，搜索了5次，间隔30秒等
      */
-    public ConnectionConfiguration setScanIntervalPairsInAutoReonnection(@NonNull List<Pair<Integer, Integer>> parameters) {
-        Inspector.requireNonNull(parameters, "parameters is null");
-        scanIntervalPairsInAutoReonnection.clear();
-        scanIntervalPairsInAutoReonnection.addAll(parameters);
+    public ConnectionConfiguration setScanIntervalPairsInAutoReconnection(@NonNull List<Pair<Integer, Integer>> parameters) {
+        Inspector.requireNonNull(parameters, "parameters can't be");
+        scanIntervalPairsInAutoReconnection.clear();
+        scanIntervalPairsInAutoReconnection.addAll(parameters);
         return this;
+    }
+
+    /**
+     * 设置默认的写特征配置
+     *
+     * @param service        特征所在的服务UUID
+     * @param characteristic 特征的UUID
+     * @param options        配置
+     */
+    public ConnectionConfiguration setDefaultWriteOptions(@NonNull UUID service, @NonNull UUID characteristic, @NonNull WriteOptions options) {
+        Inspector.requireNonNull(service, "service can't be");
+        Inspector.requireNonNull(characteristic, "characteristic can't be");
+        Inspector.requireNonNull(options, "options can't be");
+        defaultWriteOptionsMap.put(service + ":" + characteristic, options);
+        return this;
+    }
+    
+    @Nullable
+    WriteOptions getDefaultWriteOptions(@NonNull UUID service, @NonNull UUID characteristic) {
+        return defaultWriteOptionsMap.get(service + ":" + characteristic);
     }
 }

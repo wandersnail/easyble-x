@@ -109,9 +109,6 @@ public interface Request {
         }
 
         public Request build() {
-            if (type == RequestType.WRITE_CHARACTERISTIC && writeOptions == null) {
-                writeOptions = new WriteOptions.Builder().build();
-            }
             return new GenericRequest(this);
         }
     }
@@ -234,7 +231,7 @@ public interface Request {
      */
     static WriteCharacteristicBuilder getWriteCharacteristicBuilder(@NonNull UUID service, @NonNull UUID characteristic,
                                                                     @NonNull byte[] value) {
-        Inspector.requireNonNull(value, "value is null");
+        Inspector.requireNonNull(value, "value can't be");
         WriteCharacteristicBuilder builder = new WriteCharacteristicBuilder();
         builder.service = service;
         builder.characteristic = characteristic;

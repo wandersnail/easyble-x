@@ -73,7 +73,7 @@ public class ScanConfiguration {
      * {@link BluetoothLeScanner}的搜索设置
      */
     public ScanConfiguration setScanSettings(@NonNull ScanSettings scanSettings) {
-        Inspector.requireNonNull(scanSettings, "scanSettings is null");
+        Inspector.requireNonNull(scanSettings, "scanSettings can't be");
         this.scanSettings = scanSettings;
         return this;
     }

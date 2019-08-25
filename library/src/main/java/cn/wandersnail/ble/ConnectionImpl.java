@@ -80,6 +80,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private final PosterDispatcher posterDispatcher;
     private final BluetoothGattCallback gattCallback = new BleGattCallback();
     private final EasyBLE easyBle;
+    private int mtu = 20;
 
     ConnectionImpl(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration,
                    int connectDelay, EventObserver observer) {
@@ -273,6 +274,7 @@ class ConnectionImpl implements Connection, ScanListener {
             if (currentRequest != null) {
                 if (currentRequest.type == RequestType.CHANGE_MTU) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
+                        ConnectionImpl.this.mtu = mtu;
                         notifyMtuChanged(currentRequest, mtu);
                     } else {
                         handleGattStatusFailed();
@@ -518,7 +520,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private boolean canScanReconnect() {
         long duration = System.currentTimeMillis() - lastScanStopTime;
-        List<Pair<Integer, Integer>> parameters = configuration.scanIntervalPairsInAutoReonnection;
+        List<Pair<Integer, Integer>> parameters = configuration.scanIntervalPairsInAutoReconnection;
         Collections.sort(parameters, (o1, o2) -> {
             if (o1 == null || o1.first == null) return 1;
             if (o2 == null || o2.first == null) return -1;
@@ -1010,6 +1012,11 @@ class ConnectionImpl implements Connection, ScanListener {
         logD(Logger.TYPE_PHY_CHANGE, "%s [addr: %s, tvPhy: %s, rxPhy: %s]", event, device.address, txPhy, rxPhy);
     }
 
+    @Override
+    public int getMtu() {
+        return mtu;
+    }
+
     @NonNull
     @Override
     public Device getDevice() {
@@ -1169,7 +1176,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private void checkUuidExistsAndEnqueue(GenericRequest request, int uuidNum) {
         boolean exists = false;
         if (uuidNum > 2) {
-            exists = checkDescriptoreExists(request, request.service, request.characteristic, request.descriptor);
+            exists = checkDescriptorExists(request, request.service, request.characteristic, request.descriptor);
         } else if (uuidNum > 1) {
             exists = checkCharacteristicExists(request, request.service, request.characteristic);
         } else if (uuidNum == 1) {
@@ -1201,8 +1208,8 @@ class ConnectionImpl implements Connection, ScanListener {
         return false;
     }
 
-    //检查Descriptore是否存在
-    private boolean checkDescriptoreExists(GenericRequest request, UUID service, UUID characteristic, UUID descriptor) {
+    //检查Descriptor是否存在
+    private boolean checkDescriptorExists(GenericRequest request, UUID service, UUID characteristic, UUID descriptor) {
         if (checkServiceExists(request, service) && checkCharacteristicExists(request, service, characteristic)) {
             if (getDescriptor(service, characteristic, descriptor) == null) {
                 handleFailedCallback(request, REQUEST_FAIL_TYPE_DESCRIPTOR_NOT_EXIST, false);
@@ -1224,6 +1231,14 @@ class ConnectionImpl implements Connection, ScanListener {
                 case SET_INDICATION:
                 case READ_CHARACTERISTIC:
                 case WRITE_CHARACTERISTIC:
+                    if (req.type == RequestType.WRITE_CHARACTERISTIC && req.writeOptions == null) {
+                        //从默认配置中取
+                        req.writeOptions = configuration.getDefaultWriteOptions(req.service, req.characteristic);
+                        if (req.writeOptions == null) {
+                            //没有设置默认的，则新建
+                            req.writeOptions = new WriteOptions.Builder().build();
+                        }
+                    }
                     checkUuidExistsAndEnqueue(req, 2);
                     break;
                 case READ_DESCRIPTOR:
@@ -1238,7 +1253,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     @Override
     public boolean isNotificationOrIndicationEnabled(@NonNull BluetoothGattCharacteristic characteristic) {
-        Inspector.requireNonNull(characteristic, "characteristic is null");
+        Inspector.requireNonNull(characteristic, "characteristic can't be");
         BluetoothGattDescriptor descriptor = characteristic.getDescriptor(clientCharacteristicConfig);
         return descriptor != null && (Arrays.equals(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) ||
                 Arrays.equals(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_INDICATION_VALUE));
