@@ -80,7 +80,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private final PosterDispatcher posterDispatcher;
     private final BluetoothGattCallback gattCallback = new BleGattCallback();
     private final EasyBLE easyBle;
-    private int mtu = 20;
+    private int mtu = 23;
 
     ConnectionImpl(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration,
                    int connectDelay, EventObserver observer) {
