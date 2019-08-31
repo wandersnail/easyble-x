@@ -15,7 +15,7 @@
 - 支持请求延时及发送延时设置
 - 支持分包大小设置、最大传输单元设置
 - 支持观察者监听或回调方式。注意：观察者监听和回调只能取其一！
-- 支持使用注解@RunOn控制回调线程，使用注解@Observe控制观察者的方法执行线程
+- 支持使用注解@RunOn控制回调线程
 - 支持设置回调或观察者的方法默认执行线程
 - 支持发送设置（是否等待发送结果回调再发送下一包）
 - 支持写入模式设置
@@ -55,11 +55,11 @@ dependencies {
 	...
 	implementation 'cn.wandersnail:easyble-x:latestVersion'
 	//额外三个依赖
-	implementation 'cn.wandersnail:common-utils:latestVersion'
-	implementation 'cn.wandersnail:common-observer:latestVersion'
-	implementation 'cn.wandersnail:common-poster:latestVersion'
+	implementation 'cn.wandersnail:common-utils:1.0.2'
+	implementation 'cn.wandersnail:common-observer:1.0.2'
+	implementation 'cn.wandersnail:common-poster:1.0.4'
 	//也可以使用
-	//implementation 'cn.wandersnail:common-full:latestVersion'//此依赖包含上面三个
+	//implementation 'cn.wandersnail:common-full:1.0.3'//此依赖包含上面三个
 }
 ```
 
@@ -179,9 +179,11 @@ EasyBLE.getInstance().removeScanListener(scanListener);
 ```
 public class MainActivity extends AppCompatActivity implements EventObserver {
     /**
-     * 使用{@link Observe}确定要接收消息，并在主线程执行方法
+     * 使用{@link Observe}确定要接收消息，{@link RunOn}指定在主线程执行方法，设置{@link Tag}防混淆后找不到方法
      */
-    @Observe(ThreadMode.MAIN)
+    @Tag("onConnectionStateChanged") 
+    @Observe
+    @RunOn(ThreadMode.MAIN)
     @Override
     public void onConnectionStateChanged(@NonNull Device device) {
         switch (device.getConnectionState()) {

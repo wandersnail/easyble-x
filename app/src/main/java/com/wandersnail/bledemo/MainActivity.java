@@ -37,6 +37,7 @@ import cn.wandersnail.ble.callback.NotificationChangeCallback;
 import cn.wandersnail.ble.callback.ReadCharacteristicCallback;
 import cn.wandersnail.commons.observer.Observe;
 import cn.wandersnail.commons.poster.RunOn;
+import cn.wandersnail.commons.poster.Tag;
 import cn.wandersnail.commons.poster.ThreadMode;
 import cn.wandersnail.commons.util.StringUtils;
 import cn.wandersnail.commons.util.ToastUtils;
@@ -85,9 +86,11 @@ public class MainActivity extends BaseActivity {
     }
 
     /**
-     * 使用{@link Observe}确定要接收消息，并在主线程执行方法
+     * 使用{@link Observe}确定要接收消息，{@link RunOn}指定在主线程执行方法，设置{@link Tag}防混淆后找不到方法
      */
-    @Observe(ThreadMode.MAIN)
+    @Tag("onConnectionStateChanged")
+    @Observe
+    @RunOn(ThreadMode.MAIN)
     @Override
     public void onConnectionStateChanged(@NonNull Device device) {
         Log.d("EasyBLE", "主线程：" + (Looper.getMainLooper() == Looper.myLooper()) + ", 连接状态：" + device.getConnectionState());
