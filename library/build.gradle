@@ -39,9 +39,9 @@ android {
 
 dependencies {
     compileOnly 'androidx.appcompat:appcompat:1.0.2'
-    compileOnly 'cn.wandersnail:common-utils:1.0.1'
-    compileOnly 'cn.wandersnail:common-observer:1.0.1'
-    compileOnly 'cn.wandersnail:common-poster:1.0.1'
+    compileOnly 'cn.wandersnail:common-utils:1.0.2'
+    compileOnly 'cn.wandersnail:common-observer:1.0.2'
+    compileOnly 'cn.wandersnail:common-poster:1.0.4'
 }
 
 task sourcesJar(type: Jar) {
