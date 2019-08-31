@@ -331,10 +331,15 @@ connection.execute(builder.build());
 EasyBLE.getInstance().release();
 ```
 
+### 代码混淆
+-keep class * cn.wandersnail.commons.observer.Observe {
+	public <methods>;
+}
+
 ## Demo效果预览
-![image](https://github.com/wandersnail/easyble2/blob/master/screenshot/preview.gif)
-![image](https://github.com/wandersnail/easyble2/blob/master/screenshot/20190804220341.png)
-![image](https://github.com/wandersnail/easyble2/blob/master/screenshot/20190804220312.png)
+![image](https://github.com/wandersnail/easyble-x/blob/master/screenshot/preview.gif)
+![image](https://github.com/wandersnail/easyble-x/blob/master/screenshot/20190804220341.png)
+![image](https://github.com/wandersnail/easyble-x/blob/master/screenshot/20190804220312.png)
 
 ## 基于此库的BLE调试app
 [![](https://img.shields.io/badge/Download-App%20Store-yellow.svg)](http://app.mi.com/details?id=cn.zfs.bledebugger)
