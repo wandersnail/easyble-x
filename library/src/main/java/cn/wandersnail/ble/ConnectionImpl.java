@@ -134,6 +134,8 @@ class ConnectionImpl implements Connection, ScanListener {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (!isReleased) {
                 Message.obtain(connHandler, MSG_ON_CONNECTION_STATE_CHANGE, status, newState).sendToTarget();
+            } else {
+                closeGatt(gatt);
             }
         }
 
@@ -141,6 +143,8 @@ class ConnectionImpl implements Connection, ScanListener {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (!isReleased) {
                 Message.obtain(connHandler, MSG_ON_SERVICES_DISCOVERED, status, 0).sendToTarget();
+            } else {
+                closeGatt(gatt);
             }
         }
 
@@ -594,10 +598,10 @@ class ConnectionImpl implements Connection, ScanListener {
         if (descriptor == null) {
             return true;
         }
-        byte[] oriaValue = descriptor.getValue();
+        byte[] originValue = descriptor.getValue();
         if (currentRequest != null) {
             if (currentRequest.type == RequestType.SET_NOTIFICATION || currentRequest.type == RequestType.SET_INDICATION) {
-                currentRequest.descriptorTemp = oriaValue;
+                currentRequest.descriptorTemp = originValue;
             }
         }
         if (enable) {
@@ -616,7 +620,7 @@ class ConnectionImpl implements Connection, ScanListener {
         boolean result = bluetoothGatt.writeDescriptor(descriptor);
         if (!enable) {
             //还原原始值
-            descriptor.setValue(oriaValue);
+            descriptor.setValue(originValue);
         }
         characteristic.setWriteType(writeType);
         return !result;
@@ -657,8 +661,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     case MSG_REFRESH://手动刷新
                         connection.doRefresh(false);
                         break;
-                    case MSG_RELEASE_CONNECTION://释放连接
-                        connection.configuration.setAutoReconnect(false); //停止自动重连
+                    case MSG_RELEASE_CONNECTION://释放连接                        
                         connection.doDisconnect(false, msg.arg1 == MSG_ARG_NOTIFY, msg.arg2 == MSG_ARG_RELEASE);
                         break;
                     case MSG_TIMER://定时器
@@ -670,12 +673,10 @@ class ConnectionImpl implements Connection, ScanListener {
                         if (connection.bluetoothAdapter.isEnabled()) {
                             if (msg.what == MSG_DISCOVER_SERVICES) {
                                 connection.doDiscoverServices();
+                            } else if (msg.what == MSG_ON_SERVICES_DISCOVERED) {
+                                connection.doOnServicesDiscovered(msg.arg1);
                             } else {
-                                if (msg.what == MSG_ON_SERVICES_DISCOVERED) {
-                                    connection.doOnServicesDiscovered(msg.arg1);
-                                } else {
-                                    connection.doOnConnectionStateChange(msg.arg1, msg.arg2);
-                                }
+                                connection.doOnConnectionStateChange(msg.arg1, msg.arg2);
                             }
                         }
                         break;
@@ -1064,14 +1065,24 @@ class ConnectionImpl implements Connection, ScanListener {
         clearRequestQueueAndNotify();
     }
 
+    private void release(boolean noEvent) {
+        configuration.setAutoReconnect(false); //停止自动重连
+        connHandler.removeMessages(MSG_TIMER);//停止定时
+        Message msg = Message.obtain(connHandler);
+        msg.what = MSG_RELEASE_CONNECTION;
+        msg.arg1 = noEvent ? MSG_ARG_NONE : MSG_ARG_NOTIFY;
+        msg.arg2 = MSG_ARG_RELEASE;
+        msg.sendToTarget();
+    }
+    
     @Override
     public void release() {
-        Message.obtain(connHandler, MSG_RELEASE_CONNECTION, MSG_ARG_NOTIFY, MSG_ARG_RELEASE).sendToTarget();
+        release(false);
     }
 
     @Override
     public void releaseNoEvent() {
-        Message.obtain(connHandler, MSG_RELEASE_CONNECTION, MSG_ARG_NONE, MSG_ARG_RELEASE).sendToTarget();
+        release(true);
     }
 
     @NonNull
