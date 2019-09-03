@@ -332,7 +332,7 @@ EasyBLE.getInstance().release();
 ```
 
 ### 代码混淆
--keep class * cn.wandersnail.commons.observer.Observe {
+-keep class * implements cn.wandersnail.commons.observer.Observe {
 	public <methods>;
 }
 
