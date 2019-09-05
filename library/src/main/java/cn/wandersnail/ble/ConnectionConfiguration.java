@@ -23,7 +23,7 @@ public class ConnectionConfiguration {
      * 无限重连
      */
     public static final int TRY_RECONNECT_TIMES_INFINITE = -1;
-    int discoverServicesDelayMillis = 500;
+    int discoverServicesDelayMillis = 600;
     int connectTimeoutMillis = 10000;
     int requestTimeoutMillis = 3000;
     int tryReconnectMaxTimes = TRY_RECONNECT_TIMES_INFINITE;
