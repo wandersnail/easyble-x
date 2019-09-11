@@ -16,10 +16,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 
 import cn.wandersnail.ble.callback.ScanListener;
@@ -49,6 +53,9 @@ public class EasyBLE {
     private BluetoothAdapter bluetoothAdapter;
     private BroadcastReceiver broadcastReceiver;
     private final Map<String, Connection> connectionMap = new ConcurrentHashMap<>();
+    //已连接的设备MAC地址集合
+    private final List<String> addressList = new CopyOnWriteArrayList<>();
+    private final boolean internalObservable;
 
     private EasyBLE() {
         this(DEFAULT_BUILDER);
@@ -61,10 +68,12 @@ public class EasyBLE {
         scanConfiguration = builder.scanConfiguration == null ? new ScanConfiguration() : builder.scanConfiguration;
         logger = builder.logger == null ? new DefaultLogger("EasyBLE") : builder.logger;
         if (builder.observable != null) {
+            internalObservable = false;
             observable = builder.observable;
             posterDispatcher = observable.getPosterDispatcher();
             executorService = posterDispatcher.getExecutorService();
         } else {
+            internalObservable = true;
             executorService = builder.executorService;
             posterDispatcher = new PosterDispatcher(executorService, builder.methodDefaultThreadMode);
             observable = new Observable(posterDispatcher, builder.isObserveAnnotationRequired);
@@ -242,8 +251,10 @@ public class EasyBLE {
             scanner.release();
         }
         releaseAllConnections();
-        observable.unregisterAll();
-        posterDispatcher.clearTasks();
+        if (internalObservable) {
+            observable.unregisterAll();
+            posterDispatcher.clearTasks();
+        }
     }
 
     /**
@@ -475,6 +486,7 @@ public class EasyBLE {
                 }
                 connection = new ConnectionImpl(this, bluetoothAdapter, device, configuration, connectDelay, observer);
                 connectionMap.put(device.address, connection);
+                addressList.add(device.address);
                 return connection;
             } else {
                 String message = String.format(Locale.US, "connect failed! [type: unconnectable, name: %s, addr: %s]",
@@ -487,6 +499,45 @@ public class EasyBLE {
             }
         }
         return null;
+    }
+
+    /**
+     * 获取所有连接，无序的
+     */
+    @NonNull
+    public Collection<Connection> getConnections() {
+        return connectionMap.values();
+    }
+
+    /**
+     * 获取所有连接，有序的
+     */
+    @NonNull
+    public List<Connection> getOrderedConnections() {
+        List<Connection> list = new ArrayList<>();
+        for (String address : addressList) {
+            Connection connection = connectionMap.get(address);
+            if (connection != null) {
+                list.add(connection);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * 获取第一个连接
+     */
+    @Nullable
+    public Connection getFirstConnection() {
+        return addressList.isEmpty() ? null : connectionMap.get(addressList.get(0));
+    }
+
+    /**
+     * 获取最后一个连接
+     */
+    @Nullable
+    public Connection getLastConnection() {
+        return addressList.isEmpty() ? null : connectionMap.get(addressList.get(addressList.size() - 1));
     }
 
     @Nullable
@@ -504,7 +555,7 @@ public class EasyBLE {
      */
     public void disconnectConnection(Device device) {
         if (checkStatus() && device != null) {
-            Connection connection = connectionMap.remove(device.getAddress());
+            Connection connection = connectionMap.get(device.getAddress());
             if (connection != null) {
                 connection.disconnect();
             }
@@ -516,7 +567,7 @@ public class EasyBLE {
      */
     public void disconnectConnection(String address) {
         if (checkStatus() && address != null) {
-            Connection connection = connectionMap.remove(address);
+            Connection connection = connectionMap.get(address);
             if (connection != null) {
                 connection.disconnect();
             }
@@ -543,6 +594,7 @@ public class EasyBLE {
                 connection.release();
             }
             connectionMap.clear();
+            addressList.clear();
         }
     }
 
@@ -551,6 +603,7 @@ public class EasyBLE {
      */
     public void releaseConnection(String address) {
         if (checkStatus() && address != null) {
+            addressList.remove(address);
             Connection connection = connectionMap.remove(address);
             if (connection != null) {
                 connection.release();
@@ -563,6 +616,7 @@ public class EasyBLE {
      */
     public void releaseConnection(Device device) {
         if (checkStatus() && device != null) {
+            addressList.remove(device.getAddress());
             Connection connection = connectionMap.remove(device.getAddress());
             if (connection != null) {
                 connection.release();

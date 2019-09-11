@@ -81,6 +81,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private final BluetoothGattCallback gattCallback = new BleGattCallback();
     private final EasyBLE easyBle;
     private int mtu = 23;
+    private boolean isReleasing;
 
     ConnectionImpl(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration,
                    int connectDelay, EventObserver observer) {
@@ -1060,19 +1061,24 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private void finalRelease() {
         isReleased = true;
+        isReleasing = false;
         connHandler.removeCallbacksAndMessages(null);
         easyBle.removeScanListener(this);
         clearRequestQueueAndNotify();
     }
 
     private void release(boolean noEvent) {
-        configuration.setAutoReconnect(false); //停止自动重连
-        connHandler.removeMessages(MSG_TIMER);//停止定时
-        Message msg = Message.obtain(connHandler);
-        msg.what = MSG_RELEASE_CONNECTION;
-        msg.arg1 = noEvent ? MSG_ARG_NONE : MSG_ARG_NOTIFY;
-        msg.arg2 = MSG_ARG_RELEASE;
-        msg.sendToTarget();
+        if (!isReleased && !isReleasing) {
+            isReleasing = true;
+            configuration.setAutoReconnect(false); //停止自动重连
+            connHandler.removeMessages(MSG_TIMER);//停止定时
+            Message msg = Message.obtain(connHandler);
+            msg.what = MSG_RELEASE_CONNECTION;
+            msg.arg1 = noEvent ? MSG_ARG_NONE : MSG_ARG_NOTIFY;
+            msg.arg2 = MSG_ARG_RELEASE;
+            msg.sendToTarget();
+            easyBle.releaseConnection(device);//从集合中删除
+        }
     }
     
     @Override
