@@ -362,7 +362,7 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     private void doTimer() {
-        if (!isReleased) {
+        if (!isReleased && !isReleasing) {
             //只处理不是已发现服务并且不在刷新也不是主动断开连接的
             if (device.connectionState != ConnectionState.SERVICE_DISCOVERED && !refreshing && !isActiveDisconnect) {
                 if (device.connectionState != ConnectionState.DISCONNECTED) {
@@ -454,7 +454,7 @@ class ConnectionImpl implements Connection, ScanListener {
             device.connectionState = ConnectionState.RELEASED;
             logD(Logger.TYPE_CONNECTION_STATE, "connection released! [name: %s, addr: %s]", device.name, device.address);
             finalRelease();
-        } else if (reconnect) {
+        } else if (reconnect && !isReleasing && !isReleased) {
             if (reconnectImmediatelyCount < configuration.reconnectImmediatelyMaxTimes) {
                 tryReconnectCount++;
                 reconnectImmediatelyCount++;
@@ -1068,6 +1068,9 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     private void release(boolean noEvent) {
+        if (bluetoothGatt != null) {
+            closeGatt(bluetoothGatt);
+        }
         if (!isReleased && !isReleasing) {
             isReleasing = true;
             configuration.setAutoReconnect(false); //停止自动重连
