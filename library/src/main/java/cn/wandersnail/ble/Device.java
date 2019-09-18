@@ -19,6 +19,7 @@ import java.util.Objects;
  */
 public class Device implements Comparable<Device>, Cloneable, Parcelable {
     private final BluetoothDevice originDevice;
+    ConnectionState connectionState = ConnectionState.DISCONNECTED;
     @Nullable
     ScanResult scanResult;
     @NonNull
@@ -26,8 +27,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     @NonNull
     final String address;
     int rssi;
-    @NonNull
-    ConnectionState connectionState = ConnectionState.DISCONNECTED;
+    
 
     public Device(@NonNull BluetoothDevice originDevice) {
         this.originDevice = originDevice;
@@ -69,7 +69,8 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     @NonNull
     public ConnectionState getConnectionState() {
-        return connectionState;
+        Connection connection = EasyBLE.getInstance().getConnection(this);
+        return connection == null ? connectionState : connection.getConnectionState();
     }
 
     @Nullable
@@ -86,22 +87,24 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
      * 是否已连接并成功发现服务
      */
     public boolean isConnected() {
-        return connectionState == ConnectionState.SERVICE_DISCOVERED;
+        return getConnectionState() == ConnectionState.SERVICE_DISCOVERED;
     }
 
     /**
      * 是否已断开连接
      */
     public boolean isDisconnected() {
-        return connectionState == ConnectionState.DISCONNECTED || connectionState == ConnectionState.RELEASED;
+        ConnectionState state = getConnectionState();
+        return state == ConnectionState.DISCONNECTED || state == ConnectionState.RELEASED;
     }
 
     /**
      * 是否正在连接
      */
     public boolean isConnecting() {
-        return connectionState != ConnectionState.DISCONNECTED && connectionState != ConnectionState.SERVICE_DISCOVERED &&
-                connectionState != ConnectionState.RELEASED;
+        ConnectionState state = getConnectionState();
+        return state != ConnectionState.DISCONNECTED && state != ConnectionState.SERVICE_DISCOVERED &&
+                state != ConnectionState.RELEASED;
     }
 
     @Override

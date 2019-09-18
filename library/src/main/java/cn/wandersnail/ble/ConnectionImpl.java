@@ -47,15 +47,12 @@ class ConnectionImpl implements Connection, ScanListener {
     private static final int MSG_DISCONNECT = 2;
     private static final int MSG_REFRESH = 3;
     private static final int MSG_TIMER = 4;
-    private static final int MSG_RELEASE_CONNECTION = 5;
     private static final int MSG_DISCOVER_SERVICES = 6;
     private static final int MSG_ON_CONNECTION_STATE_CHANGE = 7;
     private static final int MSG_ON_SERVICES_DISCOVERED = 8;
 
     private static final int MSG_ARG_NONE = 0;
     private static final int MSG_ARG_RECONNECT = 1;
-    private static final int MSG_ARG_NOTIFY = 2;
-    private static final int MSG_ARG_RELEASE = 3;
 
     private final BluetoothAdapter bluetoothAdapter;
     private final Device device;
@@ -81,7 +78,6 @@ class ConnectionImpl implements Connection, ScanListener {
     private final BluetoothGattCallback gattCallback = new BleGattCallback();
     private final EasyBLE easyBle;
     private int mtu = 23;
-    private boolean isReleasing;
 
     ConnectionImpl(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration,
                    int connectDelay, EventObserver observer) {
@@ -362,7 +358,7 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     private void doTimer() {
-        if (!isReleased && !isReleasing) {
+        if (!isReleased) {
             //只处理不是已发现服务并且不在刷新也不是主动断开连接的
             if (device.connectionState != ConnectionState.SERVICE_DISCOVERED && !refreshing && !isActiveDisconnect) {
                 if (device.connectionState != ConnectionState.DISCONNECTED) {
@@ -388,9 +384,9 @@ class ConnectionImpl implements Connection, ScanListener {
                         }
                         boolean infinite = configuration.tryReconnectMaxTimes == ConnectionConfiguration.TRY_RECONNECT_TIMES_INFINITE;
                         if (configuration.isAutoReconnect && (infinite || tryReconnectCount < configuration.connectTimeoutMillis)) {
-                            doDisconnect(true, true, false);
+                            doDisconnect(true);
                         } else {
-                            doDisconnect(false, true, false);
+                            doDisconnect(false);
                             if (observer != null) {
                                 posterDispatcher.post(observer, MethodInfoGenerator.onConnectFailed(device, CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION));
                             }
@@ -400,7 +396,7 @@ class ConnectionImpl implements Connection, ScanListener {
                         }
                     }
                 } else if (configuration.isAutoReconnect) {
-                    doDisconnect(true, true, false);
+                    doDisconnect(true);
                 }
             }
             connHandler.sendEmptyMessageDelayed(MSG_TIMER, 500);
@@ -438,10 +434,8 @@ class ConnectionImpl implements Connection, ScanListener {
      * 处理断开
      *
      * @param reconnect 断开后是否重连
-     * @param notify    是否回调和通知观察者
-     * @param release   是否是释放
      */
-    private void doDisconnect(boolean reconnect, boolean notify, boolean release) {
+    private void doDisconnect(boolean reconnect) {
         clearRequestQueueAndNotify();
         connHandler.removeCallbacks(connectRunnable);
         connHandler.removeMessages(MSG_DISCOVER_SERVICES);
@@ -450,11 +444,7 @@ class ConnectionImpl implements Connection, ScanListener {
             bluetoothGatt = null;
         }
         device.connectionState = ConnectionState.DISCONNECTED;
-        if (release) {
-            device.connectionState = ConnectionState.RELEASED;
-            logD(Logger.TYPE_CONNECTION_STATE, "connection released! [name: %s, addr: %s]", device.name, device.address);
-            finalRelease();
-        } else if (reconnect && !isReleasing && !isReleased) {
+        if (reconnect && !isReleased) {
             if (reconnectImmediatelyCount < configuration.reconnectImmediatelyMaxTimes) {
                 tryReconnectCount++;
                 reconnectImmediatelyCount++;
@@ -464,9 +454,7 @@ class ConnectionImpl implements Connection, ScanListener {
                 tryScanReconnect();
             }
         }
-        if (notify) {
-            sendConnectionCallback();
-        }
+        sendConnectionCallback();
     }
 
     private void doClearTaskAndRefresh() {
@@ -657,13 +645,10 @@ class ConnectionImpl implements Connection, ScanListener {
                         break;
                     case MSG_DISCONNECT://断开
                         boolean reconnect = msg.arg1 == MSG_ARG_RECONNECT && connection.bluetoothAdapter.isEnabled();
-                        connection.doDisconnect(reconnect, true, false);
+                        connection.doDisconnect(reconnect);
                         break;
                     case MSG_REFRESH://手动刷新
                         connection.doRefresh(false);
-                        break;
-                    case MSG_RELEASE_CONNECTION://释放连接                        
-                        connection.doDisconnect(false, msg.arg1 == MSG_ARG_NOTIFY, msg.arg2 == MSG_ARG_RELEASE);
                         break;
                     case MSG_TIMER://定时器
                         connection.doTimer();
@@ -1059,27 +1044,22 @@ class ConnectionImpl implements Connection, ScanListener {
         connHandler.sendEmptyMessage(MSG_REFRESH);
     }
 
-    private void finalRelease() {
-        isReleased = true;
-        isReleasing = false;
-        connHandler.removeCallbacksAndMessages(null);
-        easyBle.removeScanListener(this);
-        clearRequestQueueAndNotify();
-    }
-
-    private void release(boolean noEvent) {
-        if (bluetoothGatt != null) {
-            closeGatt(bluetoothGatt);
-        }
-        if (!isReleased && !isReleasing) {
-            isReleasing = true;
+    private void release(boolean noEvent) {  
+        if (!isReleased) {
+            isReleased = true;
             configuration.setAutoReconnect(false); //停止自动重连
-            connHandler.removeMessages(MSG_TIMER);//停止定时
-            Message msg = Message.obtain(connHandler);
-            msg.what = MSG_RELEASE_CONNECTION;
-            msg.arg1 = noEvent ? MSG_ARG_NONE : MSG_ARG_NOTIFY;
-            msg.arg2 = MSG_ARG_RELEASE;
-            msg.sendToTarget();
+            connHandler.removeCallbacksAndMessages(null);
+            easyBle.removeScanListener(this);
+            clearRequestQueueAndNotify();
+            if (bluetoothGatt != null) {
+                closeGatt(bluetoothGatt);
+                bluetoothGatt = null;
+            }
+            device.connectionState = ConnectionState.RELEASED;
+            logD(Logger.TYPE_CONNECTION_STATE, "connection released! [name: %s, addr: %s]", device.name, device.address);
+            if (!noEvent) {
+                sendConnectionCallback();
+            }
             easyBle.releaseConnection(device);//从集合中删除
         }
     }
