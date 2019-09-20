@@ -31,7 +31,10 @@ import cn.wandersnail.ble.Device;
 import cn.wandersnail.ble.EasyBLE;
 import cn.wandersnail.ble.EasyBLEBuilder;
 import cn.wandersnail.ble.Request;
+import cn.wandersnail.ble.RequestBuilder;
+import cn.wandersnail.ble.RequestBuilderFactory;
 import cn.wandersnail.ble.RequestType;
+import cn.wandersnail.ble.WriteCharacteristicBuilder;
 import cn.wandersnail.ble.WriteOptions;
 import cn.wandersnail.ble.callback.NotificationChangeCallback;
 import cn.wandersnail.ble.callback.ReadCharacteristicCallback;
@@ -201,7 +204,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void writeCharacteristic(@NotNull Item item) {
-        Request.WriteCharacteristicBuilder builder = Request.getWriteCharacteristicBuilder(item.service.getUuid(), 
+        WriteCharacteristicBuilder builder = new RequestBuilderFactory().getWriteCharacteristicBuilder(item.service.getUuid(), 
                 item.characteristic.getUuid(), ("Multi-pass deformation also shows that in high-temperature rolling process, " +
                         "the material will be softened as a result of the recovery and recrystallization, " +
                         "so the rolling force is reduced and the time interval of the passes of rough rolling should be longer.").getBytes());
@@ -218,7 +221,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void readCharacteristic(@NotNull Item item) {
-        Request.Builder<ReadCharacteristicCallback> builder = Request.getReadCharacteristicBuilder(item.service.getUuid(), item.characteristic.getUuid());
+        RequestBuilder<ReadCharacteristicCallback> builder = new RequestBuilderFactory().getReadCharacteristicBuilder(item.service.getUuid(), item.characteristic.getUuid());
         builder.setTag(UUID.randomUUID().toString());
         builder.setPriority(Integer.MAX_VALUE);//设置请求优先级
         //设置了回调则观察者不会收到此次请求的结果消息
@@ -242,7 +245,7 @@ public class MainActivity extends BaseActivity {
 
     private void setNotification(@NotNull Item item) {
         boolean isEnabled = connection.isNotificationOrIndicationEnabled(item.service.getUuid(), item.characteristic.getUuid());
-        Request.Builder<NotificationChangeCallback> builder = Request.getSetNotificationBuilder(item.service.getUuid(), item.characteristic.getUuid(), !isEnabled);
+        RequestBuilder<NotificationChangeCallback> builder = new RequestBuilderFactory().getSetNotificationBuilder(item.service.getUuid(), item.characteristic.getUuid(), !isEnabled);
         //不设置回调，使用观察者模式接收结果
         builder.build().execute(connection);
     }
