@@ -42,7 +42,7 @@ class Scanner {
     private final BluetoothAdapter bluetoothAdapter;
     private final Handler mainHandler;
     private boolean isScanning;
-    private final BluetoothLeScanner bleScanner;
+    private BluetoothLeScanner bleScanner;
     private final List<ScanListener> scanListeners = new ArrayList<>();
     private final SparseArray<BluetoothProfile> proxyBluetoothProfiles = new SparseArray<>();
     private final Logger logger;
@@ -53,10 +53,17 @@ class Scanner {
         this.configuration = easyBle.scanConfiguration;
         mainHandler = new Handler(Looper.getMainLooper());
         logger = easyBle.getLogger();
-        deviceCreator = easyBle.getDeviceCreator();
-        bleScanner = bluetoothAdapter.getBluetoothLeScanner();
+        deviceCreator = easyBle.getDeviceCreator();        
     }
 
+    private BluetoothLeScanner getLeScanner() {
+        if (bleScanner == null) {
+            //如果蓝牙未开启的时候，获取到是null
+            bleScanner = bluetoothAdapter.getBluetoothLeScanner();
+        }
+        return bleScanner;
+    }
+    
     synchronized void addScanListener(@NonNull ScanListener listener) {
         if (!scanListeners.contains(listener)) {
             scanListeners.add(listener);
@@ -196,7 +203,7 @@ class Scanner {
 
     void startScan(Context context) {
         synchronized (this) {
-            if (!bluetoothAdapter.isEnabled() || isScanning) {
+            if (!bluetoothAdapter.isEnabled() || isScanning || getLeScanner() == null) {
                 return;
             }
             if (!isLocationEnabled(context)) {
@@ -230,7 +237,9 @@ class Scanner {
             }
         }
         proxyBluetoothProfiles.clear();
-        bleScanner.stopScan(scanCallback);
+        if (bleScanner != null) {
+            bleScanner.stopScan(scanCallback);
+        }
         if (!bluetoothAdapter.isEnabled()) return;
         if (isScanning) {
             isScanning = false;
