@@ -29,7 +29,7 @@ class GenericRequest implements Request, Comparable<GenericRequest> {
     byte[] sendingBytes;
     //--------------------------------
 
-    GenericRequest(Builder builder) {
+    GenericRequest(RequestBuilder builder) {
         tag = builder.tag;
         type = builder.type;
         service = builder.service;
