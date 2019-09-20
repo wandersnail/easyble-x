@@ -166,7 +166,9 @@ public class EasyBLE {
                     if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) { //蓝牙关闭
                         logger.log(Log.DEBUG, Logger.TYPE_GENERAL, "蓝牙关闭了");
                         //通知搜索器
-                        scanner.onBluetoothOff();
+                        if (scanner != null) {
+                            scanner.onBluetoothOff();
+                        }
                         //断开所有连接
                         disconnectAllConnections();
                     } else if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_ON) {
