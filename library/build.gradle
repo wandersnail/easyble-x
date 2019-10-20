@@ -15,7 +15,7 @@ version = lib_version
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
+        minSdkVersion 19
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "$lib_version"
@@ -39,9 +39,9 @@ android {
 
 dependencies {
     compileOnly 'androidx.appcompat:appcompat:1.1.0'
-    compileOnly 'cn.wandersnail:common-utils:1.0.5'
-    compileOnly 'cn.wandersnail:common-observer:1.0.5'
-    compileOnly 'cn.wandersnail:common-poster:1.0.5'
+    compileOnly 'cn.wandersnail:common-utils:1.0.6'
+    compileOnly 'cn.wandersnail:common-observer:1.0.6'
+    compileOnly 'cn.wandersnail:common-poster:1.0.6'
 }
 
 task sourcesJar(type: Jar) {

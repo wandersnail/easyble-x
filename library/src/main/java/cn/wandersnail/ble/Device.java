@@ -8,6 +8,7 @@ import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import java.util.Objects;
 
@@ -20,8 +21,11 @@ import java.util.Objects;
 public class Device implements Comparable<Device>, Cloneable, Parcelable {
     private final BluetoothDevice originDevice;
     ConnectionState connectionState = ConnectionState.DISCONNECTED;
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @Nullable
     ScanResult scanResult;
+    @Nullable
+    byte[] scanRecord;
     @NonNull
     String name;
     @NonNull
@@ -40,9 +44,15 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         return originDevice;
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @Nullable
     public ScanResult getScanResult() {
         return scanResult;
+    }
+
+    @Nullable
+    public byte[] getScanRecord() {
+        return scanRecord;
     }
 
     public void setRssi(int rssi) {
@@ -75,9 +85,11 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     @Nullable
     public Boolean isConnectable() {
-        if (scanResult != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                return scanResult.isConnectable();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (scanResult != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    return scanResult.isConnectable();
+                }
             }
         }
         return null;
@@ -154,7 +166,10 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeParcelable(this.originDevice, flags);
-        dest.writeParcelable(this.scanResult, flags);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            dest.writeParcelable(this.scanResult, flags);
+        }
+        dest.writeByteArray(this.scanRecord);
         dest.writeString(this.name);
         dest.writeString(this.address);
         dest.writeInt(this.rssi);
@@ -168,7 +183,10 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     protected Device(Parcel in) {
         this.originDevice = in.readParcelable(BluetoothDevice.class.getClassLoader());
-        this.scanResult = in.readParcelable(ScanResult.class.getClassLoader());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            this.scanResult = in.readParcelable(ScanResult.class.getClassLoader());
+        }
+        in.readByteArray(this.scanRecord);
         String inName = in.readString();
         this.name = inName == null ? "" : inName;
         this.address = Objects.requireNonNull(in.readString());

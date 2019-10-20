@@ -25,6 +25,7 @@ public class RequestBuilderFactory {
      *
      * @param mtu 要修改成的值
      */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     public RequestBuilder<MtuChangeCallback> getChangeMtuBuilder(@IntRange(from = 23, to = 517) int mtu) {
         if (mtu < 23) {
             mtu = 23;
