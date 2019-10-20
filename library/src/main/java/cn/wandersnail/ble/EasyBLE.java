@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -308,7 +309,11 @@ public class EasyBLE {
         if (scanner == null) {
             synchronized (this) {
                 if (bluetoothAdapter != null && scanner == null) {
-                    scanner = new Scanner(this, bluetoothAdapter);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        scanner = new LeScanner(this, bluetoothAdapter);
+                    } else {
+                        scanner = new LegacyScanner(this, bluetoothAdapter);
+                    }
                 }
             }
         }        

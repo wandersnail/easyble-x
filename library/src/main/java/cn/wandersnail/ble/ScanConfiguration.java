@@ -4,9 +4,11 @@ import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanSettings;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import java.util.List;
 
@@ -72,6 +74,7 @@ public class ScanConfiguration {
     /**
      * {@link BluetoothLeScanner}的搜索设置
      */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     public ScanConfiguration setScanSettings(@NonNull ScanSettings scanSettings) {
         Inspector.requireNonNull(scanSettings, "scanSettings can't be");
         this.scanSettings = scanSettings;
@@ -97,6 +100,7 @@ public class ScanConfiguration {
     /**
      * 搜索过滤器。{@link BluetoothLeScanner#startScan(List, ScanSettings, ScanCallback)}
      */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     public ScanConfiguration setFilters(@Nullable List<ScanFilter> filters) {
         this.filters = filters;
         return this;

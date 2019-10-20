@@ -14,7 +14,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.5.0'
+        classpath 'com.android.tools.build:gradle:3.5.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.novoda:bintray-release:0.9.1'
         // NOTE: Do not place your application dependencies here; they belong
@@ -28,7 +28,6 @@ allprojects {
         jcenter()
         mavenCentral()
         maven { url 'https://dl.bintray.com/wandersnail/androidx/' }
-        maven { url 'http://localhost:8081/repository/maven-releases' }
     }
 
     // 指定编码
