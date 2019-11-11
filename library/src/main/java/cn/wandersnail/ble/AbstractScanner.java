@@ -170,7 +170,7 @@ abstract class AbstractScanner implements Scanner {
     }
 
     private void parseScanResult(BluetoothDevice device) {
-        parseScanResult(device, null, -127, null);
+        parseScanResult(device, null, -120, null);
     }
     
     void parseScanResult(BluetoothDevice device, @Nullable ScanResult result, int rssi, byte[] scanRecord) {
