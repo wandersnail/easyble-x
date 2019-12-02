@@ -239,8 +239,8 @@ abstract class AbstractScanner implements Scanner {
             }
         }
         proxyBluetoothProfiles.clear();
-        performStopScan();
         if (!bluetoothAdapter.isEnabled()) return;
+        performStopScan();
         synchronized (this) {
             if (isScanning) {
                 isScanning = false;
