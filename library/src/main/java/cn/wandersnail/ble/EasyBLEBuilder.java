@@ -24,16 +24,16 @@ public class EasyBLEBuilder {
     Observable observable;
     Logger logger;
     boolean isObserveAnnotationRequired = false;
-    Scanner.Type scannerType;
+    ScannerType scannerType;
 
     EasyBLEBuilder() {
     }
 
     /**
-     * 指定蓝牙扫描器，默认为系统Android5.0以上使用{@link Scanner.Type#LE}，否则使用{@link Scanner.Type#LEGACY}。
-     * 系统小于Android5.0时，指定{@link Scanner.Type#LE}无效
+     * 指定蓝牙扫描器，默认为系统Android5.0以上使用{@link ScannerType#LE}，否则使用{@link ScannerType#LEGACY}。
+     * 系统小于Android5.0时，指定{@link ScannerType#LE}无效
      */
-    public EasyBLEBuilder setScannerType(@NonNull Scanner.Type scannerType) {
+    public EasyBLEBuilder setScannerType(@NonNull ScannerType scannerType) {
         Inspector.requireNonNull(scannerType, "scannerType can't be");
         this.scannerType = scannerType;
         return this;

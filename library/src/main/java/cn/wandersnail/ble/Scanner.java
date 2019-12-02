@@ -1,7 +1,5 @@
 package cn.wandersnail.ble;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
@@ -15,16 +13,6 @@ import cn.wandersnail.ble.callback.ScanListener;
  * author: zengfansheng
  */
 interface Scanner {
-    enum Type {
-        /**
-         * 对应{@link BluetoothLeScanner}
-         */
-        LE,
-        /**
-         * 使用{@link BluetoothAdapter#startLeScan(BluetoothAdapter.LeScanCallback)}
-         */
-        LEGACY
-    }
     
     void addScanListener(@NonNull ScanListener listener);
 
@@ -41,5 +29,5 @@ interface Scanner {
     void release();
     
     @NonNull
-    Type getType();
+    ScannerType getType();
 }
