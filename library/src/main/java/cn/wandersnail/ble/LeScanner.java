@@ -68,7 +68,7 @@ class LeScanner extends AbstractScanner {
 
     @NonNull
     @Override
-    public Type getType() {
-        return Type.LE;
+    public ScannerType getType() {
+        return ScannerType.LE;
     }
 }

@@ -37,7 +37,7 @@ class LegacyScanner extends AbstractScanner implements BluetoothAdapter.LeScanCa
 
     @NonNull
     @Override
-    public Type getType() {
-        return Type.LEGACY;
+    public ScannerType getType() {
+        return ScannerType.LEGACY;
     }
 }
