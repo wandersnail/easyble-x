@@ -7,6 +7,7 @@ import android.bluetooth.le.ScanResult;
 import android.os.Build;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
 import cn.wandersnail.ble.callback.ScanListener;
@@ -63,5 +64,11 @@ class LeScanner extends AbstractScanner {
         if (bleScanner != null) {
             bleScanner.stopScan(scanCallback);
         }
+    }
+
+    @NonNull
+    @Override
+    public Type getType() {
+        return Type.LE;
     }
 }
