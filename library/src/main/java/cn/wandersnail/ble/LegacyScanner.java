@@ -3,6 +3,8 @@ package cn.wandersnail.ble;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 
+import androidx.annotation.NonNull;
+
 /**
  * date: 2019/10/1 15:13
  * author: zengfansheng
@@ -29,7 +31,13 @@ class LegacyScanner extends AbstractScanner implements BluetoothAdapter.LeScanCa
     }
 
     @Override
-    public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
+    public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {        
         parseScanResult(device, null, rssi, scanRecord);
+    }
+
+    @NonNull
+    @Override
+    public Type getType() {
+        return Type.LEGACY;
     }
 }

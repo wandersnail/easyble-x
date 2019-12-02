@@ -47,6 +47,7 @@ public class EasyBLE {
     private final DeviceCreator deviceCreator;
     private final Observable observable;
     private final Logger logger;
+    private final Scanner.Type scannerType;
     public final ScanConfiguration scanConfiguration;
     private Scanner scanner;
     private Application application;
@@ -65,6 +66,7 @@ public class EasyBLE {
     EasyBLE(EasyBLEBuilder builder) {
         tryGetApplication();
         bondController = builder.bondController;
+        scannerType = builder.scannerType;
         deviceCreator = builder.deviceCreator == null ? new DefaultDeviceCreator() : builder.deviceCreator;
         scanConfiguration = builder.scanConfiguration == null ? new ScanConfiguration() : builder.scanConfiguration;
         logger = builder.logger == null ? new DefaultLogger("EasyBLE") : builder.logger;
@@ -310,7 +312,11 @@ public class EasyBLE {
             synchronized (this) {
                 if (bluetoothAdapter != null && scanner == null) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        scanner = new LeScanner(this, bluetoothAdapter);
+                        if (scannerType == Scanner.Type.LE) {
+                            scanner = new LeScanner(this, bluetoothAdapter);
+                        } else {
+                            scanner = new LegacyScanner(this, bluetoothAdapter);
+                        }
                     } else {
                         scanner = new LegacyScanner(this, bluetoothAdapter);
                     }

@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'maven'
 
-def lib_version = '1.1.1'
+def lib_version = '1.1.2'
 def user_name = 'wandersnail'
 def lib_group = 'cn.wandersnail'
 def lib_artifact = 'easyble-x'
@@ -39,7 +39,7 @@ android {
 
 dependencies {
     compileOnly 'androidx.appcompat:appcompat:1.1.0'
-    compileOnly 'cn.wandersnail:common-utils:1.0.6'
+    compileOnly 'cn.wandersnail:common-utils:1.0.7'
     compileOnly 'cn.wandersnail:common-observer:1.0.6'
     compileOnly 'cn.wandersnail:common-poster:1.0.6'
 }

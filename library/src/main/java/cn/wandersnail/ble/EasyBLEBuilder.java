@@ -16,16 +16,27 @@ import cn.wandersnail.commons.poster.ThreadMode;
  */
 public class EasyBLEBuilder {
     private final static ExecutorService DEFAULT_EXECUTOR_SERVICE = Executors.newCachedThreadPool();
-    BondController bondController;    
+    BondController bondController;
     DeviceCreator deviceCreator;
     ThreadMode methodDefaultThreadMode = ThreadMode.MAIN;
     ExecutorService executorService = DEFAULT_EXECUTOR_SERVICE;
-    ScanConfiguration scanConfiguration;    
+    ScanConfiguration scanConfiguration;
     Observable observable;
     Logger logger;
     boolean isObserveAnnotationRequired = false;
-    
-    EasyBLEBuilder() {        
+    Scanner.Type scannerType;
+
+    EasyBLEBuilder() {
+    }
+
+    /**
+     * 指定蓝牙扫描器，默认为系统Android5.0以上使用{@link Scanner.Type#LE}，否则使用{@link Scanner.Type#LEGACY}。
+     * 系统小于Android5.0时，指定{@link Scanner.Type#LE}无效
+     */
+    public EasyBLEBuilder setScannerType(@NonNull Scanner.Type scannerType) {
+        Inspector.requireNonNull(scannerType, "scannerType can't be");
+        this.scannerType = scannerType;
+        return this;
     }
 
     /**
