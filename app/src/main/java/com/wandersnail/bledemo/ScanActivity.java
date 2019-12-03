@@ -29,6 +29,7 @@ import cn.wandersnail.ble.Device;
 import cn.wandersnail.ble.EasyBLE;
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.commons.helper.PermissionsRequester;
+import cn.wandersnail.commons.util.ToastUtils;
 import cn.wandersnail.widget.listview.BaseListAdapter;
 import cn.wandersnail.widget.listview.BaseViewHolder;
 import cn.wandersnail.widget.listview.PullRefreshLayout;
@@ -106,6 +107,7 @@ public class ScanActivity extends AppCompatActivity {
                 case ScanListener.ERROR_LOCATION_SERVICE_CLOSED://位置服务未开启		
             		break;
                 case ScanListener.ERROR_SCAN_FAILED://搜索失败
+                    ToastUtils.showShort("搜索出错：" + errorCode);
                     break;
             }
         }

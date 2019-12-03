@@ -316,10 +316,10 @@ public class EasyBLE {
             synchronized (this) {
                 if (bluetoothAdapter != null && scanner == null) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        if (scannerType == ScannerType.LE) {
-                            scanner = new LeScanner(this, bluetoothAdapter);
-                        } else {
+                        if (scannerType == ScannerType.LEGACY) {
                             scanner = new LegacyScanner(this, bluetoothAdapter);
+                        } else {
+                            scanner = new LeScanner(this, bluetoothAdapter);
                         }
                     } else {
                         scanner = new LegacyScanner(this, bluetoothAdapter);
