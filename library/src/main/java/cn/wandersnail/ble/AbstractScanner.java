@@ -192,7 +192,7 @@ abstract class AbstractScanner implements Scanner {
                 handleScanCallback(false, dev, -1, "");
             }
         }
-        String msg = String.format(Locale.US, "found device! [name: %s, addr: %s]", name.isEmpty() ? "N/A" : name, device.getAddress());
+        String msg = String.format(Locale.US, "found device! [name: %s, addr: %s]", TextUtils.isEmpty(name) ? "N/A" : name, device.getAddress());
         logger.log(Log.DEBUG, Logger.TYPE_SCAN_STATE, msg);
     }
 
