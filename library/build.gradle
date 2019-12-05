@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'maven'
 
-def lib_version = '1.1.4'
+def lib_version = '1.1.5'
 def user_name = 'wandersnail'
 def lib_group = 'cn.wandersnail'
 def lib_artifact = 'easyble-x'
@@ -56,7 +56,7 @@ task classJar(type: Jar, dependsOn: ['assembleRelease', 'sourcesJar']) {
 
 task javadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    setClasspath(classpath + project.files(android.getBootClasspath().join(File.pathSeparator)))
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
