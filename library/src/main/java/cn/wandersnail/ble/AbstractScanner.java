@@ -82,8 +82,13 @@ abstract class AbstractScanner implements Scanner {
 
     //检查是否有定位权限
     private boolean noLocationPermission(Context context) {
-        return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+        int sdkVersion = context.getApplicationInfo().targetSdkVersion;
+        if (sdkVersion >= 29) {//target 在Android10以上的需要精确定位权限才能搜索到蓝牙设备
+            return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+        } else {
+            return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+        }
     }
 
     //处理搜索回调
@@ -239,8 +244,9 @@ abstract class AbstractScanner implements Scanner {
             }
         }
         proxyBluetoothProfiles.clear();
-        if (!bluetoothAdapter.isEnabled()) return;
-        performStopScan();
+        if (bluetoothAdapter.isEnabled()) {
+            performStopScan();
+        }
         synchronized (this) {
             if (isScanning) {
                 isScanning = false;
