@@ -23,10 +23,10 @@ import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.ble.util.Logger;
@@ -40,7 +40,7 @@ abstract class AbstractScanner implements Scanner {
     final BluetoothAdapter bluetoothAdapter;
     private final Handler mainHandler;
     private boolean isScanning;
-    private final List<ScanListener> scanListeners = new ArrayList<>();
+    private final List<ScanListener> scanListeners = new CopyOnWriteArrayList<>();
     private final SparseArray<BluetoothProfile> proxyBluetoothProfiles = new SparseArray<>();
     final Logger logger;
     private final DeviceCreator deviceCreator;
@@ -54,14 +54,14 @@ abstract class AbstractScanner implements Scanner {
     }
     
     @Override
-    public synchronized void addScanListener(@NonNull ScanListener listener) {
+    public void addScanListener(@NonNull ScanListener listener) {
         if (!scanListeners.contains(listener)) {
             scanListeners.add(listener);
         }
     }
 
     @Override
-    public synchronized void removeScanListener(@NonNull ScanListener listener) {
+    public void removeScanListener(@NonNull ScanListener listener) {
         scanListeners.remove(listener);
     }
 
@@ -94,17 +94,15 @@ abstract class AbstractScanner implements Scanner {
     //处理搜索回调
     protected void handleScanCallback(final boolean start, @Nullable final Device device, final int errorCode, final String errorMsg) {
         mainHandler.post(() -> {
-            synchronized (AbstractScanner.this) {
-                for (ScanListener listener : scanListeners) {
-                    if (device != null) {
-                        listener.onScanResult(device);
-                    } else if (start) {
-                        listener.onScanStart();
-                    } else if (errorCode >= 0) {
-                        listener.onScanError(errorCode, errorMsg);
-                    } else {
-                        listener.onScanStop();
-                    }
+            for (ScanListener listener : scanListeners) {
+                if (device != null) {
+                    listener.onScanResult(device);
+                } else if (start) {
+                    listener.onScanStart();
+                } else if (errorCode >= 0) {
+                    listener.onScanError(errorCode, errorMsg);
+                } else {
+                    listener.onScanStop();
                 }
             }
         });
@@ -266,7 +264,7 @@ abstract class AbstractScanner implements Scanner {
     }
 
     @Override
-    public synchronized void release() {
+    public void release() {
         stopScan(false);
         scanListeners.clear();
     }
