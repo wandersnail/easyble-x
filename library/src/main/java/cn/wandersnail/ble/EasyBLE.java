@@ -430,7 +430,7 @@ public class EasyBLE {
     public Connection connect(@NonNull String address, @Nullable ConnectionConfiguration configuration,
                               @Nullable EventObserver observer) {
         if (checkStatus()) {
-            Inspector.requireNonNull(address, "address can't be");
+            Inspector.requireNonNull(address, "address can't be null");
             BluetoothDevice remoteDevice = bluetoothAdapter.getRemoteDevice(address);
             if (remoteDevice != null) {
                 return connect(new Device(remoteDevice), configuration, observer);
@@ -486,7 +486,7 @@ public class EasyBLE {
     public synchronized Connection connect(@NonNull final Device device, @Nullable ConnectionConfiguration configuration,
                                            @Nullable final EventObserver observer) {
         if (checkStatus()) {
-            Inspector.requireNonNull(device, "device can't be");
+            Inspector.requireNonNull(device, "device can't be null");
             Connection connection = connectionMap.remove(device.getAddress());
             //如果连接已存在，先释放掉
             if (connection != null) {

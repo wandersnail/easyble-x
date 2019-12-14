@@ -76,7 +76,7 @@ public class ScanConfiguration {
      */
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     public ScanConfiguration setScanSettings(@NonNull ScanSettings scanSettings) {
-        Inspector.requireNonNull(scanSettings, "scanSettings can't be");
+        Inspector.requireNonNull(scanSettings, "scanSettings can't be null");
         this.scanSettings = scanSettings;
         return this;
     }
