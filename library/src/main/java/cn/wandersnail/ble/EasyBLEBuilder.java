@@ -34,7 +34,7 @@ public class EasyBLEBuilder {
      * 系统小于Android5.0时，指定{@link ScannerType#LE}无效
      */
     public EasyBLEBuilder setScannerType(@NonNull ScannerType scannerType) {
-        Inspector.requireNonNull(scannerType, "scannerType can't be");
+        Inspector.requireNonNull(scannerType, "scannerType can't be null");
         this.scannerType = scannerType;
         return this;
     }
@@ -43,7 +43,7 @@ public class EasyBLEBuilder {
      * 自定义线程池用来执行后台任务
      */
     public EasyBLEBuilder setExecutorService(@NonNull ExecutorService executorService) {
-        Inspector.requireNonNull(executorService, "executorService can't be");
+        Inspector.requireNonNull(executorService, "executorService can't be null");
         this.executorService = executorService;
         return this;
     }
@@ -52,7 +52,7 @@ public class EasyBLEBuilder {
      * 设备实例构建器
      */
     public EasyBLEBuilder setDeviceCreator(@NonNull DeviceCreator deviceCreator) {
-        Inspector.requireNonNull(deviceCreator, "deviceCreator can't be");
+        Inspector.requireNonNull(deviceCreator, "deviceCreator can't be null");
         this.deviceCreator = deviceCreator;
         return this;
     }
@@ -61,7 +61,7 @@ public class EasyBLEBuilder {
      * 配对控制器。如果设置了控制器，则会在连接时，尝试配对
      */
     public EasyBLEBuilder setBondController(@NonNull BondController bondController) {
-        Inspector.requireNonNull(bondController, "bondController can't be");
+        Inspector.requireNonNull(bondController, "bondController can't be null");
         this.bondController = bondController;
         return this;
     }
@@ -70,7 +70,7 @@ public class EasyBLEBuilder {
      * 观察者或者回调的方法在没有使用注解指定调用线程时，默认被调用的线程
      */
     public EasyBLEBuilder setMethodDefaultThreadMode(@NonNull ThreadMode mode) {
-        Inspector.requireNonNull(mode, "mode can't be");
+        Inspector.requireNonNull(mode, "mode can't be null");
         methodDefaultThreadMode = mode;
         return this;
     }
@@ -79,7 +79,7 @@ public class EasyBLEBuilder {
      * 搜索配置
      */
     public EasyBLEBuilder setScanConfiguration(@NonNull ScanConfiguration scanConfiguration) {
-        Inspector.requireNonNull(scanConfiguration, "scanConfiguration can't be");
+        Inspector.requireNonNull(scanConfiguration, "scanConfiguration can't be null");
         this.scanConfiguration = scanConfiguration;
         return this;
     }
@@ -88,7 +88,7 @@ public class EasyBLEBuilder {
      * 日志打印
      */
     public EasyBLEBuilder setLogger(@NonNull Logger logger) {
-        Inspector.requireNonNull(logger, "logger can't be");
+        Inspector.requireNonNull(logger, "logger can't be null");
         this.logger = logger;
         return this;
     }
@@ -99,7 +99,7 @@ public class EasyBLEBuilder {
      * {@link #setObserveAnnotationRequired(boolean)}、{@link #setExecutorService(ExecutorService)}将不起作用
      */
     public EasyBLEBuilder setObservable(@NonNull Observable observable) {
-        Inspector.requireNonNull(observable, "observable can't be");
+        Inspector.requireNonNull(observable, "observable can't be null");
         this.observable = observable;
         return this;
     }

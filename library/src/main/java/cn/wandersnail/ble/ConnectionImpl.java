@@ -1256,7 +1256,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     @Override
     public boolean isNotificationOrIndicationEnabled(@NonNull BluetoothGattCharacteristic characteristic) {
-        Inspector.requireNonNull(characteristic, "characteristic can't be");
+        Inspector.requireNonNull(characteristic, "characteristic can't be null");
         BluetoothGattDescriptor descriptor = characteristic.getDescriptor(clientCharacteristicConfig);
         return descriptor != null && (Arrays.equals(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) ||
                 Arrays.equals(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_INDICATION_VALUE));

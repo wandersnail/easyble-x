@@ -107,7 +107,7 @@ public class RequestBuilderFactory {
      */
     public WriteCharacteristicBuilder getWriteCharacteristicBuilder(@NonNull UUID service, @NonNull UUID characteristic,
                                                                             @NonNull byte[] value) {
-        Inspector.requireNonNull(value, "value can't be");
+        Inspector.requireNonNull(value, "value can't be null");
         WriteCharacteristicBuilder builder = new WriteCharacteristicBuilder();
         builder.service = service;
         builder.characteristic = characteristic;
