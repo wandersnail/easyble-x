@@ -450,6 +450,7 @@ class ConnectionImpl implements Connection, ScanListener {
                 reconnectImmediatelyCount++;
                 connStartTime = System.currentTimeMillis();
                 doConnect();
+                return;
             } else if (canScanReconnect()) {
                 tryScanReconnect();
             }
@@ -729,8 +730,10 @@ class ConnectionImpl implements Connection, ScanListener {
                         }
                         break;
                     case CHANGE_MTU:
-                        if (!bluetoothGatt.requestMtu((int) request.value)) {
-                            handleFailedCallback(request, REQUEST_FAIL_TYPE_REQUEST_FAILED, true);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            if (!bluetoothGatt.requestMtu((int) request.value)) {
+                                handleFailedCallback(request, REQUEST_FAIL_TYPE_REQUEST_FAILED, true);
+                            }
                         }
                         break;
                     case READ_PHY:
