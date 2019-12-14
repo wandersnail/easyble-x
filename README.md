@@ -340,6 +340,10 @@ EasyBLE.getInstance().release();
 -keep class * implements cn.wandersnail.commons.observer.Observe {
 	public <methods>;
 }
+#保持 Serializable 不被混淆
+-keep class * implements cn.wandersnail.ble.Request {
+    !private *;
+}
 
 ## Demo效果预览
 ![image](https://github.com/wandersnail/easyble-x/blob/master/screenshot/preview.gif)
