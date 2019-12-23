@@ -202,7 +202,7 @@ abstract class AbstractScanner implements Scanner {
     @Override
     public void startScan(@NonNull Context context) {
         synchronized (this) {
-            if (!bluetoothAdapter.isEnabled() || isScanning || !isReady()) {
+            if (!isBtEnabled() || isScanning || !isReady()) {
                 return;
             }
             if (!isLocationEnabled(context)) {
@@ -242,7 +242,7 @@ abstract class AbstractScanner implements Scanner {
             }
         }
         proxyBluetoothProfiles.clear();
-        if (bluetoothAdapter.isEnabled()) {
+        if (isBtEnabled()) {
             performStopScan();
         }
         synchronized (this) {
@@ -257,6 +257,20 @@ abstract class AbstractScanner implements Scanner {
 
     private Runnable stopScanRunnable = () -> stopScan(false);
 
+    //蓝牙是否开启
+    private boolean isBtEnabled() {
+        if (bluetoothAdapter.isEnabled()) {
+            try {
+                Method method = bluetoothAdapter.getClass().getDeclaredMethod("isLeEnabled");
+                method.setAccessible(true);
+                return (boolean) method.invoke(bluetoothAdapter);
+            } catch (Exception e) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     @Override
     public void onBluetoothOff() {
         isScanning = false;
