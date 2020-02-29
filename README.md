@@ -8,6 +8,8 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x/badge.svg)](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x)
 [![Download](https://api.bintray.com/packages/wandersnail/androidx/easyble-x/images/download.svg)](https://bintray.com/wandersnail/androidx/easyble-x/_latestVersion)
 
+[github地址](https://github.com/wandersnail/easyble-x)
+
 ## 功能
 - 支持多设备同时连接
 - 支持广播包解析
