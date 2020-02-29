@@ -3,7 +3,6 @@
 ## 基于此库的BLE调试app
 [![](https://img.shields.io/badge/Download-小米应用商店-yellow.svg)](http://app.mi.com/details?id=cn.zfs.bledebugger)
 [![](https://img.shields.io/badge/Download-APK-blue.svg)](https://raw.githubusercontent.com/wandersnail/myapks/master/bleutility-v2.10.apk)
-<a href="https://play.google.com/store/apps/details?id=cn.zfs.bledebugger"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="36"></a>
 
 ## 最新版本
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x/badge.svg)](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x)
@@ -346,6 +345,6 @@ EasyBLE.getInstance().release();
 }
 
 ## Demo效果预览
-![image](https://github.com/wandersnail/easyble-x/blob/master/screenshot/preview.gif)
-![image](https://github.com/wandersnail/easyble-x/blob/master/screenshot/20190804220341.png)
-![image](https://github.com/wandersnail/easyble-x/blob/master/screenshot/20190804220312.png)
+![image](https://gitee.com/fszeng/easyble-x/raw/master/screenshot/screenshot/preview.gif)
+![image](https://gitee.com/fszeng/easyble-x/raw/master/screenshot/20190804220341.png)
+![image](https://gitee.com/fszeng/easyble-x/raw/master/screenshot/20190804220312.png)
