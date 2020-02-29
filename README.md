@@ -7,8 +7,8 @@
 ## 最新版本
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x/badge.svg)](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x)
 [![Download](https://api.bintray.com/packages/wandersnail/androidx/easyble-x/images/download.svg)](https://bintray.com/wandersnail/androidx/easyble-x/_latestVersion)
-
-[github地址](https://github.com/wandersnail/easyble-x)
+[![](https://img.shields.io/badge/源码-github-blue.svg)](https://github.com/wandersnail/easyble-x)
+[![](https://img.shields.io/badge/源码-码云-blue.svg)](https://gitee.com/fszeng/easyble-x)
 
 ## 功能
 - 支持多设备同时连接
@@ -348,6 +348,6 @@ EasyBLE.getInstance().release();
 ```
 
 ## Demo效果预览
-![image](https://gitee.com/fszeng/easyble-x/raw/master/screenshot/preview.gif)
-![image](https://gitee.com/fszeng/easyble-x/raw/master/screenshot/20190804220341.png)
-![image](https://gitee.com/fszeng/easyble-x/raw/master/screenshot/20190804220312.png)
+![image](https://s2.ax1x.com/2020/02/29/3sWVn1.png)
+![image](https://s2.ax1x.com/2020/02/29/3sWAXR.png)
+![image](https://s2.ax1x.com/2020/02/29/3sWe76.gif)
