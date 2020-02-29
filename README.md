@@ -334,7 +334,7 @@ connection.execute(builder.build());
 ```
 EasyBLE.getInstance().release();
 ```
-
+```
 ### 代码混淆
 -keep class * implements cn.wandersnail.commons.observer.Observe {
 	public <methods>;
@@ -343,8 +343,9 @@ EasyBLE.getInstance().release();
 -keep class * implements cn.wandersnail.ble.Request {
     !private *;
 }
+```
 
 ## Demo效果预览
-![image](https://gitee.com/fszeng/easyble-x/raw/master/screenshot/screenshot/preview.gif)
+![image](https://gitee.com/fszeng/easyble-x/raw/master/screenshot/preview.gif)
 ![image](https://gitee.com/fszeng/easyble-x/raw/master/screenshot/20190804220341.png)
 ![image](https://gitee.com/fszeng/easyble-x/raw/master/screenshot/20190804220312.png)
