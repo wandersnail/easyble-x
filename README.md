@@ -2,7 +2,7 @@
 
 ## 基于此库的BLE调试app
 [![](https://img.shields.io/badge/Download-小米应用商店-yellow.svg)](http://app.mi.com/details?id=cn.zfs.bledebugger)
-[![](https://img.shields.io/badge/Download-APK-blue.svg)](https://raw.githubusercontent.com/wandersnail/myapks/master/bleutility-v2.10.apk)
+- 第一次进入是主页的话，重新再进一次就是应用详情页了
 
 ## 最新版本
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x/badge.svg)](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x)
