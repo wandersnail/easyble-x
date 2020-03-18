@@ -94,7 +94,7 @@ public class ScanActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onScanResult(@NotNull Device device) {
+        public void onScanResult(@NonNull Device device, boolean isConnectedBySys) {
             layoutEmpty.setVisibility(View.INVISIBLE);
             listAdapter.add(device);
         }
@@ -116,7 +116,11 @@ public class ScanActivity extends AppCompatActivity {
     //需要进行检测的权限
     private List<String> getNeedPermissions() {
         List<String> list = new ArrayList<>();
-        list.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        if (getApplicationInfo().targetSdkVersion >= 29) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
+            list.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        } else {
+            list.add(Manifest.permission.ACCESS_COARSE_LOCATION);            
+        }
         return list;
     }
 

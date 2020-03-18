@@ -113,7 +113,7 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     @Override
-    public void onScanResult(@NonNull Device device) {
+    public void onScanResult(@NonNull Device device, boolean isConnectedBySys) {
         synchronized (this) {
             if (!isReleased && this.device.equals(device) && this.device.connectionState == ConnectionState.SCANNING_FOR_RECONNECTION) {
                 connHandler.sendEmptyMessage(MSG_CONNECT);

@@ -65,9 +65,9 @@ dependencies {
 	...
 	implementation 'cn.wandersnail:easyble-x:latestVersion'
 	//额外三个依赖
-	implementation 'cn.wandersnail:common-utils:1.0.5'
-	implementation 'cn.wandersnail:common-observer:1.0.5'
-	implementation 'cn.wandersnail:common-poster:1.0.5'
+	implementation 'cn.wandersnail:common-utils:latestVersion'
+	implementation 'cn.wandersnail:common-observer:latestVersion'
+	implementation 'cn.wandersnail:common-poster:latestVersion'
 	//也可以使用
 	//implementation 'cn.wandersnail:common-full:latestVersion'//此依赖包含上面三个
 }
@@ -102,12 +102,15 @@ EasyBLE.getInstance().initialize(this);
 ```
 ScanConfiguration scanConfig = new ScanConfiguration()
 		.setScanSettings(new ScanSettings.Builder()
-				.setScanMode(ScanSettings.SCAN_MODE_BALANCED)
+				.setScanMode(ScanSettings.SCAN_MODE_BALANCED)//搜索模式
 				.build())
-		.setScanPeriodMillis(15000)
-		.setAcceptSysConnectedDevice(true)
-		.setOnlyAcceptBleDevice(true);
+		.setScanPeriodMillis(15000)//搜索周期
+		.setAcceptSysConnectedDevice(true)//是否将系统蓝牙已连接的设备放到搜索结果中
+		.setOnlyAcceptBleDevice(true);//是否过滤非ble设备
 EasyBLE ble = EasyBLE.getBuilder().setScanConfiguration(scanConfig)
+        .setScannerType(ScannerType.LE)//指定蓝牙扫描器，默认为系统Android5.0以上使用ScannerType.LE
+        .setExecutorService(executorService)//自定义线程池用来执行后台任务，也可使用默认
+        .setDeviceCreator(creator)//设备实例构建器。返回搜索结果时的设备对象由此构建器实例化
 		.setObserveAnnotationRequired(false)//不强制使用{@link Observe}注解才会收到被观察者的消息，强制使用的话，性能会好一些
 		.setMethodDefaultThreadMode(ThreadMode.MAIN)//指定回调方法和观察者方法的默认线程
 		.build();
@@ -131,6 +134,8 @@ EasyBLE.getInstance().setLogEnabled(true);//开启日志打印
 
 1. 定义搜索监听器
 
+   > Android6.0以上搜索需要至少模糊定位权限，如果targetSdkVersion设置29以上需要精确定位权限。权限需要动态申请
+
 ```
 private ScanListener scanListener = new ScanListener() {
 	@Override
@@ -143,8 +148,14 @@ private ScanListener scanListener = new ScanListener() {
 		//搜索停止
 	}
 
+    /**
+     * 搜索到BLE设备
+     *
+     * @param device           搜索到的设备
+     * @param isConnectedBySys 是否已被系统蓝牙连接上
+     */
 	@Override
-	public void onScanResult(@NotNull Device device) {
+	public void onScanResult(@NonNull Device device, boolean isConnectedBySys) {
 		//搜索结果
 	}
 
