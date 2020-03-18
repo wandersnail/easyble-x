@@ -32,7 +32,6 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     final String address;
     int rssi;
     
-
     public Device(@NonNull BluetoothDevice originDevice) {
         this.originDevice = originDevice;
         this.name = originDevice.getName() == null ? "" : originDevice.getName();

@@ -43,7 +43,7 @@ class LeScanner extends AbstractScanner {
 
         @Override
         public void onScanFailed(int errorCode) {
-            handleScanCallback(false, null, ScanListener.ERROR_SCAN_FAILED, "onScanFailed. errorCode = " + errorCode);
+            handleScanCallback(false, null, false, ScanListener.ERROR_SCAN_FAILED, "onScanFailed. errorCode = " + errorCode);
             logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, "onScanFailed. errorCode = " + errorCode);
             stopScan(true);
         }

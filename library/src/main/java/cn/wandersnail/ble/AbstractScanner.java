@@ -83,7 +83,7 @@ abstract class AbstractScanner implements Scanner {
     //检查是否有定位权限
     private boolean noLocationPermission(Context context) {
         int sdkVersion = context.getApplicationInfo().targetSdkVersion;
-        if (sdkVersion >= 29) {//target 在Android10以上的需要精确定位权限才能搜索到蓝牙设备
+        if (sdkVersion >= 29) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
             return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
         } else {
             return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
@@ -92,11 +92,12 @@ abstract class AbstractScanner implements Scanner {
     }
 
     //处理搜索回调
-    protected void handleScanCallback(final boolean start, @Nullable final Device device, final int errorCode, final String errorMsg) {
+    protected void handleScanCallback(final boolean start, @Nullable final Device device, final boolean isConnectedBySys, 
+                                      final int errorCode, final String errorMsg) {
         mainHandler.post(() -> {
             for (ScanListener listener : scanListeners) {
                 if (device != null) {
-                    listener.onScanResult(device);
+                    listener.onScanResult(device, isConnectedBySys);
                 } else if (start) {
                     listener.onScanStart();
                 } else if (errorCode >= 0) {
@@ -122,7 +123,7 @@ abstract class AbstractScanner implements Scanner {
                     isConnectedMethod.setAccessible(true);
                     boolean isConnected = (boolean) isConnectedMethod.invoke(device);
                     if (isConnected) {
-                        parseScanResult(device);
+                        parseScanResult(device, true);
                     }
                 }
             }
@@ -149,7 +150,7 @@ abstract class AbstractScanner implements Scanner {
                 try {
                     List<BluetoothDevice> devices = proxy.getConnectedDevices();
                     for (BluetoothDevice device : devices) {
-                        parseScanResult(device);
+                        parseScanResult(device, true);
                     }
                 } catch (Exception ignore) {
                 }
@@ -165,18 +166,18 @@ abstract class AbstractScanner implements Scanner {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     void parseScanResult(BluetoothDevice device, @Nullable ScanResult result) {
         if (result == null) {
-            parseScanResult(device);
+            parseScanResult(device, false);
         } else {
             ScanRecord record = result.getScanRecord();
-            parseScanResult(device, result, result.getRssi(), record == null ? null : record.getBytes());            
+            parseScanResult(device, false, result, result.getRssi(), record == null ? null : record.getBytes());            
         }
     }
 
-    private void parseScanResult(BluetoothDevice device) {
-        parseScanResult(device, null, -120, null);
+    private void parseScanResult(BluetoothDevice device, boolean isConnectedBySys) {
+        parseScanResult(device, isConnectedBySys, null, -120, null);
     }
     
-    void parseScanResult(BluetoothDevice device, @Nullable ScanResult result, int rssi, byte[] scanRecord) {
+    void parseScanResult(BluetoothDevice device, boolean isConnectedBySys, @Nullable ScanResult result, int rssi, byte[] scanRecord) {
         if ((configuration.onlyAcceptBleDevice && device.getType() != BluetoothDevice.DEVICE_TYPE_LE) ||
                 !device.getAddress().matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
             return;
@@ -192,7 +193,7 @@ abstract class AbstractScanner implements Scanner {
                     dev.scanResult = result;
                 }
                 dev.scanRecord = scanRecord;
-                handleScanCallback(false, dev, -1, "");
+                handleScanCallback(false, dev, isConnectedBySys, -1, "");
             }
         }
         String msg = String.format(Locale.US, "found device! [name: %s, addr: %s]", TextUtils.isEmpty(name) ? "N/A" : name, device.getAddress());
@@ -207,18 +208,18 @@ abstract class AbstractScanner implements Scanner {
             }
             if (!isLocationEnabled(context)) {
                 String errorMsg = "Unable to scan for Bluetooth devices, the phone's location service is not turned on.";
-                handleScanCallback(false, null, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, errorMsg);
+                handleScanCallback(false, null, false, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, errorMsg);
                 logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                 return;
             } else if (noLocationPermission(context)) {
                 String errorMsg = "Unable to scan for Bluetooth devices, lack location permission.";
-                handleScanCallback(false, null, ScanListener.ERROR_LACK_LOCATION_PERMISSION, errorMsg);
+                handleScanCallback(false, null, false, ScanListener.ERROR_LACK_LOCATION_PERMISSION, errorMsg);
                 logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                 return;
             }
             isScanning = true;
         }
-        handleScanCallback(true, null, -1, "");
+        handleScanCallback(true, null, false, -1, "");
         if (configuration.acceptSysConnectedDevice) {
             getSystemConnectedDevices(context);
         }
@@ -249,7 +250,7 @@ abstract class AbstractScanner implements Scanner {
             if (isScanning) {
                 isScanning = false;
                 if (!quietly) {
-                    handleScanCallback(false, null, -1, "");
+                    handleScanCallback(false, null, false, -1, "");
                 }
             }
         }
@@ -274,7 +275,7 @@ abstract class AbstractScanner implements Scanner {
     @Override
     public void onBluetoothOff() {
         isScanning = false;
-        handleScanCallback(false, null, -1, "");
+        handleScanCallback(false, null, false, -1, "");
     }
 
     @Override

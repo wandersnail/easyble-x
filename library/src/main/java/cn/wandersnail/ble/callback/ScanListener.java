@@ -38,8 +38,20 @@ public interface ScanListener {
 
     /**
      * 搜索到BLE设备
+     *
+     * @deprecated 使用 {@link #onScanResult(Device, boolean)}，不要再覆写此方法，因为不再会被回调
      */
-    void onScanResult(@NonNull Device device);
+    @Deprecated
+    default void onScanResult(@NonNull Device device) {
+    }
+
+    /**
+     * 搜索到BLE设备
+     *
+     * @param device           搜索到的设备
+     * @param isConnectedBySys 是否已被系统蓝牙连接上
+     */
+    void onScanResult(@NonNull Device device, boolean isConnectedBySys);
 
     /**
      * 搜索错误
