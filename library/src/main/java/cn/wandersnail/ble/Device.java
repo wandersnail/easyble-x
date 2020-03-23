@@ -168,7 +168,12 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             dest.writeParcelable(this.scanResult, flags);
         }
-        dest.writeByteArray(this.scanRecord);
+        if (this.scanRecord != null) {
+            dest.writeInt(this.scanRecord.length);
+            dest.writeByteArray(this.scanRecord);            
+        } else {
+            dest.writeInt(-1);
+        }
         dest.writeString(this.name);
         dest.writeString(this.address);
         dest.writeInt(this.rssi);
@@ -185,7 +190,11 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             this.scanResult = in.readParcelable(ScanResult.class.getClassLoader());
         }
-        in.readByteArray(this.scanRecord);
+        int scanRecordLen = in.readInt();
+        if (scanRecordLen > 0) {
+            this.scanRecord = new byte[scanRecordLen];
+            in.readByteArray(this.scanRecord);
+        }        
         String inName = in.readString();
         this.name = inName == null ? "" : inName;
         this.address = Objects.requireNonNull(in.readString());
