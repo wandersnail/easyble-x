@@ -351,12 +351,15 @@ connection.execute(builder.build());
 ```
 EasyBLE.getInstance().release();
 ```
-```
 ### 代码混淆
+
+```
+-keep interface * implements cn.wandersnail.commons.observer.Observe
 -keep class * implements cn.wandersnail.commons.observer.Observe {
 	public <methods>;
 }
 #保持 Serializable 不被混淆
+-keep interface * implements cn.wandersnail.ble.Request
 -keep class * implements cn.wandersnail.ble.Request {
     !private *;
 }
