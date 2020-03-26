@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.os.Build;
 import android.util.Log;
 
@@ -56,7 +57,15 @@ class LeScanner extends AbstractScanner {
 
     @Override
     protected void performStartScan() {
-        bleScanner.startScan(configuration.filters, configuration.scanSettings, scanCallback);
+        ScanSettings settings;
+        if (configuration.scanSettings == null) {
+            settings = new ScanSettings.Builder()
+                    .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
+                    .build();
+        } else {
+            settings = configuration.scanSettings;
+        }
+        bleScanner.startScan(configuration.filters, settings, scanCallback);
     }
 
     @Override
