@@ -19,19 +19,17 @@ import java.util.Objects;
  * author: zengfansheng
  */
 public class Device implements Comparable<Device>, Cloneable, Parcelable {
-    private final BluetoothDevice originDevice;
+    private BluetoothDevice originDevice;
     ConnectionState connectionState = ConnectionState.DISCONNECTED;
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @Nullable
     ScanResult scanResult;
     @Nullable
     byte[] scanRecord;
-    @NonNull
     String name;
-    @NonNull
-    final String address;
+    String address;
     int rssi;
-    
+
     public Device(@NonNull BluetoothDevice originDevice) {
         this.originDevice = originDevice;
         this.name = originDevice.getName() == null ? "" : originDevice.getName();
@@ -93,7 +91,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         }
         return null;
     }
-    
+
     /**
      * 是否已连接并成功发现服务
      */
@@ -170,7 +168,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         }
         if (this.scanRecord != null) {
             dest.writeInt(this.scanRecord.length);
-            dest.writeByteArray(this.scanRecord);            
+            dest.writeByteArray(this.scanRecord);
         } else {
             dest.writeInt(-1);
         }
@@ -186,6 +184,10 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     }
 
     protected Device(Parcel in) {
+        readFromParcel(in);
+    }
+
+    public void readFromParcel(Parcel in) {
         this.originDevice = in.readParcelable(BluetoothDevice.class.getClassLoader());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             this.scanResult = in.readParcelable(ScanResult.class.getClassLoader());
@@ -194,7 +196,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
         if (scanRecordLen > 0) {
             this.scanRecord = new byte[scanRecordLen];
             in.readByteArray(this.scanRecord);
-        }        
+        }
         String inName = in.readString();
         this.name = inName == null ? "" : inName;
         this.address = Objects.requireNonNull(in.readString());
