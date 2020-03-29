@@ -3,9 +3,13 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/menuProgress"
-        android:checkable="false"
+        android:id="@+id/menuConnect"
+        android:title="连接"
+        android:orderInCategory="0"
+        app:showAsAction="ifRoom|withText"/>
+    <item
+        android:id="@+id/menuDisconnect"
+        android:title="断开"
         android:orderInCategory="1"
-        android:title="搜索中..."
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="ifRoom|withText"/>
 </menu>
