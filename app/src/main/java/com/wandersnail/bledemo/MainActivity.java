@@ -5,6 +5,8 @@ import android.bluetooth.BluetoothGattService;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -77,6 +79,7 @@ public class MainActivity extends BaseActivity {
         ConnectionConfiguration config = new ConnectionConfiguration();
         config.setConnectTimeoutMillis(10000);
         config.setRequestTimeoutMillis(1000);
+        config.setAutoReconnect(false);
 //        connection = EasyBLE.getInstance().connect(device, config, observer);//回调监听连接状态，设置此回调不影响观察者接收连接状态消息
         connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态         
     }
@@ -86,6 +89,32 @@ public class MainActivity extends BaseActivity {
         super.onDestroy();
         //释放连接
         EasyBLE.getInstance().releaseConnection(device);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        if (device != null && !device.isDisconnected()) {
+            menu.findItem(R.id.menuDisconnect).setVisible(true);
+            menu.findItem(R.id.menuConnect).setVisible(false);
+        } else {
+            menu.findItem(R.id.menuDisconnect).setVisible(false);
+            menu.findItem(R.id.menuConnect).setVisible(true);
+        }
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.menuDisconnect:
+                EasyBLE.getInstance().disconnectConnection(device);
+        		break;
+            case R.id.menuConnect:
+                EasyBLE.getInstance().getConnection(device).reconnect();
+        		break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     /**
@@ -135,6 +164,7 @@ public class MainActivity extends BaseActivity {
                 adapter.notifyDataSetChanged();
                 break;
         }
+        invalidateOptionsMenu();
     }
 
 

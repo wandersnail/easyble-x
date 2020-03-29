@@ -147,7 +147,7 @@ public class ScanActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main, menu);
+        getMenuInflater().inflate(R.menu.scan, menu);
         MenuItem item = menu.findItem(R.id.menuProgress);
         item.setActionView(R.layout.toolbar_indeterminate_progress);
         item.setVisible(EasyBLE.getInstance().isScanning());
