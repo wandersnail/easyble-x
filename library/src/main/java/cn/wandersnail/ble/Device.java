@@ -184,11 +184,11 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     }
 
     protected Device(Parcel in) {
+        this.originDevice = in.readParcelable(BluetoothDevice.class.getClassLoader());
         readFromParcel(in);
     }
 
     public void readFromParcel(Parcel in) {
-        this.originDevice = in.readParcelable(BluetoothDevice.class.getClassLoader());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             this.scanResult = in.readParcelable(ScanResult.class.getClassLoader());
         }
