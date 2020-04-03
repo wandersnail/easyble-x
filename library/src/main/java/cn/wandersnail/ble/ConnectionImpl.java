@@ -78,6 +78,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private final BluetoothGattCallback gattCallback = new BleGattCallback();
     private final EasyBLE easyBle;
     private int mtu = 23;
+    private BluetoothGattCallback originCallback;
 
     ConnectionImpl(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration,
                    int connectDelay, EventObserver observer) {
@@ -126,9 +127,26 @@ class ConnectionImpl implements Connection, ScanListener {
 
     }
 
+    @Override
+    public void setBluetoothGattCallback(BluetoothGattCallback callback) {
+        originCallback = callback;
+    }
+
+    @Override
+    public boolean hasProperty(UUID service, UUID characteristic, int property) {
+        BluetoothGattCharacteristic charac = getCharacteristic(service, characteristic);
+        if (charac == null) {
+            return false;
+        }
+        return (charac.getProperties() & property) != 0;
+    }
+
     private class BleGattCallback extends BluetoothGattCallback {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            if (originCallback != null) {
+                easyBle.getExecutorService().execute(() -> originCallback.onConnectionStateChange(gatt, status, newState));
+            }
             if (!isReleased) {
                 Message.obtain(connHandler, MSG_ON_CONNECTION_STATE_CHANGE, status, newState).sendToTarget();
             } else {
@@ -138,6 +156,9 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            if (originCallback != null) {
+                easyBle.getExecutorService().execute(() -> originCallback.onServicesDiscovered(gatt, status));
+            }
             if (!isReleased) {
                 Message.obtain(connHandler, MSG_ON_SERVICES_DISCOVERED, status, 0).sendToTarget();
             } else {
@@ -147,6 +168,9 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            if (originCallback != null) {
+                easyBle.getExecutorService().execute(() -> originCallback.onCharacteristicRead(gatt, characteristic, status));
+            }
             if (currentRequest != null) {
                 if (currentRequest.type == RequestType.READ_CHARACTERISTIC) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -161,6 +185,9 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            if (originCallback != null) {
+                easyBle.getExecutorService().execute(() -> originCallback.onCharacteristicWrite(gatt, characteristic, status));
+            }
             if (currentRequest != null && currentRequest.type == RequestType.WRITE_CHARACTERISTIC &&
                     currentRequest.writeOptions.isWaitWriteResult) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -172,8 +199,8 @@ class ConnectionImpl implements Connection, ScanListener {
                         if (currentRequest.remainQueue == null || currentRequest.remainQueue.isEmpty()) {
                             progress = total;
                         } else {
-                            progress = data.length / packageSize - currentRequest.remainQueue.size() + 1;                            
-                        }                        
+                            progress = data.length / packageSize - currentRequest.remainQueue.size() + 1;
+                        }
                         printWriteLog(currentRequest, progress, total, characteristic.getValue());
                     }
                     if (currentRequest.remainQueue == null || currentRequest.remainQueue.isEmpty()) {
@@ -205,11 +232,17 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            if (originCallback != null) {
+                easyBle.getExecutorService().execute(() -> originCallback.onCharacteristicChanged(gatt, characteristic));
+            }
             notifyCharacteristicChanged(characteristic);
         }
 
         @Override
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
+            if (originCallback != null) {
+                easyBle.getExecutorService().execute(() -> originCallback.onReadRemoteRssi(gatt, rssi, status));
+            }
             if (currentRequest != null) {
                 if (currentRequest.type == RequestType.READ_RSSI) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -224,6 +257,9 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            if (originCallback != null) {
+                easyBle.getExecutorService().execute(() -> originCallback.onDescriptorRead(gatt, descriptor, status));
+            }
             if (currentRequest != null) {
                 BluetoothGattCharacteristic charac = descriptor.getCharacteristic();
                 switch (currentRequest.type) {
@@ -253,6 +289,9 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            if (originCallback != null) {
+                easyBle.getExecutorService().execute(() -> originCallback.onDescriptorWrite(gatt, descriptor, status));
+            }
             if (currentRequest != null) {
                 if (currentRequest.type == RequestType.SET_NOTIFICATION || currentRequest.type == RequestType.SET_INDICATION) {
                     BluetoothGattDescriptor localDescriptor = getDescriptor(descriptor.getCharacteristic().getService().getUuid(),
@@ -272,6 +311,11 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+            if (originCallback != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    easyBle.getExecutorService().execute(() -> originCallback.onMtuChanged(gatt, mtu, status));
+                }
+            }
             if (currentRequest != null) {
                 if (currentRequest.type == RequestType.CHANGE_MTU) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -287,11 +331,21 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onPhyRead(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
+            if (originCallback != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    easyBle.getExecutorService().execute(() -> originCallback.onPhyRead(gatt, txPhy, rxPhy, status));
+                }
+            }
             handlePhyChange(true, txPhy, rxPhy, status);
         }
 
         @Override
         public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
+            if (originCallback != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    easyBle.getExecutorService().execute(() -> originCallback.onPhyRead(gatt, txPhy, rxPhy, status));
+                }
+            }
             handlePhyChange(false, txPhy, rxPhy, status);
         }
     }
@@ -558,7 +612,7 @@ class ConnectionImpl implements Connection, ScanListener {
         characteristic.setValue(value);
         int writeType = request.writeOptions.writeType;
         if ((writeType == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE ||
-                writeType == BluetoothGattCharacteristic.WRITE_TYPE_SIGNED || 
+                writeType == BluetoothGattCharacteristic.WRITE_TYPE_SIGNED ||
                 writeType == BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)) {
             characteristic.setWriteType(writeType);
         }
@@ -782,7 +836,7 @@ class ConnectionImpl implements Connection, ScanListener {
             handleFailedCallback(request, REQUEST_FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED, true);
         }
     }
-    
+
     private void printWriteLog(GenericRequest request, int progress, int total, byte[] value) {
         if (logger.isEnabled()) {
             String t = String.valueOf(total);
@@ -846,7 +900,7 @@ class ConnectionImpl implements Connection, ScanListener {
                         executeNextRequest();
                     }
                 }
-            }            
+            }
         } catch (Exception e) {
             handleWriteFailed(request);
         }
@@ -921,23 +975,23 @@ class ConnectionImpl implements Connection, ScanListener {
             observable.notifyObservers(info);
         }
     }
-    
+
     private void log(int priority, int type, String format, Object... args) {
         logger.log(priority, type, String.format(Locale.US, format, args));
     }
-    
+
     private void logE(int type, String format, Object... args) {
         log(Log.ERROR, type, format, args);
     }
-    
+
     private void logD(int type, String format, Object... args) {
         log(Log.DEBUG, type, format, args);
     }
-    
+
     private void notifyRequestFailed(GenericRequest request, int failType) {
         MethodInfo info = MethodInfoGenerator.onRequestFailed(request, failType, request.value);
         handleCallbacks(request.callback, info);
-        logE(Logger.TYPE_REQUEST_FAILED, "request failed! [requestType: %s, addr: %s, failType: %d", 
+        logE(Logger.TYPE_REQUEST_FAILED, "request failed! [requestType: %s, addr: %s, failType: %d",
                 request.type, device.address, failType);
     }
 
@@ -992,7 +1046,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private void notifyCharacteristicWrite(GenericRequest request, byte[] value) {
         MethodInfo info = MethodInfoGenerator.onCharacteristicWrite(request, value);
-        handleCallbacks(request.callback, info);        
+        handleCallbacks(request.callback, info);
     }
 
     private void notifyPhyChange(GenericRequest request, int txPhy, int rxPhy) {
@@ -1047,7 +1101,7 @@ class ConnectionImpl implements Connection, ScanListener {
         connHandler.sendEmptyMessage(MSG_REFRESH);
     }
 
-    private void release(boolean noEvent) {  
+    private void release(boolean noEvent) {
         if (!isReleased) {
             isReleased = true;
             configuration.setAutoReconnect(false); //停止自动重连
@@ -1066,7 +1120,7 @@ class ConnectionImpl implements Connection, ScanListener {
             easyBle.releaseConnection(device);//从集合中删除
         }
     }
-    
+
     @Override
     public void release() {
         release(false);
@@ -1251,7 +1305,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     enqueue(req);
                     break;
             }
-        }        
+        }
     }
 
     @Override

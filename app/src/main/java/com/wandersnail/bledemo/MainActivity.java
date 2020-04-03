@@ -1,5 +1,7 @@
 package com.wandersnail.bledemo;
 
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.os.Bundle;
@@ -38,6 +40,7 @@ import cn.wandersnail.ble.RequestBuilderFactory;
 import cn.wandersnail.ble.RequestType;
 import cn.wandersnail.ble.WriteCharacteristicBuilder;
 import cn.wandersnail.ble.WriteOptions;
+import cn.wandersnail.ble.callback.MtuChangeCallback;
 import cn.wandersnail.ble.callback.NotificationChangeCallback;
 import cn.wandersnail.ble.callback.ReadCharacteristicCallback;
 import cn.wandersnail.commons.observer.Observe;
@@ -81,7 +84,13 @@ public class MainActivity extends BaseActivity {
         config.setRequestTimeoutMillis(1000);
         config.setAutoReconnect(false);
 //        connection = EasyBLE.getInstance().connect(device, config, observer);//回调监听连接状态，设置此回调不影响观察者接收连接状态消息
-        connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态         
+        connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态  
+        connection.setBluetoothGattCallback(new BluetoothGattCallback() {
+            @Override
+            public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+                Log.d("EasyBLE", "原始写入数据：" + StringUtils.toHex(characteristic.getValue()));
+            }
+        });
     }
 
     @Override
@@ -162,6 +171,21 @@ public class MainActivity extends BaseActivity {
                     }
                 }
                 adapter.notifyDataSetChanged();
+                //设置MTU
+                Connection connection = EasyBLE.getInstance().getConnection(device);
+                RequestBuilder<MtuChangeCallback> builder = new RequestBuilderFactory().getChangeMtuBuilder(503);
+                Request request = builder.setCallback(new MtuChangeCallback() {
+                    @Override
+                    public void onMtuChanged(@NonNull Request request, int mtu) {
+                        Log.d("EasyBLE", "MTU修改成功，新值：" + mtu);
+                    }
+
+                    @Override
+                    public void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value) {
+
+                    }
+                }).build();
+                connection.execute(request);
                 break;
         }
         invalidateOptionsMenu();
@@ -234,17 +258,24 @@ public class MainActivity extends BaseActivity {
     }
 
     private void writeCharacteristic(@NotNull Item item) {
+        Log.d("EasyBLE", "开始写入");
         WriteCharacteristicBuilder builder = new RequestBuilderFactory().getWriteCharacteristicBuilder(item.service.getUuid(), 
                 item.characteristic.getUuid(), ("Multi-pass deformation also shows that in high-temperature rolling process, " +
                         "the material will be softened as a result of the recovery and recrystallization, " +
+                        "so the rolling force is reduced and the time interval of the passes of rough rolling should be longer." +
+                        "Multi-pass deformation also shows that in high-temperature rolling process, " +
+                        "the material will be softened as a result of the recovery and recrystallization, " +
                         "so the rolling force is reduced and the time interval of the passes of rough rolling should be longer.").getBytes());
         //根据需要设置写入配置
+        int writeType = connection.hasProperty(item.service.getUuid(), item.characteristic.getUuid(), 
+                BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) ? 
+                BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE : BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT;
         builder.setWriteOptions(new WriteOptions.Builder()
-                .setPackageSize(20)
+                .setPackageSize(connection.getMtu() - 3)
                 .setPackageWriteDelayMillis(5)
                 .setRequestWriteDelayMillis(10)
                 .setWaitWriteResult(true)
-                .setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+                .setWriteType(writeType)
                 .build());
         //不设置回调，使用观察者模式接收结果
         builder.build().execute(connection);
