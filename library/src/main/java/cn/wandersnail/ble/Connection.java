@@ -1,6 +1,7 @@
 package cn.wandersnail.ble;
 
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
@@ -62,7 +63,7 @@ public interface Connection {
      * 获取当前设置的最大传输单元
      */
     int getMtu();
-    
+
     /**
      * 重连
      */
@@ -138,4 +139,18 @@ public interface Connection {
      * 通知或Indication是否开启
      */
     boolean isNotificationOrIndicationEnabled(UUID service, UUID characteristic);
+
+    /**
+     * 设置原生回调
+     */
+    void setBluetoothGattCallback(BluetoothGattCallback callback);
+
+    /**
+     * 判断特征是否具有某属性
+     *
+     * @param service        特征所在服务的UUID
+     * @param characteristic 特征的UUID
+     * @param property       需要判断是否存在的属性。{@link BluetoothGattCharacteristic#PROPERTY_WRITE}等
+     */
+    boolean hasProperty(UUID service, UUID characteristic, int property);
 }
