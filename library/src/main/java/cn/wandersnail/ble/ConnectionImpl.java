@@ -498,7 +498,7 @@ class ConnectionImpl implements Connection, ScanListener {
             bluetoothGatt = null;
         }
         device.connectionState = ConnectionState.DISCONNECTED;
-        if (reconnect && !isReleased) {
+        if (bluetoothAdapter != null && bluetoothAdapter.isEnabled() && reconnect && !isReleased) {
             if (reconnectImmediatelyCount < configuration.reconnectImmediatelyMaxTimes) {
                 tryReconnectCount++;
                 reconnectImmediatelyCount++;
