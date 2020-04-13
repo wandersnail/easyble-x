@@ -266,7 +266,8 @@ abstract class AbstractScanner implements Scanner {
                 method.setAccessible(true);
                 return (boolean) method.invoke(bluetoothAdapter);
             } catch (Exception e) {
-                return true;
+                int state = bluetoothAdapter.getState();
+                return state == BluetoothAdapter.STATE_ON || state == 15;
             }
         }
         return false;
