@@ -60,7 +60,6 @@ class ConnectionImpl implements Connection, ScanListener {
     private BluetoothGatt bluetoothGatt;
     private final List<GenericRequest> requestQueue = new ArrayList<>();//请求队列
     private GenericRequest currentRequest;//当前的请求
-    private BluetoothGattCharacteristic pendingCharacteristic;
     private EventObserver observer;//伴生观察者
     private boolean isReleased;//连接是否已释放
     private final Handler connHandler;//用于操作连接的Handler，运行在主线程
@@ -261,28 +260,13 @@ class ConnectionImpl implements Connection, ScanListener {
                 easyBle.getExecutorService().execute(() -> originCallback.onDescriptorRead(gatt, descriptor, status));
             }
             if (currentRequest != null) {
-                BluetoothGattCharacteristic charac = descriptor.getCharacteristic();
-                switch (currentRequest.type) {
-                    case SET_NOTIFICATION:
-                    case SET_INDICATION:
-                        if (status != BluetoothGatt.GATT_SUCCESS) {
-                            handleGattStatusFailed();
-                        } else if (charac.getService().getUuid() == pendingCharacteristic.getService().getUuid() &&
-                                charac.getUuid() == pendingCharacteristic.getUuid()) {
-                            if (enableNotificationOrIndicationFail(((int) currentRequest.value) == 1,
-                                    currentRequest.type == RequestType.SET_NOTIFICATION, charac)) {
-                                handleGattStatusFailed();
-                            }
-                        }
-                        break;
-                    case READ_DESCRIPTOR:
-                        if (status == BluetoothGatt.GATT_SUCCESS) {
-                            notifyDescriptorRead(currentRequest, descriptor.getValue());
-                        } else {
-                            handleGattStatusFailed();
-                        }
-                        executeNextRequest();
-                        break;
+                if (currentRequest.type == RequestType.READ_DESCRIPTOR) {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        notifyDescriptorRead(currentRequest, descriptor.getValue());
+                    } else {
+                        handleGattStatusFailed();
+                    }
+                    executeNextRequest();
                 }
             }
         }
@@ -797,8 +781,8 @@ class ConnectionImpl implements Connection, ScanListener {
                         break;
                     case SET_PREFERRED_PHY:
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            int[] optins = (int[]) request.value;
-                            bluetoothGatt.setPreferredPhy(optins[0], optins[1], optins[2]);
+                            int[] options = (int[]) request.value;
+                            bluetoothGatt.setPreferredPhy(options[0], options[1], options[2]);
                         }
                         break;
                     default:
@@ -863,6 +847,9 @@ class ConnectionImpl implements Connection, ScanListener {
                     return;
                 }
             }
+            if (options.useMtuAsPackageSize) {
+                options.packageSize = mtu - 3;
+            }
             if (value.length > options.packageSize) {
                 List<byte[]> list = MathUtils.splitPackage(value, options.packageSize);
                 if (!options.isWaitWriteResult) { //不等待写入回调，直接写入下一包数据
@@ -924,10 +911,9 @@ class ConnectionImpl implements Connection, ScanListener {
     }
 
     private void executeIndicationOrNotification(GenericRequest request, BluetoothGattCharacteristic characteristic) {
-        pendingCharacteristic = characteristic;
-        BluetoothGattDescriptor gattDescriptor = pendingCharacteristic.getDescriptor(clientCharacteristicConfig);
-        if (gattDescriptor == null || !bluetoothGatt.readDescriptor(gattDescriptor)) {
-            handleFailedCallback(request, REQUEST_FAIL_TYPE_REQUEST_FAILED, true);
+        if (enableNotificationOrIndicationFail(((int) request.value) == 1,
+                request.type == RequestType.SET_NOTIFICATION, characteristic)) {
+            handleGattStatusFailed();
         }
     }
 
