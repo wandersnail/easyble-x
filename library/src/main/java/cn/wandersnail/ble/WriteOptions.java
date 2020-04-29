@@ -11,9 +11,10 @@ import android.bluetooth.BluetoothGattCharacteristic;
 public class WriteOptions {
     final int packageWriteDelayMillis;
     final int requestWriteDelayMillis;
-    final int packageSize;
+    int packageSize;
     final boolean isWaitWriteResult;
     final int writeType;
+    final boolean useMtuAsPackageSize;
 
     private WriteOptions(Builder builder) {
         packageWriteDelayMillis = builder.packageWriteDelayMillis;
@@ -21,6 +22,7 @@ public class WriteOptions {
         packageSize = builder.packageSize;
         isWaitWriteResult = builder.isWaitWriteResult;
         writeType = builder.writeType;
+        useMtuAsPackageSize = builder.useMtuAsPackageSize;
     }
 
     /**
@@ -65,6 +67,7 @@ public class WriteOptions {
         private int packageSize = 20;
         private boolean isWaitWriteResult = true;
         private int writeType = -1;
+        private boolean useMtuAsPackageSize = false;
 
         /**
          * 两次写数据到特征的时间间隔
@@ -114,6 +117,14 @@ public class WriteOptions {
                     writeType == BluetoothGattCharacteristic.WRITE_TYPE_SIGNED) {
                 this.writeType = writeType;
             }            
+            return this;
+        }
+
+        /**
+         * 设置将MTU作为包大小，并且{@link #setPackageSize(int)}设置的值将被忽略。真实数据包大小 = mtu - 3
+         */
+        public Builder setMtuAsPackageSize() {
+            useMtuAsPackageSize = true;
             return this;
         }
         
