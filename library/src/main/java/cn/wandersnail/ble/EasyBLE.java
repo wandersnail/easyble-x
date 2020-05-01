@@ -363,8 +363,8 @@ public class EasyBLE {
         if (checkStatus() && scanner != null) {
             for (Connection connection : connectionMap.values()) {
                 //连接过程中不允许搜索
-                if (connection.getConnectionState() != ConnectionState.CONNECTING ||
-                        connection.getConnectionState() != ConnectionState.SERVICE_DISCOVERING) {
+                if (connection.getConnectionState() == ConnectionState.CONNECTING ||
+                        connection.getConnectionState() == ConnectionState.SERVICE_DISCOVERING) {
                     return;
                 }
             }
