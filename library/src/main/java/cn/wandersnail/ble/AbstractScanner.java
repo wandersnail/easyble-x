@@ -17,6 +17,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -200,10 +201,11 @@ abstract class AbstractScanner implements Scanner {
         logger.log(Log.DEBUG, Logger.TYPE_SCAN_STATE, msg);
     }
 
+    @CallSuper
     @Override
     public void startScan(@NonNull Context context) {
         synchronized (this) {
-            if (!isBtEnabled() || isScanning || !isReady()) {
+            if (!isBtEnabled() || (getType() != ScannerType.CLASSIC && isScanning) || !isReady()) {
                 return;
             }
             if (!isLocationEnabled(context)) {
@@ -217,14 +219,20 @@ abstract class AbstractScanner implements Scanner {
                 logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                 return;
             }
-            isScanning = true;
+            if (getType() != ScannerType.CLASSIC) {
+                isScanning = true;
+            }
         }
-        handleScanCallback(true, null, false, -1, "");
+        if (getType() != ScannerType.CLASSIC) {
+            handleScanCallback(true, null, false, -1, "");
+        }
         if (configuration.acceptSysConnectedDevice) {
             getSystemConnectedDevices(context);
         }
         performStartScan();
-        mainHandler.postDelayed(stopScanRunnable, configuration.scanPeriodMillis);
+        if (getType() != ScannerType.CLASSIC) {
+            mainHandler.postDelayed(stopScanRunnable, configuration.scanPeriodMillis);
+        }
     }
 
     @Override
@@ -232,6 +240,14 @@ abstract class AbstractScanner implements Scanner {
         return isScanning;
     }
 
+    @CallSuper
+    void setScanning(boolean scanning) {
+        synchronized (this) {
+            isScanning = scanning;
+        }
+    }
+    
+    @CallSuper
     @Override
     public void stopScan(boolean quietly) {
         mainHandler.removeCallbacks(stopScanRunnable);
@@ -246,11 +262,13 @@ abstract class AbstractScanner implements Scanner {
         if (isBtEnabled()) {
             performStopScan();
         }
-        synchronized (this) {
-            if (isScanning) {
-                isScanning = false;
-                if (!quietly) {
-                    handleScanCallback(false, null, false, -1, "");
+        if (getType() != ScannerType.CLASSIC) {
+            synchronized (this) {
+                if (isScanning) {
+                    isScanning = false;
+                    if (!quietly) {
+                        handleScanCallback(false, null, false, -1, "");
+                    }
                 }
             }
         }
@@ -275,7 +293,9 @@ abstract class AbstractScanner implements Scanner {
     
     @Override
     public void onBluetoothOff() {
-        isScanning = false;
+        synchronized (this) {
+            isScanning = false;
+        }
         handleScanCallback(false, null, false, -1, "");
     }
 

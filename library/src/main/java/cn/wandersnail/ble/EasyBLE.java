@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -166,6 +167,57 @@ public class EasyBLE {
     private class InnerBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action != null) {
+                switch (action) {
+                    case BluetoothAdapter.ACTION_STATE_CHANGED: //蓝牙开关状态变化 
+                        if (bluetoothAdapter != null) {
+                            //通知观察者蓝牙状态
+                            observable.notifyObservers(MethodInfoGenerator.onBluetoothAdapterStateChanged(bluetoothAdapter.getState()));
+                            if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) { //蓝牙关闭
+                                logger.log(Log.DEBUG, Logger.TYPE_GENERAL, "蓝牙关闭了");
+                                //通知搜索器
+                                if (scanner != null) {
+                                    scanner.onBluetoothOff();
+                                }
+                                //断开所有连接
+                                disconnectAllConnections();
+                            } else if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_ON) {
+                                logger.log(Log.DEBUG, Logger.TYPE_GENERAL, "蓝牙开启了");
+                                //重连所有设置了自动重连的连接
+                                for (Connection connection : connectionMap.values()) {
+                                    if (connection.isAutoReconnectEnabled()) {
+                                        connection.reconnect();
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case BluetoothAdapter.ACTION_DISCOVERY_STARTED:
+                        if (scanner instanceof ClassicScanner) {
+                            ClassicScanner scanner = (ClassicScanner) EasyBLE.this.scanner;
+                            scanner.setScanning(true);
+                        }
+                        break;
+                    case BluetoothAdapter.ACTION_DISCOVERY_FINISHED:
+                        if (scanner instanceof ClassicScanner) {
+                            ClassicScanner scanner = (ClassicScanner) EasyBLE.this.scanner;
+                            scanner.setScanning(false);
+                        }
+                        break;
+                    case BluetoothDevice.ACTION_FOUND:
+                        BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                        if (device != null && scanner instanceof ClassicScanner) {
+                            int rssi = -120;
+                            Bundle extras = intent.getExtras();
+                            if (extras != null) {
+                                rssi = extras.getShort(BluetoothDevice.EXTRA_RSSI);
+                            }                            
+                            ((ClassicScanner) scanner).parseScanResult(device, false, null, rssi, null);
+                        }
+                        break;    
+                }
+            }
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) { //蓝牙开关状态变化 
                 if (bluetoothAdapter != null) {
                     //通知观察者蓝牙状态
@@ -213,6 +265,9 @@ public class EasyBLE {
             broadcastReceiver = new InnerBroadcastReceiver();
             IntentFilter filter = new IntentFilter();
             filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+            filter.addAction(BluetoothDevice.ACTION_FOUND);
             application.registerReceiver(broadcastReceiver, filter);
         }        
         isInitialized = true;
@@ -318,9 +373,13 @@ public class EasyBLE {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         if (scannerType == ScannerType.LEGACY) {
                             scanner = new LegacyScanner(this, bluetoothAdapter);
+                        } else if (scannerType == ScannerType.CLASSIC) {
+                            scanner = new ClassicScanner(this, bluetoothAdapter);
                         } else {
                             scanner = new LeScanner(this, bluetoothAdapter);
                         }
+                    } else if (scannerType == ScannerType.CLASSIC) {
+                        scanner = new ClassicScanner(this, bluetoothAdapter);
                     } else {
                         scanner = new LegacyScanner(this, bluetoothAdapter);
                     }
