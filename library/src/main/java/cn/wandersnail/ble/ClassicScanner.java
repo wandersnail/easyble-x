@@ -37,6 +37,8 @@ class ClassicScanner extends AbstractScanner {
             handleScanCallback(true, null, false, -1, "");
         } else if (!stopQuietly) {
             handleScanCallback(false, null, false, -1, "");
+        } else {
+            stopQuietly = false;
         }
     }
 
