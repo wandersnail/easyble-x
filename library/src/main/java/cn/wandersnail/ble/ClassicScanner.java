@@ -44,8 +44,8 @@ class ClassicScanner extends AbstractScanner {
 
     @Override
     public void stopScan(boolean quietly) {
-        super.stopScan(quietly);
         stopQuietly = quietly;
+        super.stopScan(quietly);
     }
 
     @NonNull
