@@ -93,8 +93,8 @@ abstract class AbstractScanner implements Scanner {
     }
 
     //处理搜索回调
-    protected void handleScanCallback(final boolean start, @Nullable final Device device, final boolean isConnectedBySys, 
-                                      final int errorCode, final String errorMsg) {
+    void handleScanCallback(final boolean start, @Nullable final Device device, final boolean isConnectedBySys,
+                            final int errorCode, final String errorMsg) {
         mainHandler.post(() -> {
             for (ScanListener listener : scanListeners) {
                 if (device != null) {

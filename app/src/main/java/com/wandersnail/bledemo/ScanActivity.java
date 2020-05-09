@@ -172,6 +172,7 @@ public class ScanActivity extends AppCompatActivity {
     private void doStartScan() {
         listAdapter.clear();
         layoutEmpty.setVisibility(View.VISIBLE);
+        EasyBLE.getInstance().stopScanQuietly();
         EasyBLE.getInstance().startScan();
     }
 
