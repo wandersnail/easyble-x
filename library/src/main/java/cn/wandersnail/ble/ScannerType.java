@@ -15,5 +15,9 @@ public enum ScannerType {
     /**
      * 使用{@link BluetoothAdapter#startLeScan(BluetoothAdapter.LeScanCallback)}
      */
-    LEGACY
+    LEGACY,
+    /**
+     * 使用{@link BluetoothAdapter#startDiscovery()}，没有广播数据，不支持搜索设置
+     */
+    CLASSIC
 }
