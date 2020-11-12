@@ -64,12 +64,7 @@ allprojects {
 dependencies {
 	...
 	implementation 'cn.wandersnail:easyble-x:latestVersion'
-	//额外三个依赖
-	implementation 'cn.wandersnail:common-utils:latestVersion'
-	implementation 'cn.wandersnail:common-observer:latestVersion'
-	implementation 'cn.wandersnail:common-poster:latestVersion'
-	//也可以使用
-	//implementation 'cn.wandersnail:common-full:latestVersion'//此依赖包含上面三个
+	//implementation 'cn.wandersnail:common-full:latestVersion'
 }
 ```
 
