@@ -64,7 +64,7 @@ allprojects {
 dependencies {
 	...
 	implementation 'cn.wandersnail:easyble-x:latestVersion'
-	//implementation 'cn.wandersnail:common-full:latestVersion'
+	implementation 'cn.wandersnail:common-full:latestVersion'
 }
 ```
 
