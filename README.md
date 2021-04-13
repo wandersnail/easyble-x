@@ -11,6 +11,7 @@
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x/badge.svg)](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x)
 [![Download](https://api.bintray.com/packages/wandersnail/androidx/easyble-x/images/download.svg)](https://bintray.com/wandersnail/androidx/easyble-x/_latestVersion)
+[![Release](https://jitpack.io/v/wandersnail/easyble-x.svg)](https://jitpack.io/#wandersnail/easyble-x)
 [![](https://img.shields.io/badge/源码-github-blue.svg)](https://github.com/wandersnail/easyble-x)
 [![](https://img.shields.io/badge/源码-码云-red.svg)](https://gitee.com/fszeng/easyble-x)
 
