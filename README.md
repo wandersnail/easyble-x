@@ -65,7 +65,7 @@ allprojects {
 dependencies {
 	...
 	implementation 'cn.wandersnail:easyble-x:latestVersion'
-	implementation 'cn.wandersnail:common-full:latestVersion'
+	implementation 'cn.wandersnail:commons-android:latestVersion'
 }
 ```
 
@@ -75,7 +75,7 @@ allprojects {
 	repositories {
 		...
 		mavenCentral()
-		maven { url 'https://dl.bintray.com/wandersnail/androidx/' }
+		maven { url 'https://jitpack.io' }
 	}
 }
 ```
