@@ -38,7 +38,7 @@ android {
 
 dependencies {
     compileOnly 'androidx.appcompat:appcompat:1.2.0'
-    compileOnly 'cn.wandersnail:common-full:1.1.6'
+    compileOnly 'cn.wandersnail:commons-android:1.2.4'
 }
 
 task sourcesJar(type: Jar) {
