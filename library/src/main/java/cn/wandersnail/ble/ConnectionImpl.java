@@ -13,10 +13,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.util.Pair;
-
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -28,6 +24,9 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.util.Pair;
 import cn.wandersnail.ble.callback.RequestCallback;
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.ble.util.Logger;
@@ -60,7 +59,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private BluetoothGatt bluetoothGatt;
     private final List<GenericRequest> requestQueue = new ArrayList<>();//请求队列
     private GenericRequest currentRequest;//当前的请求
-    private EventObserver observer;//伴生观察者
+    private final EventObserver observer;//伴生观察者
     private boolean isReleased;//连接是否已释放
     private final Handler connHandler;//用于操作连接的Handler，运行在主线程
     private long connStartTime; //用于连接超时计时

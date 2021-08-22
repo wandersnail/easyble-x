@@ -1,11 +1,10 @@
 package cn.wandersnail.ble;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import java.util.Queue;
 import java.util.UUID;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import cn.wandersnail.ble.callback.RequestCallback;
 
 /**
@@ -14,7 +13,7 @@ import cn.wandersnail.ble.callback.RequestCallback;
  */
 class GenericRequest implements Request, Comparable<GenericRequest> {
     Device device;
-    private String tag;
+    private final String tag;
     RequestType type;
     UUID service;
     UUID characteristic;

@@ -6,11 +6,11 @@ import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.util.Objects;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-
-import java.util.Objects;
 
 /**
  * BLE设备实体类
@@ -19,7 +19,7 @@ import java.util.Objects;
  * author: zengfansheng
  */
 public class Device implements Comparable<Device>, Cloneable, Parcelable {
-    private BluetoothDevice originDevice;
+    private final BluetoothDevice originDevice;
     ConnectionState connectionState = ConnectionState.DISCONNECTED;
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @Nullable
