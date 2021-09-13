@@ -12,6 +12,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
+import android.util.Pair;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
@@ -24,9 +28,6 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.util.Pair;
 import cn.wandersnail.ble.callback.RequestCallback;
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.ble.util.Logger;
@@ -238,6 +239,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
+            device.setRssi(rssi);
             if (originCallback != null) {
                 easyBle.getExecutorService().execute(() -> originCallback.onReadRemoteRssi(gatt, rssi, status));
             }
@@ -551,7 +553,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private boolean canScanReconnect() {
         long duration = System.currentTimeMillis() - lastScanStopTime;
-        List<Pair<Integer, Integer>> parameters = configuration.scanIntervalPairsInAutoReconnection;
+        List<android.util.Pair<Integer, Integer>> parameters = configuration.scanIntervalPairsInAutoReconnection;
         Collections.sort(parameters, (o1, o2) -> {
             if (o1 == null || o1.first == null) return 1;
             if (o2 == null || o2.first == null) return -1;
