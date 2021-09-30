@@ -12,10 +12,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
-import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.util.Pair;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
@@ -553,7 +553,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private boolean canScanReconnect() {
         long duration = System.currentTimeMillis() - lastScanStopTime;
-        List<android.util.Pair<Integer, Integer>> parameters = configuration.scanIntervalPairsInAutoReconnection;
+        List<Pair<Integer, Integer>> parameters = configuration.scanIntervalPairsInAutoReconnection;
         Collections.sort(parameters, (o1, o2) -> {
             if (o1 == null || o1.first == null) return 1;
             if (o2 == null || o2.first == null) return -1;

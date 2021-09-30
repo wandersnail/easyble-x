@@ -105,7 +105,9 @@ public class EasyBLEBuilder {
     }
 
     /**
-     * 是否强制使用{@link Observe}注解才会收到被观察者的消息。强制使用的话，性能会好一些
+     * 是否强制使用{@link Observe}注解才会收到被观察者的消息
+     * 
+     * @param observeAnnotationRequired true：只有方法上加{@link Observe}注解的才会收到消息。false：加不加注解都会收到消息
      */
     public EasyBLEBuilder setObserveAnnotationRequired(boolean observeAnnotationRequired) {
         isObserveAnnotationRequired = observeAnnotationRequired;

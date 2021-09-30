@@ -36,7 +36,7 @@ class LeScanner extends AbstractScanner {
         return bleScanner;
     }
 
-    private ScanCallback scanCallback = new ScanCallback() {
+    private final ScanCallback scanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             parseScanResult(result.getDevice(), result);

@@ -48,14 +48,12 @@ allprojects {
 
         kotlinOptions {
             jvmTarget = '1.8'
-            apiVersion = '1.3'
-            languageVersion = '1.3'
         }
     }
 }
 ```
 
-2. module的build.gradle中的添加依赖，自行修改为最新版本，同步后通常就可以用了：
+2. module的build.gradle中的添加依赖，自行将latestVersion修改为最新版本，同步后通常就可以用了：
 ```
 dependencies {
 	...
@@ -102,8 +100,8 @@ EasyBLE ble = EasyBLE.getBuilder().setScanConfiguration(scanConfig)
         .setScannerType(ScannerType.LE)//指定蓝牙扫描器，默认为系统Android5.0以上使用ScannerType.LE
         .setExecutorService(executorService)//自定义线程池用来执行后台任务，也可使用默认
         .setDeviceCreator(creator)//设备实例构建器。返回搜索结果时的设备对象由此构建器实例化
-		.setObserveAnnotationRequired(false)//不强制使用{@link Observe}注解才会收到被观察者的消息，强制使用的话，性能会好一些
-		.setMethodDefaultThreadMode(ThreadMode.MAIN)//指定回调方法和观察者方法的默认线程
+		.setObserveAnnotationRequired(false)//不强制使用{@link Observe}注解才会收到被观察者的消息，默认为false
+		.setMethodDefaultThreadMode(ThreadMode.MAIN)//指定回调方法和观察者方法的默认线程，默认为ThreadMode.MAIN
 		.build();
 ble.initialize(this);
 ```
@@ -343,12 +341,12 @@ connection.execute(builder.build());
 EasyBLE.getInstance().release();
 ```
 ### 代码混淆
+如果使用jar方式依赖，需要添加一下混淆规则。使用aar或直接远程依赖不需要额外添加，库里自带混淆规则
 
 ```
 -keep class * implements cn.wandersnail.commons.observer.Observe {
 	public <methods>;
 }
-#保持 Serializable 不被混淆
 -keep class * implements cn.wandersnail.ble.Request {
     !private *;
 }
