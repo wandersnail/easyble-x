@@ -6,11 +6,11 @@ import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import java.util.Objects;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+
+import java.util.Objects;
 
 /**
  * BLE设备实体类
@@ -26,9 +26,9 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
     ScanResult scanResult;
     @Nullable
     byte[] scanRecord;
-    String name;
-    String address;
-    int rssi;
+    String name = "";
+    String address = "";
+    int rssi = -120;
 
     public Device(@NonNull BluetoothDevice originDevice) {
         this.originDevice = originDevice;

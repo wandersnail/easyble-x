@@ -6,7 +6,7 @@ signing {
     sign configurations.archives
 }
 
-def lib_version = '1.2.7'
+def lib_version = '1.2.8'
 def user_name = 'wandersnail'
 def lib_group = 'cn.wandersnail'
 def lib_artifact = 'easyble-x'
@@ -24,13 +24,10 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "$lib_version"
+
+        consumerProguardFiles 'easyblex-consumer-rules.pro'
     }
 
-    buildTypes {
-        release {
-            minifyEnabled false
-        }
-    }
     lintOptions {
         abortOnError false
         disable 'TypographyFractions', 'TypographyQuotes'
@@ -43,7 +40,7 @@ android {
 
 dependencies {
     compileOnly 'androidx.appcompat:appcompat:1.3.1'
-    compileOnly 'cn.wandersnail:commons-android:1.2.5'
+    compileOnly 'cn.wandersnail:commons-android:1.3.0'
 }
 
 task sourcesJar(type: Jar) {

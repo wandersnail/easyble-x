@@ -208,16 +208,18 @@ abstract class AbstractScanner implements Scanner {
             if (!isBtEnabled() || (getType() != ScannerType.CLASSIC && isScanning) || !isReady()) {
                 return;
             }
-            if (!isLocationEnabled(context)) {
-                String errorMsg = "Unable to scan for Bluetooth devices, the phone's location service is not turned on.";
-                handleScanCallback(false, null, false, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, errorMsg);
-                logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
-                return;
-            } else if (noLocationPermission(context)) {
-                String errorMsg = "Unable to scan for Bluetooth devices, lack location permission.";
-                handleScanCallback(false, null, false, ScanListener.ERROR_LACK_LOCATION_PERMISSION, errorMsg);
-                logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
-                return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (!isLocationEnabled(context)) {
+                    String errorMsg = "Unable to scan for Bluetooth devices, the phone's location service is not turned on.";
+                    handleScanCallback(false, null, false, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, errorMsg);
+                    logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
+                    return;
+                } else if (noLocationPermission(context)) {
+                    String errorMsg = "Unable to scan for Bluetooth devices, lack location permission.";
+                    handleScanCallback(false, null, false, ScanListener.ERROR_LACK_LOCATION_PERMISSION, errorMsg);
+                    logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
+                    return;
+                }
             }
             if (getType() != ScannerType.CLASSIC) {
                 isScanning = true;
@@ -274,7 +276,7 @@ abstract class AbstractScanner implements Scanner {
         }
     }
 
-    private Runnable stopScanRunnable = () -> stopScan(false);
+    private final Runnable stopScanRunnable = () -> stopScan(false);
 
     //蓝牙是否开启
     private boolean isBtEnabled() {
