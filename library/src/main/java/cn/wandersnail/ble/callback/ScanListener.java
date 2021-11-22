@@ -25,6 +25,11 @@ public interface ScanListener {
      * 搜索错误
      */
     int ERROR_SCAN_FAILED = 2;
+    /**
+     * 缺少搜索权限。 {@link Manifest.permission#BLUETOOTH_SCAN}
+     */
+    int ERROR_LACK_SCAN_PERMISSION = 3;
+    
 
     /**
      * 蓝牙搜索开始

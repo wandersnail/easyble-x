@@ -126,6 +126,21 @@ public class MainActivity extends BaseActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onConnectFailed(@NonNull Device device, int failType) {
+        switch(failType) {
+            case Connection.CONNECT_FAIL_TYPE_LACK_CONNECT_PERMISSION:		
+                ToastUtils.showShort("连接失败：缺少连接权限");
+        		break;
+            case Connection.CONNECT_FAIL_TYPE_CONNECTION_IS_UNSUPPORTED:
+                ToastUtils.showShort("连接失败：设备不支持连接");
+                break;
+            case Connection.CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION:
+                ToastUtils.showShort("连接失败：达到最大重连次数限制");
+                break;
+        }
+    }
+
     /**
      * 使用{@link Observe}确定要接收消息，{@link RunOn}指定在主线程执行方法，设置{@link Tag}防混淆后找不到方法
      */

@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -28,7 +29,7 @@ import java.util.List;
 import cn.wandersnail.ble.Device;
 import cn.wandersnail.ble.EasyBLE;
 import cn.wandersnail.ble.callback.ScanListener;
-import cn.wandersnail.commons.helper.PermissionsRequester;
+import cn.wandersnail.commons.helper.PermissionsRequester2;
 import cn.wandersnail.commons.util.ToastUtils;
 import cn.wandersnail.widget.listview.BaseListAdapter;
 import cn.wandersnail.widget.listview.BaseViewHolder;
@@ -43,7 +44,6 @@ public class ScanActivity extends AppCompatActivity {
     private PullRefreshLayout refreshLayout;
     private LinearLayout layoutEmpty;
     private List<Device> devList = new ArrayList<>();
-    private PermissionsRequester permissionsRequester;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -51,7 +51,7 @@ public class ScanActivity extends AppCompatActivity {
         setContentView(R.layout.activity_scan);
         initViews();
         EasyBLE.getInstance().addScanListener(scanListener);        
-        initialize();
+        checkPermissions();
     }
 
     private void initViews() {
@@ -82,7 +82,7 @@ public class ScanActivity extends AppCompatActivity {
         System.exit(0);
     }
 
-    private ScanListener scanListener = new ScanListener() {
+    private final ScanListener scanListener = new ScanListener() {
         @Override
         public void onScanStart() {
             invalidateOptionsMenu();
@@ -106,6 +106,8 @@ public class ScanActivity extends AppCompatActivity {
             		break;
                 case ScanListener.ERROR_LOCATION_SERVICE_CLOSED://位置服务未开启		
             		break;
+                case ScanListener.ERROR_LACK_SCAN_PERMISSION://缺少搜索权限		
+            		break;
                 case ScanListener.ERROR_SCAN_FAILED://搜索失败
                     ToastUtils.showShort("搜索出错：" + errorCode);
                     break;
@@ -117,9 +119,14 @@ public class ScanActivity extends AppCompatActivity {
     private List<String> getNeedPermissions() {
         List<String> list = new ArrayList<>();
         if (getApplicationInfo().targetSdkVersion >= 29) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
-            list.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            list.add(Manifest.permission.ACCESS_FINE_LOCATION);            
         } else {
             list.add(Manifest.permission.ACCESS_COARSE_LOCATION);            
+        }
+        //Android 12需要
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            list.add(Manifest.permission.BLUETOOTH_SCAN);
+            list.add(Manifest.permission.BLUETOOTH_CONNECT);
         }
         return list;
     }
@@ -154,19 +161,13 @@ public class ScanActivity extends AppCompatActivity {
         return super.onCreateOptionsMenu(menu);
     }
 
-    private void initialize() {
+    private void checkPermissions() {
         //动态申请权限
-        permissionsRequester = new PermissionsRequester(this);
+        PermissionsRequester2 permissionsRequester = new PermissionsRequester2(this);
         permissionsRequester.setCallback(list -> {
             
         });
         permissionsRequester.checkAndRequest(getNeedPermissions());
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        permissionsRequester.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     private void doStartScan() {
