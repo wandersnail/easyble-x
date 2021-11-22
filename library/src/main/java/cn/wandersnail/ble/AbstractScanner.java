@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Handler;
@@ -21,7 +20,6 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import androidx.core.content.ContextCompat;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -80,16 +78,25 @@ abstract class AbstractScanner implements Scanner {
             }
         }
     }
-
+    
     //检查是否有定位权限
     private boolean noLocationPermission(Context context) {
         int sdkVersion = context.getApplicationInfo().targetSdkVersion;
-        if (sdkVersion >= 29) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
-            return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+        if (sdkVersion >= Build.VERSION_CODES.Q) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
+            return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION);
         } else {
-            return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED;
+            return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) &&
+                    !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION);
         }
+    }
+
+    //检查是否有搜索权限
+    private boolean noScanPermission(Context context) {
+        //在31以上的需要搜索权限才能搜索到蓝牙设备
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return !PermissionChecker.hasPermission(context, Manifest.permission.BLUETOOTH_SCAN);
+        }
+        return false;
     }
 
     //处理搜索回调
@@ -128,13 +135,13 @@ abstract class AbstractScanner implements Scanner {
                     }
                 }
             }
-        } catch (Exception ignore) {
+        } catch (Throwable ignore) {
         }
         //遍历支持的，获取所有连接的
         for (int i = 1; i <= 21; i++) {
             try {
                 getSystemConnectedDevices(context, i);
-            } catch (Exception ignore) {
+            } catch (Throwable ignore) {
             }
         }
     }
@@ -153,7 +160,7 @@ abstract class AbstractScanner implements Scanner {
                     for (BluetoothDevice device : devices) {
                         parseScanResult(device, true);
                     }
-                } catch (Exception ignore) {
+                } catch (Throwable ignore) {
                 }
             }
 
@@ -214,9 +221,16 @@ abstract class AbstractScanner implements Scanner {
                     handleScanCallback(false, null, false, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, errorMsg);
                     logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                     return;
-                } else if (noLocationPermission(context)) {
+                }
+                if (noLocationPermission(context)) {
                     String errorMsg = "Unable to scan for Bluetooth devices, lack location permission.";
                     handleScanCallback(false, null, false, ScanListener.ERROR_LACK_LOCATION_PERMISSION, errorMsg);
+                    logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
+                    return;
+                }
+                if (noScanPermission(context)) {
+                    String errorMsg = "Unable to scan for Bluetooth devices, lack scan permission.";
+                    handleScanCallback(false, null, false, ScanListener.ERROR_LACK_SCAN_PERMISSION, errorMsg);
                     logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                     return;
                 }
@@ -285,7 +299,7 @@ abstract class AbstractScanner implements Scanner {
                 Method method = bluetoothAdapter.getClass().getDeclaredMethod("isLeEnabled");
                 method.setAccessible(true);
                 return (boolean) method.invoke(bluetoothAdapter);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 int state = bluetoothAdapter.getState();
                 return state == BluetoothAdapter.STATE_ON || state == 15;
             }

@@ -1,5 +1,6 @@
 package cn.wandersnail.ble;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.bluetooth.BluetoothAdapter;
@@ -119,7 +120,7 @@ public class EasyBLE {
             Object acThread = method.invoke(null);
             Method appMethod = acThread.getClass().getMethod("getApplication");
             application = (Application) appMethod.invoke(acThread);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
     }
@@ -442,6 +443,15 @@ public class EasyBLE {
         }
     }
 
+    //检查是否有连接权限
+    private boolean hasConnectPermission(Context context) {
+        //在31以上的需要连接权限才能连接蓝牙设备
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return PermissionChecker.hasPermission(context, Manifest.permission.BLUETOOTH_CONNECT);
+        }
+        return true;
+    }
+    
     /**
      * 创建连接
      *
@@ -545,6 +555,10 @@ public class EasyBLE {
     public synchronized Connection connect(@NonNull final Device device, @Nullable ConnectionConfiguration configuration,
                                            @Nullable final EventObserver observer) {
         if (checkStatus()) {
+            if (!hasConnectPermission(application)) {
+                notifyConnectionFail(observer, device, "lack connect permission", Connection.CONNECT_FAIL_TYPE_LACK_CONNECT_PERMISSION);
+                return null;
+            }
             Inspector.requireNonNull(device, "device can't be null");
             Connection connection = connectionMap.remove(device.getAddress());
             //如果连接已存在，先释放掉
@@ -565,16 +579,20 @@ public class EasyBLE {
                 addressList.add(device.address);
                 return connection;
             } else {
-                String message = String.format(Locale.US, "connect failed! [type: unconnectable, name: %s, addr: %s]",
-                        device.getName(), device.getAddress());
-                logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, message);
-                if (observer != null) {
-                    posterDispatcher.post(observer, MethodInfoGenerator.onConnectFailed(device, Connection.CONNECT_FAIL_TYPE_CONNECTION_IS_UNSUPPORTED));
-                }
-                observable.notifyObservers(MethodInfoGenerator.onConnectFailed(device, Connection.CONNECT_FAIL_TYPE_CONNECTION_IS_UNSUPPORTED));
+                notifyConnectionFail(observer, device, "unconnectable", Connection.CONNECT_FAIL_TYPE_CONNECTION_IS_UNSUPPORTED);
             }
         }
         return null;
+    }
+    
+    private void notifyConnectionFail(EventObserver observer, Device device, String typeStr, int type) {
+        String message = String.format(Locale.US, "connect failed! [type: %s, name: %s, addr: %s]",
+                typeStr, device.getName(), device.getAddress());
+        logger.log(Log.ERROR, Logger.TYPE_CONNECTION_STATE, message);
+        if (observer != null) {
+            posterDispatcher.post(observer, MethodInfoGenerator.onConnectFailed(device, type));
+        }
+        observable.notifyObservers(MethodInfoGenerator.onConnectFailed(device, type));
     }
 
     /**
@@ -749,7 +767,7 @@ public class EasyBLE {
         try {
             BluetoothDevice remoteDevice = bluetoothAdapter.getRemoteDevice(address);
             return remoteDevice.getBondState() != BluetoothDevice.BOND_NONE || remoteDevice.createBond();
-        } catch (Exception ignore) {
+        } catch (Throwable ignore) {
             return false;
         }
     }
@@ -766,7 +784,7 @@ public class EasyBLE {
                 if (filter == null || filter.accept(device)) {
                     try {
                         device.getClass().getMethod("removeBond").invoke(device);
-                    } catch (Exception ignore) {
+                    } catch (Throwable ignore) {
                     }
                 }
             }
@@ -786,7 +804,7 @@ public class EasyBLE {
             if (remoteDevice.getBondState() != BluetoothDevice.BOND_NONE) {
                 remoteDevice.getClass().getMethod("removeBond").invoke(remoteDevice);
             }
-        } catch (Exception ignore) {
+        } catch (Throwable ignore) {
         }
     }
 }

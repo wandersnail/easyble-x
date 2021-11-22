@@ -2,19 +2,20 @@
 
 buildscript {
     ext {
-        compileSdkVersion = 28
+        compileSdkVersion = 31
         minSdkVersion = 21
         targetSdkVersion = 28
 
-        kotlin_version = '1.4.21'
+        kotlin_version = '1.6.0'
     }
     
     repositories {
         google()
-        maven { url 'https://maven.aliyun.com/repository/public' }
+        mavenCentral()
+        maven { url 'https://maven.aliyun.com/repository/jcenter' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.2.1'
+        classpath 'com.android.tools.build:gradle:7.0.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -22,7 +23,8 @@ buildscript {
 allprojects {
     repositories {
         google()
-        maven { url 'https://maven.aliyun.com/repository/public' }
+        mavenCentral()
+        maven { url 'https://maven.aliyun.com/repository/jcenter' }
         maven { url 'https://jitpack.io' }
     }
 
@@ -32,6 +34,7 @@ allprojects {
     }
 
     tasks.withType(Javadoc) {
+        enabled = false
         options {
             encoding "UTF-8"
             charSet 'UTF-8'

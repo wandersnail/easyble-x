@@ -1,5 +1,6 @@
 package cn.wandersnail.ble;
 
+import android.Manifest;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -55,6 +56,10 @@ public interface Connection {
      * 不支持连接
      */
     int CONNECT_FAIL_TYPE_CONNECTION_IS_UNSUPPORTED = 2;
+    /**
+     * 缺少连接权限。 {@link Manifest.permission#BLUETOOTH_CONNECT}
+     */
+    int CONNECT_FAIL_TYPE_LACK_CONNECT_PERMISSION = 3;
 
     @NonNull
     Device getDevice();

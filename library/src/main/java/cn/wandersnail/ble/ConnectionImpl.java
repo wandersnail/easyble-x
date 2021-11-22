@@ -442,7 +442,7 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
 
-    private Runnable connectRunnable = new Runnable() {
+    private final Runnable connectRunnable = new Runnable() {
         @Override
         public void run() {
             if (!isReleased) {
@@ -509,7 +509,7 @@ class ConnectionImpl implements Connection, ScanListener {
         if (bluetoothGatt != null) {
             try {
                 bluetoothGatt.disconnect();
-            } catch (Exception ignore) {
+            } catch (Throwable ignore) {
             }
 
             if (isAuto) {
@@ -570,11 +570,11 @@ class ConnectionImpl implements Connection, ScanListener {
     private void closeGatt(BluetoothGatt gatt) {
         try {
             gatt.disconnect();
-        } catch (Exception ignore) {
+        } catch (Throwable ignore) {
         }
         try {
             gatt.close();
-        } catch (Exception ignore) {
+        } catch (Throwable ignore) {
         }
     }
 
@@ -889,7 +889,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             handleWriteFailed(request);
         }
     }
@@ -1078,7 +1078,7 @@ class ConnectionImpl implements Connection, ScanListener {
         try {
             Method localMethod = bluetoothGatt.getClass().getMethod("refresh");
             return (boolean) localMethod.invoke(bluetoothGatt);
-        } catch (Exception ignore) {
+        } catch (Throwable ignore) {
         }
         return false;
     }
