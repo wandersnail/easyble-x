@@ -29,6 +29,10 @@ public interface ScanListener {
      * 缺少搜索权限。 {@link Manifest.permission#BLUETOOTH_SCAN}
      */
     int ERROR_LACK_SCAN_PERMISSION = 3;
+    /**
+     * 缺少连接权限。 {@link Manifest.permission#BLUETOOTH_CONNECT}
+     */
+    int ERROR_LACK_CONNECT_PERMISSION = 4;
     
 
     /**

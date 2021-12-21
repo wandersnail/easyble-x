@@ -98,6 +98,15 @@ abstract class AbstractScanner implements Scanner {
         }
         return false;
     }
+    
+    //检查是否有连接权限，部分机型获取设备名称需要连接权限
+    private boolean noConnectPermission(Context context) {
+        //在31以上的需要搜索权限才能搜索到蓝牙设备
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return !PermissionChecker.hasPermission(context, Manifest.permission.BLUETOOTH_CONNECT);
+        }
+        return false;
+    }
 
     //处理搜索回调
     void handleScanCallback(final boolean start, @Nullable final Device device, final boolean isConnectedBySys,
@@ -231,6 +240,12 @@ abstract class AbstractScanner implements Scanner {
                 if (noScanPermission(context)) {
                     String errorMsg = "Unable to scan for Bluetooth devices, lack scan permission.";
                     handleScanCallback(false, null, false, ScanListener.ERROR_LACK_SCAN_PERMISSION, errorMsg);
+                    logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
+                    return;
+                }
+                if (noConnectPermission(context)) {
+                    String errorMsg = "Unable to scan for Bluetooth devices, lack connect permission.";
+                    handleScanCallback(false, null, false, ScanListener.ERROR_LACK_CONNECT_PERMISSION, errorMsg);
                     logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                     return;
                 }
