@@ -73,7 +73,7 @@ abstract class AbstractScanner implements Scanner {
             try {
                 int locationMode = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE);
                 return locationMode != Settings.Secure.LOCATION_MODE_OFF;
-            } catch (Settings.SettingNotFoundException e) {
+            } catch (Throwable e) {
                 return false;
             }
         }
@@ -286,12 +286,16 @@ abstract class AbstractScanner implements Scanner {
         for (int i = 0; i < size; i++) {
             try {
                 bluetoothAdapter.closeProfileProxy(proxyBluetoothProfiles.keyAt(i), proxyBluetoothProfiles.valueAt(i));
-            } catch (Exception ignore) {
+            } catch (Throwable ignore) {
             }
         }
         proxyBluetoothProfiles.clear();
-        if (isBtEnabled()) {
-            performStopScan();
+        try {
+            if (isBtEnabled()) {
+                performStopScan();
+            }
+        } catch (Throwable ignore) {
+            //android12没有搜索权限时会抛异常
         }
         if (getType() != ScannerType.CLASSIC) {
             synchronized (this) {
