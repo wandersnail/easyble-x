@@ -287,7 +287,7 @@ class ConnectionImpl implements Connection, ScanListener {
                             localDescriptor.setValue(currentRequest.descriptorTemp);
                         }
                     } else {
-                        notifyNotificationChanged(currentRequest, ((int) currentRequest.value) == 1);
+                        notifyNotificationOrIndicationChanged(currentRequest, ((int) currentRequest.value) == 1);
                     }
                     executeNextRequest();
                 }
@@ -917,7 +917,7 @@ class ConnectionImpl implements Connection, ScanListener {
             handleGattStatusFailed();
         }
     }
-
+    
     private void handlePhyChange(boolean read, int txPhy, int rxPhy, int status) {
         if (currentRequest != null) {
             if ((read && currentRequest.type == RequestType.READ_PHY) || ((!read && currentRequest.type == RequestType.SET_PREFERRED_PHY))) {
@@ -1019,16 +1019,18 @@ class ConnectionImpl implements Connection, ScanListener {
                 substringUuid(request.characteristic), device.address, toHex(value));
     }
 
-    private void notifyNotificationChanged(GenericRequest request, boolean isEnabled) {
-        MethodInfo info = MethodInfoGenerator.onNotificationChanged(request, isEnabled);
-        handleCallbacks(request.callback, info);
+    private void notifyNotificationOrIndicationChanged(GenericRequest request, boolean isEnabled) {
+        MethodInfo info;
         if (request.type == RequestType.SET_NOTIFICATION) {
+            info = MethodInfoGenerator.onNotificationChanged(request, isEnabled);
             logD(Logger.TYPE_NOTIFICATION_CHANGED, "%s [UUID: %s, addr: %s]", isEnabled ? "notification enabled!" :
                     "notification disabled!", substringUuid(request.characteristic), device.address);
         } else {
+            info = MethodInfoGenerator.onIndicationChanged(request, isEnabled);
             logD(Logger.TYPE_INDICATION_CHANGED, "%s [UUID: %s, addr: %s]", isEnabled ? "indication enabled!" :
                     "indication disabled!", substringUuid(request.characteristic), device.address);
         }
+        handleCallbacks(request.callback, info);
     }
 
     private void notifyCharacteristicWrite(GenericRequest request, byte[] value) {
@@ -1295,19 +1297,50 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
 
+    @Deprecated
     @Override
     public boolean isNotificationOrIndicationEnabled(@NonNull BluetoothGattCharacteristic characteristic) {
-        Inspector.requireNonNull(characteristic, "characteristic can't be null");
         BluetoothGattDescriptor descriptor = characteristic.getDescriptor(clientCharacteristicConfig);
         return descriptor != null && (Arrays.equals(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) ||
                 Arrays.equals(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_INDICATION_VALUE));
     }
 
+    @Deprecated
     @Override
     public boolean isNotificationOrIndicationEnabled(UUID service, UUID characteristic) {
         BluetoothGattCharacteristic c = getCharacteristic(service, characteristic);
         if (c != null) {
             return isNotificationOrIndicationEnabled(c);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isIndicationEnabled(@NonNull BluetoothGattCharacteristic characteristic) {
+        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(clientCharacteristicConfig);
+        return descriptor != null && Arrays.equals(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+    }
+
+    @Override
+    public boolean isIndicationEnabled(UUID service, UUID characteristic) {
+        BluetoothGattCharacteristic c = getCharacteristic(service, characteristic);
+        if (c != null) {
+            return isIndicationEnabled(c);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isNotificationEnabled(@NonNull BluetoothGattCharacteristic characteristic) {
+        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(clientCharacteristicConfig);
+        return descriptor != null && Arrays.equals(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+    }
+
+    @Override
+    public boolean isNotificationEnabled(UUID service, UUID characteristic) {
+        BluetoothGattCharacteristic c = getCharacteristic(service, characteristic);
+        if (c != null) {
+            return isNotificationEnabled(c);
         }
         return false;
     }

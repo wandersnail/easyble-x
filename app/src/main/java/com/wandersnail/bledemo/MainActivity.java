@@ -37,9 +37,9 @@ import cn.wandersnail.ble.EasyBLEBuilder;
 import cn.wandersnail.ble.Request;
 import cn.wandersnail.ble.RequestBuilder;
 import cn.wandersnail.ble.RequestBuilderFactory;
-import cn.wandersnail.ble.RequestType;
 import cn.wandersnail.ble.WriteCharacteristicBuilder;
 import cn.wandersnail.ble.WriteOptions;
+import cn.wandersnail.ble.callback.IndicationChangeCallback;
 import cn.wandersnail.ble.callback.MtuChangeCallback;
 import cn.wandersnail.ble.callback.NotificationChangeCallback;
 import cn.wandersnail.ble.callback.ReadCharacteristicCallback;
@@ -60,7 +60,7 @@ public class MainActivity extends BaseActivity {
     private FrameLayout layoutConnecting;
     private AVLoadingIndicatorView loadingIndicator;
     private ImageView ivDisconnected;
-    private List<Item> itemList = new ArrayList<>();
+    private final List<Item> itemList = new ArrayList<>();
     private ListViewAdapter adapter;
     private Connection connection;
 
@@ -214,18 +214,19 @@ public class MainActivity extends BaseActivity {
     @Override
     public void onNotificationChanged(@NonNull Request request, boolean isEnabled) {
         Log.d("EasyBLE", "主线程：" + (Looper.getMainLooper() == Looper.myLooper()) + ", 通知/Indication：" + (isEnabled ? "开启" : "关闭"));
-        if (request.getType() == RequestType.SET_NOTIFICATION) {
-            if (isEnabled) {
-                ToastUtils.showShort("通知开启了");
-            } else {
-                ToastUtils.showShort("通知关闭了");
-            }
+        if (isEnabled) {
+            ToastUtils.showShort("Notification开启了");
         } else {
-            if (isEnabled) {
-                ToastUtils.showShort("Indication开启了");
-            } else {
-                ToastUtils.showShort("Indication关闭了");
-            }
+            ToastUtils.showShort("Notification关闭了");
+        }
+    }
+
+    @Override
+    public void onIndicationChanged(@NonNull Request request, boolean isEnabled) {
+        if (isEnabled) {
+            ToastUtils.showShort("Indication开启了");
+        } else {
+            ToastUtils.showShort("Indication关闭了");
         }
     }
 
@@ -245,7 +246,20 @@ public class MainActivity extends BaseActivity {
         adapter.setOnInnerItemClickListener((item, adapterView, view, i) -> {
             final List<String> menuItems = new ArrayList<>();
             if (item.hasNotifyProperty) {
-                menuItems.add("开关通知");
+                boolean isEnabled = connection.isNotificationEnabled(item.service.getUuid(), item.characteristic.getUuid());
+                if (isEnabled) {
+                    menuItems.add("关闭Notification");
+                } else {
+                    menuItems.add("开启Notification");
+                }
+            }
+            if (item.hasIndicateProperty) {
+                boolean isEnabled = connection.isIndicationEnabled(item.service.getUuid(), item.characteristic.getUuid());
+                if (isEnabled) {
+                    menuItems.add("关闭Indication");
+                } else {
+                    menuItems.add("开启Indication");
+                }
             }
             if (item.hasReadProperty) {
                 menuItems.add("读取特征值");
@@ -257,8 +271,13 @@ public class MainActivity extends BaseActivity {
                     .setItems(menuItems.toArray(new String[0]), (dialog, which) -> {
                         dialog.dismiss();
                         switch (menuItems.get(which)) {
-                            case "开关通知":
+                            case "关闭Notification":
+                            case "开启Notification":
                                 setNotification(item);
+                                break;
+                            case "开启Indication":
+                            case "关闭Indication":
+                                setIndication(item);
                                 break;
                             case "读取特征值":
                                 readCharacteristic(item);
@@ -320,8 +339,15 @@ public class MainActivity extends BaseActivity {
     }
 
     private void setNotification(@NotNull Item item) {
-        boolean isEnabled = connection.isNotificationOrIndicationEnabled(item.service.getUuid(), item.characteristic.getUuid());
+        boolean isEnabled = connection.isNotificationEnabled(item.service.getUuid(), item.characteristic.getUuid());
         RequestBuilder<NotificationChangeCallback> builder = new RequestBuilderFactory().getSetNotificationBuilder(item.service.getUuid(), item.characteristic.getUuid(), !isEnabled);
+        //不设置回调，使用观察者模式接收结果
+        builder.build().execute(connection);
+    }
+    
+    private void setIndication(@NotNull Item item) {
+        boolean isEnabled = connection.isIndicationEnabled(item.service.getUuid(), item.characteristic.getUuid());
+        RequestBuilder<IndicationChangeCallback> builder = new RequestBuilderFactory().getSetIndicationBuilder(item.service.getUuid(), item.characteristic.getUuid(), !isEnabled);
         //不设置回调，使用观察者模式接收结果
         builder.build().execute(connection);
     }
@@ -394,8 +420,11 @@ public class MainActivity extends BaseActivity {
                         sb.append(", ");
                     }
                     sb.append(propertyStrs[i]);
-                    if (property == BluetoothGattCharacteristic.PROPERTY_NOTIFY || property == BluetoothGattCharacteristic.PROPERTY_INDICATE) {
+                    if (property == BluetoothGattCharacteristic.PROPERTY_NOTIFY) {
                         node.hasNotifyProperty = true;
+                    }
+                    if (property == BluetoothGattCharacteristic.PROPERTY_INDICATE) {
+                        node.hasIndicateProperty = true;
                     }
                     if (property == BluetoothGattCharacteristic.PROPERTY_WRITE || property == BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) {
                         node.hasWriteProperty = true;
@@ -419,11 +448,12 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    private class Item extends Node<Item> {
+    private static class Item extends Node<Item> {
         boolean isService;
         BluetoothGattService service;
         BluetoothGattCharacteristic characteristic;
         boolean hasNotifyProperty;
+        boolean hasIndicateProperty;
         boolean hasWriteProperty;
         boolean hasReadProperty;
 

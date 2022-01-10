@@ -74,12 +74,21 @@ public interface EventObserver extends Observer {
     }
 
     /**
-     * 通知开关变化 / Indication开关变化
+     * 通知开关变化
      *
      * @param request   请求
      * @param isEnabled 开启或关闭
      */
     default void onNotificationChanged(@NonNull Request request, boolean isEnabled) {
+    }
+
+    /**
+     * Indication开关变化
+     *
+     * @param request   请求
+     * @param isEnabled 开启或关闭
+     */
+    default void onIndicationChanged(@NonNull Request request, boolean isEnabled) {
     }
 
     /**
