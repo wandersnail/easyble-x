@@ -9,6 +9,7 @@ import androidx.annotation.RequiresApi;
 
 import java.util.UUID;
 
+import cn.wandersnail.ble.callback.IndicationChangeCallback;
 import cn.wandersnail.ble.callback.MtuChangeCallback;
 import cn.wandersnail.ble.callback.NotificationChangeCallback;
 import cn.wandersnail.ble.callback.PhyChangeCallback;
@@ -73,9 +74,9 @@ public class RequestBuilderFactory {
      * @param characteristic 特征UUID
      * @param enable         开启或关闭
      */
-    public RequestBuilder<NotificationChangeCallback> getSetIndicationBuilder(@NonNull UUID service, @NonNull UUID characteristic,
-                                                                               boolean enable) {
-        RequestBuilder<NotificationChangeCallback> builder = new RequestBuilder<>(RequestType.SET_INDICATION);
+    public RequestBuilder<IndicationChangeCallback> getSetIndicationBuilder(@NonNull UUID service, @NonNull UUID characteristic,
+                                                                            boolean enable) {
+        RequestBuilder<IndicationChangeCallback> builder = new RequestBuilder<>(RequestType.SET_INDICATION);
         builder.service = service;
         builder.characteristic = characteristic;
         builder.value = enable ? 1 : 0;
@@ -107,7 +108,6 @@ public class RequestBuilderFactory {
      */
     public WriteCharacteristicBuilder getWriteCharacteristicBuilder(@NonNull UUID service, @NonNull UUID characteristic,
                                                                             @NonNull byte[] value) {
-        Inspector.requireNonNull(value, "value can't be null");
         WriteCharacteristicBuilder builder = new WriteCharacteristicBuilder();
         builder.service = service;
         builder.characteristic = characteristic;

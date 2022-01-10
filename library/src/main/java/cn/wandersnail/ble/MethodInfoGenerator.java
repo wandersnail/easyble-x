@@ -58,6 +58,11 @@ class MethodInfoGenerator {
         return new MethodInfo("onNotificationChanged", new MethodInfo.Parameter(Request.class, request),
                 new MethodInfo.Parameter(boolean.class, isEnabled));
     }
+    
+    static MethodInfo onIndicationChanged(Request request, boolean isEnabled) {
+        return new MethodInfo("onIndicationChanged", new MethodInfo.Parameter(Request.class, request),
+                new MethodInfo.Parameter(boolean.class, isEnabled));
+    }
 
     static MethodInfo onMtuChanged(Request request, int mtu) {
         return new MethodInfo("onMtuChanged", new MethodInfo.Parameter(Request.class, request),

@@ -122,7 +122,6 @@ public class ConnectionConfiguration {
      * 自动重连时，搜索次数与间隔的对应关系，first：已尝试次数，second：间隔，单位为毫秒。如搜索了1次，间隔2秒，搜索了5次，间隔30秒等
      */
     public ConnectionConfiguration setScanIntervalPairsInAutoReconnection(@NonNull List<Pair<Integer, Integer>> parameters) {
-        Inspector.requireNonNull(parameters, "parameters can't be null");
         scanIntervalPairsInAutoReconnection.clear();
         scanIntervalPairsInAutoReconnection.addAll(parameters);
         return this;
@@ -136,9 +135,6 @@ public class ConnectionConfiguration {
      * @param options        配置
      */
     public ConnectionConfiguration setDefaultWriteOptions(@NonNull UUID service, @NonNull UUID characteristic, @NonNull WriteOptions options) {
-        Inspector.requireNonNull(service, "service can't be null");
-        Inspector.requireNonNull(characteristic, "characteristic can't be null");
-        Inspector.requireNonNull(options, "options can't be null");
         defaultWriteOptionsMap.put(service + ":" + characteristic, options);
         return this;
     }

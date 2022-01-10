@@ -249,7 +249,6 @@ public class EasyBLE {
         if (isInitialized()) {
             return;
         }
-        Inspector.requireNonNull(application, "application can't be");
         this.application = application;
         //检查是否支持BLE
         if (!application.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -275,7 +274,9 @@ public class EasyBLE {
     }
 
     private synchronized boolean checkStatus() {
-        Inspector.requireNonNull(instance, "EasyBLE instance has been destroyed!");
+        if (instance == null) {
+            throw new IllegalStateException("EasyBLE instance has been destroyed!");
+        }
         if (!isInitialized) {
             if (!tryAutoInit()) {
                 String msg = "The SDK has not been initialized, make sure to call EasyBLE.getInstance().initialize(Application) first.";
@@ -499,7 +500,6 @@ public class EasyBLE {
     public Connection connect(@NonNull String address, @Nullable ConnectionConfiguration configuration,
                               @Nullable EventObserver observer) {
         if (checkStatus()) {
-            Inspector.requireNonNull(address, "address can't be null");
             BluetoothDevice remoteDevice = bluetoothAdapter.getRemoteDevice(address);
             if (remoteDevice != null) {
                 return connect(new Device(remoteDevice), configuration, observer);
@@ -559,7 +559,6 @@ public class EasyBLE {
                 notifyConnectionFail(observer, device, "lack connect permission", Connection.CONNECT_FAIL_TYPE_LACK_CONNECT_PERMISSION);
                 return null;
             }
-            Inspector.requireNonNull(device, "device can't be null");
             Connection connection = connectionMap.remove(device.getAddress());
             //如果连接已存在，先释放掉
             if (connection != null) {

@@ -43,7 +43,7 @@ public class ScanActivity extends AppCompatActivity {
     private ListAdapter listAdapter;
     private PullRefreshLayout refreshLayout;
     private LinearLayout layoutEmpty;
-    private List<Device> devList = new ArrayList<>();
+    private final List<Device> devList = new ArrayList<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -177,9 +177,9 @@ public class ScanActivity extends AppCompatActivity {
         EasyBLE.getInstance().startScan();
     }
 
-    private class ListAdapter extends BaseListAdapter<Device> {
-        private HashMap<String, Long> updateTimeMap = new HashMap<>();
-        private HashMap<String, TextView> rssiViews = new HashMap<>();
+    private static class ListAdapter extends BaseListAdapter<Device> {
+        private final HashMap<String, Long> updateTimeMap = new HashMap<>();
+        private final HashMap<String, TextView> rssiViews = new HashMap<>();
 
         ListAdapter(@NotNull Context context, @NotNull List<Device> list) {
             super(context, list);
@@ -194,7 +194,7 @@ public class ScanActivity extends AppCompatActivity {
                 TextView tvRssi;
 
                 @Override
-                public void onBind(Device device, int i) {
+                public void onBind(@NonNull Device device, int i) {
                     rssiViews.put(device.getAddress(), tvRssi);
                     tvName.setText(device.getName().isEmpty() ? "N/A" : device.getName());
                     tvAddr.setText(device.getAddress());

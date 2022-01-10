@@ -138,12 +138,32 @@ public interface Connection {
     /**
      * 通知或Indication是否开启
      */
+    @Deprecated
     boolean isNotificationOrIndicationEnabled(@NonNull BluetoothGattCharacteristic characteristic);
 
     /**
      * 通知或Indication是否开启
      */
+    @Deprecated
     boolean isNotificationOrIndicationEnabled(UUID service, UUID characteristic);
+    /**
+     * 通知是否开启
+     */
+    boolean isNotificationEnabled(@NonNull BluetoothGattCharacteristic characteristic);
+
+    /**
+     * 通知是否开启
+     */
+    boolean isNotificationEnabled(UUID service, UUID characteristic);
+    /**
+     * Indication是否开启
+     */
+    boolean isIndicationEnabled(@NonNull BluetoothGattCharacteristic characteristic);
+
+    /**
+     * Indication是否开启
+     */
+    boolean isIndicationEnabled(UUID service, UUID characteristic);
 
     /**
      * 设置原生回调
