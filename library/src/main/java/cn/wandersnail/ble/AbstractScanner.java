@@ -81,16 +81,13 @@ abstract class AbstractScanner implements Scanner {
     
     //检查是否有定位权限
     private boolean noLocationPermission(Context context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            int sdkVersion = context.getApplicationInfo().targetSdkVersion;
-            if (sdkVersion >= Build.VERSION_CODES.Q) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
-                return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION);
-            } else {
-                return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) &&
-                        !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION);
-            }
+        int sdkVersion = context.getApplicationInfo().targetSdkVersion;
+        if (sdkVersion >= Build.VERSION_CODES.Q) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
+            return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION);
+        } else {
+            return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) &&
+                    !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION);
         }
-        return false;
     }
 
     //检查是否有搜索权限
