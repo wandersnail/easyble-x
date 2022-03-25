@@ -422,7 +422,7 @@ class ConnectionImpl implements Connection, ScanListener {
                             posterDispatcher.post(observer, MethodInfoGenerator.onConnectTimeout(device, type));
                         }
                         boolean infinite = configuration.tryReconnectMaxTimes == ConnectionConfiguration.TRY_RECONNECT_TIMES_INFINITE;
-                        if (configuration.isAutoReconnect && (infinite || tryReconnectCount < configuration.connectTimeoutMillis)) {
+                        if (configuration.isAutoReconnect && (infinite || tryReconnectCount < configuration.tryReconnectMaxTimes)) {
                             doDisconnect(true);
                         } else {
                             doDisconnect(false);
