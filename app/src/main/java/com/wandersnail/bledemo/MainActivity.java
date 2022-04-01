@@ -225,7 +225,6 @@ public class MainActivity extends BaseActivity {
         invalidateOptionsMenu();
     }
 
-
     /**
      * 使用{@link Observe}确定要接收消息，方法在{@link EasyBLEBuilder#setMethodDefaultThreadMode(ThreadMode)}指定的线程执行
      */
@@ -258,6 +257,19 @@ public class MainActivity extends BaseActivity {
     public void onCharacteristicWrite(@NonNull Request request, @NonNull byte[] value) {
         Log.d("EasyBLE", "主线程：" + (Looper.getMainLooper() == Looper.myLooper()) + ", 成功写入：" + StringUtils.toHex(value, " "));
         ToastUtils.showShort("成功写入：" + StringUtils.toHex(value, " "));
+    }
+
+    /**
+     * notification数据
+     * 
+     * @param device         设备
+     * @param service        服务UUID
+     * @param characteristic 特征UUID
+     * @param value          数据
+     */
+    @Override
+    public void onCharacteristicChanged(@NonNull Device device, @NonNull UUID service, @NonNull UUID characteristic, @NonNull byte[] value) {
+        Log.d("EasyBLE", "主线程：" + (Looper.getMainLooper() == Looper.myLooper()) + ", 收到设备主动发送来的数据：" + StringUtils.toHex(value, " "));
     }
 
     private void initViews() {
