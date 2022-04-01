@@ -33,6 +33,10 @@ public class ConnectionConfiguration {
      * 建立连接时是否使用自动连接方式。connectGatt(context,autoConnect,...)方法第二个参数
      */
     boolean useAutoConnect = false;
+    /**
+     * 连接失败后重连时使用自动连接方式。connectGatt(context,autoConnect,...)方法第二个参数
+     */
+    boolean useAutoConnectAfterConnectionFailure = true;
     @RequiresApi(Build.VERSION_CODES.M)
     int transport = BluetoothDevice.TRANSPORT_LE;
     @RequiresApi(Build.VERSION_CODES.O)
@@ -107,6 +111,14 @@ public class ConnectionConfiguration {
      */
     public ConnectionConfiguration setUseAutoConnect(boolean autoConnect) {
         useAutoConnect = autoConnect;
+        return this;
+    }
+
+    /**
+     * 连接失败后重连时使用自动连接方式
+     */
+    public ConnectionConfiguration setUseAutoConnectAfterConnectionFailure(boolean useAutoConnectAfterConnectionFailure) {
+        this.useAutoConnectAfterConnectionFailure = useAutoConnectAfterConnectionFailure;
         return this;
     }
 
