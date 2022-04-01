@@ -8,8 +8,13 @@
         android:orderInCategory="0"
         app:showAsAction="ifRoom|withText"/>
     <item
+        android:id="@+id/menuAutoConnect"
+        android:title="自动连接"
+        android:orderInCategory="1"
+        app:showAsAction="ifRoom|withText"/>
+    <item
         android:id="@+id/menuDisconnect"
         android:title="断开"
-        android:orderInCategory="1"
+        android:orderInCategory="2"
         app:showAsAction="ifRoom|withText"/>
 </menu>

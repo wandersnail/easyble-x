@@ -449,13 +449,13 @@ class ConnectionImpl implements Connection, ScanListener {
                 //连接之前必须先停止搜索
                 easyBle.stopScan();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), false, gattCallback,
+                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), configuration.useAutoConnect, gattCallback,
                             configuration.transport, configuration.phy);
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), false, gattCallback,
+                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), configuration.useAutoConnect, gattCallback,
                             configuration.transport);
                 } else {
-                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), false, gattCallback);
+                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), configuration.useAutoConnect, gattCallback);
                 }
             }
         }
