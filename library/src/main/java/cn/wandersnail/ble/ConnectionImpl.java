@@ -78,6 +78,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private final EasyBLE easyBle;
     private int mtu = 23;
     private BluetoothGattCallback originCallback;
+    private boolean connectFailed;//连接失败过
 
     ConnectionImpl(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration,
                    int connectDelay, EventObserver observer) {
@@ -353,6 +354,7 @@ class ConnectionImpl implements Connection, ScanListener {
             } else {
                 logE(Logger.TYPE_CONNECTION_STATE, "GATT error! [status: %d, name: %s, addr: %s]",
                         status, device.name, device.address);
+                connectFailed = true;
                 if (status == 133) {
                     doClearTaskAndRefresh();
                 } else {
@@ -379,6 +381,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     sendConnectionCallback();
                 }
             } else {
+                connectFailed = true;
                 doClearTaskAndRefresh();
                 logE(Logger.TYPE_CONNECTION_STATE, "GATT error! [status: %d, name: %s, addr: %s]",
                         status, device.name, device.address);
@@ -448,14 +451,18 @@ class ConnectionImpl implements Connection, ScanListener {
             if (!isReleased) {
                 //连接之前必须先停止搜索
                 easyBle.stopScan();
+                boolean autoConnect = configuration.useAutoConnect;
+                if (!autoConnect && connectFailed && configuration.useAutoConnectAfterConnectionFailure) {
+                    autoConnect = true;
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), configuration.useAutoConnect, gattCallback,
+                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), autoConnect, gattCallback,
                             configuration.transport, configuration.phy);
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), configuration.useAutoConnect, gattCallback,
+                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), autoConnect, gattCallback,
                             configuration.transport);
                 } else {
-                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), configuration.useAutoConnect, gattCallback);
+                    bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), autoConnect, gattCallback);
                 }
             }
         }
