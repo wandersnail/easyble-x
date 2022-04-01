@@ -106,9 +106,11 @@ public class MainActivity extends BaseActivity {
         if (device != null && !device.isDisconnected()) {
             menu.findItem(R.id.menuDisconnect).setVisible(true);
             menu.findItem(R.id.menuConnect).setVisible(false);
+            menu.findItem(R.id.menuAutoConnect).setVisible(false);
         } else {
             menu.findItem(R.id.menuDisconnect).setVisible(false);
             menu.findItem(R.id.menuConnect).setVisible(true);
+            menu.findItem(R.id.menuAutoConnect).setVisible(true);
         }
         return super.onCreateOptionsMenu(menu);
     }
@@ -120,8 +122,25 @@ public class MainActivity extends BaseActivity {
                 EasyBLE.getInstance().disconnectConnection(device);
         		break;
             case R.id.menuConnect:
-                EasyBLE.getInstance().getConnection(device).reconnect();
+            {
+                ConnectionConfiguration config = new ConnectionConfiguration();
+                config.setConnectTimeoutMillis(10000);
+                config.setRequestTimeoutMillis(1000);
+                config.setAutoReconnect(false);
+                config.setUseAutoConnect(false);
+                connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态
+            }  
         		break;
+            case R.id.menuAutoConnect:
+            {
+                ConnectionConfiguration config = new ConnectionConfiguration();
+                config.setConnectTimeoutMillis(10000);
+                config.setRequestTimeoutMillis(1000);
+                config.setAutoReconnect(false);
+                config.setUseAutoConnect(true);
+                connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态
+            }
+                break;
         }
         return super.onOptionsItemSelected(item);
     }
