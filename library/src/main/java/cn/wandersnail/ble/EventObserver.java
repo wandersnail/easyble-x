@@ -143,4 +143,11 @@ public interface EventObserver extends Observer {
      */
     default void onConnectTimeout(@NonNull Device device, int type) {
     }
+
+    /**
+     * 连接错误
+     * 
+     * @param status 状态码
+     */
+    default void onConnectionError(int status) {}
 }

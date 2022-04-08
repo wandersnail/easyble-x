@@ -38,7 +38,7 @@ public class ConnectionConfiguration {
      */
     boolean useAutoConnectAfterConnectionFailure = true;
     @RequiresApi(Build.VERSION_CODES.M)
-    int transport = BluetoothDevice.TRANSPORT_LE;
+    int transport = BluetoothDevice.TRANSPORT_AUTO;
     @RequiresApi(Build.VERSION_CODES.O)
     int phy = BluetoothDevice.PHY_LE_1M_MASK;
     @NonNull
