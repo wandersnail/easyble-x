@@ -355,7 +355,7 @@ class ConnectionImpl implements Connection, ScanListener {
                 logE(Logger.TYPE_CONNECTION_STATE, "GATT error! [status: %d, name: %s, addr: %s]",
                         status, device.name, device.address);
                 connectFailed = true;
-                notifyConnectionError(status);
+                notifyConnectionError(device, status);
                 if (status == 133) {
                     doClearTaskAndRefresh();
                 } else {
@@ -383,7 +383,7 @@ class ConnectionImpl implements Connection, ScanListener {
                 }
             } else {
                 connectFailed = true;
-                notifyConnectionError(status);
+                notifyConnectionError(device, status);
                 doClearTaskAndRefresh();
                 logE(Logger.TYPE_CONNECTION_STATE, "GATT error! [status: %d, name: %s, addr: %s]",
                         status, device.name, device.address);
@@ -984,10 +984,13 @@ class ConnectionImpl implements Connection, ScanListener {
         log(Log.DEBUG, type, format, args);
     }
 
-    private void notifyConnectionError(int status) {
+    private void notifyConnectionError(Device device, int status) {
         MethodInfo info = MethodInfoGenerator.onConnectionError(status);
+        MethodInfo info1 = MethodInfoGenerator.onConnectionError(device, status);
+        observable.notifyObservers(info1);
         observable.notifyObservers(info);
         if (observer != null) {
+            posterDispatcher.post(observer, info1);
             posterDispatcher.post(observer, info);
         }
     }

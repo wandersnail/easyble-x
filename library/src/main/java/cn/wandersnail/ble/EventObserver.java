@@ -149,5 +149,14 @@ public interface EventObserver extends Observer {
      * 
      * @param status 状态码
      */
+    @Deprecated
     default void onConnectionError(int status) {}
+
+    /**
+     * 连接错误
+     *
+     * @param device 设备
+     * @param status 状态码
+     */
+    default void onConnectionError(@NonNull Device device, int status) {}
 }
