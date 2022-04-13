@@ -27,6 +27,11 @@ class MethodInfoGenerator {
         return new MethodInfo("onConnectionError", new MethodInfo.Parameter(int.class, status));
     }
 
+    static MethodInfo onConnectionError(Device device, int status) {
+        return new MethodInfo("onConnectionError", new MethodInfo.Parameter(Device.class, device),
+                new MethodInfo.Parameter(int.class, status));
+    }
+
     static MethodInfo onConnectTimeout(Device device, int type) {
         return new MethodInfo("onConnectTimeout", new MethodInfo.Parameter(Device.class, device),
                 new MethodInfo.Parameter(int.class, type));
