@@ -83,8 +83,15 @@ class MethodInfoGenerator {
                 new MethodInfo.Parameter(int.class, txPhy), new MethodInfo.Parameter(int.class, rxPhy));
     }
 
+    @Deprecated
     static MethodInfo onRequestFailed(Request request, int failType, Object value) {
         return new MethodInfo("onRequestFailed", new MethodInfo.Parameter(Request.class, request),
                 new MethodInfo.Parameter(int.class, failType), new MethodInfo.Parameter(Object.class, value));
+    }
+
+    static MethodInfo onRequestFailed(Request request, int failType, int gattStatus, Object value) {
+        return new MethodInfo("onRequestFailed", new MethodInfo.Parameter(Request.class, request),
+                new MethodInfo.Parameter(int.class, failType), new MethodInfo.Parameter(int.class, gattStatus), 
+                new MethodInfo.Parameter(Object.class, value));
     }
 }

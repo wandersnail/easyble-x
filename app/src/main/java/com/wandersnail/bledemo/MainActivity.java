@@ -4,7 +4,9 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
@@ -160,6 +162,19 @@ public class MainActivity extends BaseActivity {
         }
     }
 
+    @Override
+    public void onRequestFailed(@NonNull Request request, int failType, int gattStatus, @Nullable Object value) {
+        if (gattStatus != -1) {
+            switch(gattStatus) {
+                case BluetoothGatt.GATT_REQUEST_NOT_SUPPORTED:		
+                    ToastUtils.showShort("请求不支持");
+            		break;
+                default:		
+            		break;
+            }
+        }
+    }
+
     /**
      * 使用{@link Observe}确定要接收消息，{@link RunOn}指定在主线程执行方法，设置{@link Tag}防混淆后找不到方法
      */
@@ -218,8 +233,19 @@ public class MainActivity extends BaseActivity {
                     public void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value) {
 
                     }
+
+                    @Override
+                    public void onRequestFailed(@NonNull Request request, int failType, int gattStatus, @Nullable Object value) {
+                        
+                    }
                 }).build();
                 connection.execute(request);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    new Handler(Looper.getMainLooper()).postDelayed(()-> {
+                        connection.execute(new RequestBuilderFactory().getSetPreferredPhyBuilder(2, 2, 0).build());
+                    }, 300);
+                }
                 break;
         }
         invalidateOptionsMenu();
@@ -364,6 +390,11 @@ public class MainActivity extends BaseActivity {
             @Override
             public void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value) {
 
+            }
+
+            @Override
+            public void onRequestFailed(@NonNull Request request, int failType, int gattStatus, @Nullable Object value) {
+                
             }
         });
         builder.build().execute(connection);

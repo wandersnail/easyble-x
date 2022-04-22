@@ -176,7 +176,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         notifyCharacteristicRead(currentRequest, characteristic.getValue());
                     } else {
-                        handleGattStatusFailed();
+                        handleGattStatusFailed(status);
                     }
                     executeNextRequest();
                 }
@@ -225,7 +225,7 @@ class ConnectionImpl implements Connection, ScanListener {
                         write(req, characteristic, req.sendingBytes);
                     }
                 } else {
-                    handleFailedCallback(currentRequest, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, true);
+                    handleFailedCallback(currentRequest, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, status, true);
                 }
             }
         }
@@ -249,7 +249,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         notifyRssiRead(currentRequest, rssi);
                     } else {
-                        handleGattStatusFailed();
+                        handleGattStatusFailed(status);
                     }
                     executeNextRequest();
                 }
@@ -266,7 +266,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         notifyDescriptorRead(currentRequest, descriptor.getValue());
                     } else {
-                        handleGattStatusFailed();
+                        handleGattStatusFailed(status);
                     }
                     executeNextRequest();
                 }
@@ -283,7 +283,7 @@ class ConnectionImpl implements Connection, ScanListener {
                     BluetoothGattDescriptor localDescriptor = getDescriptor(descriptor.getCharacteristic().getService().getUuid(),
                             descriptor.getCharacteristic().getUuid(), clientCharacteristicConfig);
                     if (status != BluetoothGatt.GATT_SUCCESS) {
-                        handleGattStatusFailed();
+                        handleGattStatusFailed(status);
                         if (localDescriptor != null) {
                             localDescriptor.setValue(currentRequest.descriptorTemp);
                         }
@@ -308,7 +308,7 @@ class ConnectionImpl implements Connection, ScanListener {
                         ConnectionImpl.this.mtu = mtu;
                         notifyMtuChanged(currentRequest, mtu);
                     } else {
-                        handleGattStatusFailed();
+                        handleGattStatusFailed(status);
                     }
                     executeNextRequest();
                 }
@@ -923,7 +923,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private void executeIndicationOrNotification(GenericRequest request, BluetoothGattCharacteristic characteristic) {
         if (enableNotificationOrIndicationFail(((int) request.value) == 1,
                 request.type == RequestType.SET_NOTIFICATION, characteristic)) {
-            handleGattStatusFailed();
+            handleGattStatusFailed(-1);
         }
     }
     
@@ -933,24 +933,29 @@ class ConnectionImpl implements Connection, ScanListener {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     notifyPhyChange(currentRequest, txPhy, rxPhy);
                 } else {
-                    handleGattStatusFailed();
+                    handleGattStatusFailed(status);
+                    
                 }
                 executeNextRequest();
             }
         }
     }
 
-    private void handleGattStatusFailed() {
+    private void handleGattStatusFailed(int status) {
         if (currentRequest != null) {
-            handleFailedCallback(currentRequest, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, false);
+            handleFailedCallback(currentRequest, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, status, false);
         }
     }
 
-    private void handleFailedCallback(GenericRequest request, int failType, boolean executeNext) {
-        notifyRequestFailed(request, failType);
+    private void handleFailedCallback(GenericRequest request, int failType, int status, boolean executeNext) {
+        notifyRequestFailed(request, failType, status);
         if (executeNext) {
             executeNextRequest();
         }
+    }
+    
+    private void handleFailedCallback(GenericRequest request, int failType, boolean executeNext) {
+        handleFailedCallback(request, failType, -1, executeNext);
     }
 
     private String toHex(byte[] bytes) {
@@ -995,11 +1000,18 @@ class ConnectionImpl implements Connection, ScanListener {
         }
     }
     
-    private void notifyRequestFailed(GenericRequest request, int failType) {
+    private void notifyRequestFailed(GenericRequest request, int failType, int status) {
         MethodInfo info = MethodInfoGenerator.onRequestFailed(request, failType, request.value);
+        MethodInfo info1 = MethodInfoGenerator.onRequestFailed(request, failType, status, request.value);
         handleCallbacks(request.callback, info);
-        logE(Logger.TYPE_REQUEST_FAILED, "request failed! [requestType: %s, addr: %s, failType: %d",
-                request.type, device.address, failType);
+        handleCallbacks(request.callback, info1);
+        if (status != -1) {
+            logE(Logger.TYPE_REQUEST_FAILED, "request failed! [requestType: %s, addr: %s, failType: %d，gatt status：%d",
+                    request.type, device.address, failType, status);
+        } else {
+            logE(Logger.TYPE_REQUEST_FAILED, "request failed! [requestType: %s, addr: %s, failType: %d",
+                    request.type, device.address, failType);
+        }
     }
 
     private void notifyCharacteristicRead(GenericRequest request, byte[] value) {
