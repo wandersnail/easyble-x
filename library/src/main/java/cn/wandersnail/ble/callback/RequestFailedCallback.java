@@ -21,7 +21,7 @@ public interface RequestFailedCallback extends RequestCallback {
      * @param value    请求时带的数据，可能为null
      */
     @Deprecated
-    void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value);
+    default void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value) {}
 
     /**
      * 请求失败
