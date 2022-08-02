@@ -56,7 +56,7 @@ allprojects {
 }
 ```
 
-2. module的build.gradle中的添加依赖，自行将latestVersion修改为最新版本，同步后通常就可以用了：
+2. module的build.gradle中的添加依赖，自行将latestVersion修改为各自最新版本，commons-android [最新版本](https://gitee.com/fszeng/commons-android) ，同步后通常就可以用了：
 ```
 dependencies {
 	...
