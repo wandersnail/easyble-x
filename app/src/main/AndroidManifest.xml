@@ -23,6 +23,8 @@
         </activity>
         <activity android:name=".MainActivity" android:screenOrientation="portrait"
                   android:configChanges="keyboardHidden|orientation|navigation|screenSize|keyboard"/>
+        <activity android:name=".SendFileActivity" android:screenOrientation="portrait"
+                  android:configChanges="keyboardHidden|orientation|navigation|screenSize|keyboard"/>
     </application>
 
 </manifest>

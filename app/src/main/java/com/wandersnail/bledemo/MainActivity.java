@@ -4,10 +4,12 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.ParcelUuid;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -230,11 +232,6 @@ public class MainActivity extends BaseActivity {
                     }
 
                     @Override
-                    public void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value) {
-
-                    }
-
-                    @Override
                     public void onRequestFailed(@NonNull Request request, int failType, int gattStatus, @Nullable Object value) {
                         
                     }
@@ -282,7 +279,9 @@ public class MainActivity extends BaseActivity {
     @Override
     public void onCharacteristicWrite(@NonNull Request request, @NonNull byte[] value) {
         Log.d("EasyBLE", "主线程：" + (Looper.getMainLooper() == Looper.myLooper()) + ", 成功写入：" + StringUtils.toHex(value, " "));
-        ToastUtils.showShort("成功写入：" + StringUtils.toHex(value, " "));
+        if ("single_write_test".equals(request.getTag())) {
+            ToastUtils.showShort("成功写入：" + StringUtils.toHex(value, " "));            
+        }
     }
 
     /**
@@ -323,6 +322,7 @@ public class MainActivity extends BaseActivity {
             }
             if (item.hasWriteProperty) {
                 menuItems.add("写入测试数据");
+                menuItems.add("发送文件");
             }
             new AlertDialog.Builder(MainActivity.this)
                     .setItems(menuItems.toArray(new String[0]), (dialog, which) -> {
@@ -338,6 +338,13 @@ public class MainActivity extends BaseActivity {
                                 break;
                             case "读取特征值":
                                 readCharacteristic(item);
+                                break;
+                            case "发送文件":
+                                Intent intent = new Intent(this, SendFileActivity.class);
+                                intent.putExtra("DEVICE", device);
+                                intent.putExtra("SERVICE", new ParcelUuid(item.service.getUuid()));
+                                intent.putExtra("CHARACTERISTIC", new ParcelUuid(item.characteristic.getUuid()));
+                                startActivity(intent);
                                 break;
                             default:
                                 writeCharacteristic(item);
@@ -357,6 +364,7 @@ public class MainActivity extends BaseActivity {
                         "Multi-pass deformation also shows that in high-temperature rolling process, " +
                         "the material will be softened as a result of the recovery and recrystallization, " +
                         "so the rolling force is reduced and the time interval of the passes of rough rolling should be longer.").getBytes());
+        builder.setTag("single_write_test");
         //根据需要设置写入配置
         int writeType = connection.hasProperty(item.service.getUuid(), item.characteristic.getUuid(), 
                 BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) ? 
