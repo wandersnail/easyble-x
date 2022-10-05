@@ -6,7 +6,7 @@ buildscript {
         minSdkVersion = 21
         targetSdkVersion = 28
 
-        kotlin_version = '1.6.0'
+        kotlin_version = '1.7.10'
     }
     
     repositories {
@@ -15,7 +15,7 @@ buildscript {
         maven { url 'https://maven.aliyun.com/repository/jcenter' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.3'
+        classpath 'com.android.tools.build:gradle:7.3.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }

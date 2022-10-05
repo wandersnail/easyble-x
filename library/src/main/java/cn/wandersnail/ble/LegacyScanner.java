@@ -1,5 +1,6 @@
 package cn.wandersnail.ble;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 
@@ -20,11 +21,13 @@ class LegacyScanner extends AbstractScanner implements BluetoothAdapter.LeScanCa
         return true;
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void performStartScan() {
         bluetoothAdapter.startLeScan(this);
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void performStopScan() {
         bluetoothAdapter.stopLeScan(this);

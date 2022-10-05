@@ -1,5 +1,6 @@
 package cn.wandersnail.ble;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -55,6 +56,7 @@ class LeScanner extends AbstractScanner {
         return getLeScanner() != null;
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void performStartScan() {
         ScanSettings settings;
@@ -68,6 +70,7 @@ class LeScanner extends AbstractScanner {
         bleScanner.startScan(configuration.filters, settings, scanCallback);
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void performStopScan() {
         if (bleScanner != null) {
