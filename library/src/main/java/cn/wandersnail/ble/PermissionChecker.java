@@ -20,7 +20,7 @@ import cn.wandersnail.commons.base.AppHolder;
 class PermissionChecker {
     static boolean hasPermission(@Nullable Context context, @NonNull String permission) {
         Activity activity = context instanceof Activity ? (Activity) context : AppHolder.getInstance().getTopActivity();
-        context = context == null ? AppHolder.getInstance().getContext() : context;
+        context = context == null ? EasyBLE.instance.getContext() : context;
         if (activity == null) {
             return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
         } else {
