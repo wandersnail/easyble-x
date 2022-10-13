@@ -777,14 +777,20 @@ public class EasyBLE {
     @SuppressWarnings("all")
     public void clearBondDevices(RemoveBondFilter filter) {
         checkStatus();
-        if (bluetoothAdapter != null) {
-            Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
-            for (BluetoothDevice device : devices) {
-                if (filter == null || filter.accept(device)) {
-                    try {
-                        device.getClass().getMethod("removeBond").invoke(device);
-                    } catch (Throwable ignore) {
-                    }
+        if (bluetoothAdapter == null) {
+            return;
+        }
+        Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
+        if (devices == null) {
+            return;
+        }
+        for (BluetoothDevice device : devices) {
+            if (filter == null || filter.accept(device)) {
+                try {
+                    Method method = device.getClass().getMethod("removeBond");
+                    method.setAccessible(true);
+                    method.invoke(device);
+                } catch (Throwable ignore) {
                 }
             }
         }
@@ -801,7 +807,9 @@ public class EasyBLE {
         try {
             BluetoothDevice remoteDevice = bluetoothAdapter.getRemoteDevice(address);
             if (remoteDevice.getBondState() != BluetoothDevice.BOND_NONE) {
-                remoteDevice.getClass().getMethod("removeBond").invoke(remoteDevice);
+                Method method = remoteDevice.getClass().getMethod("removeBond");
+                method.setAccessible(true);
+                method.invoke(remoteDevice);
             }
         } catch (Throwable ignore) {
         }
