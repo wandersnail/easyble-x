@@ -23,21 +23,24 @@ android {
             abiFilters "armeabi-v7a", "arm64-v8a"
         }
     }
-    lintOptions {
-        abortOnError false
-    }
     buildTypes {
         release {
             minifyEnabled false
         }
     }
     packagingOptions {
-        exclude 'META-INF/library_release.kotlin_module'
+        resources {
+            excludes += ['META-INF/library_release.kotlin_module']
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    lint {
+        abortOnError false
+    }
+    namespace 'com.wandersnail.bledemo'
 }
 
 dependencies {

@@ -15,9 +15,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.ble.util.DefaultLogger;
 import cn.wandersnail.ble.util.Logger;
@@ -119,6 +118,7 @@ public class EasyBLE {
             method.setAccessible(true);
             Object acThread = method.invoke(null);
             Method appMethod = acThread.getClass().getMethod("getApplication");
+            appMethod.setAccessible(true);
             application = (Application) appMethod.invoke(acThread);
         } catch (Throwable e) {
             e.printStackTrace();
@@ -445,12 +445,15 @@ public class EasyBLE {
     }
 
     //检查是否有连接权限
-    private boolean hasConnectPermission(Context context) {
+    private boolean noConnectPermission(Context context) {
+        if (context == null) {
+            context = getContext();
+        }
         //在31以上的需要连接权限才能连接蓝牙设备
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            return PermissionChecker.hasPermission(context, Manifest.permission.BLUETOOTH_CONNECT);
+            return !PermissionChecker.hasPermission(context, Manifest.permission.BLUETOOTH_CONNECT);
         }
-        return true;
+        return false;
     }
     
     /**
@@ -551,11 +554,12 @@ public class EasyBLE {
      * @param observer      伴生观察者
      * @return 返回创建的连接实例，创建失败则返回null
      */
+    @SuppressLint("MissingPermission")
     @Nullable
     public synchronized Connection connect(@NonNull final Device device, @Nullable ConnectionConfiguration configuration,
                                            @Nullable final EventObserver observer) {
         if (checkStatus()) {
-            if (!hasConnectPermission(application)) {
+            if (noConnectPermission(application)) {
                 notifyConnectionFail(observer, device, "lack connect permission", Connection.CONNECT_FAIL_TYPE_LACK_CONNECT_PERMISSION);
                 return null;
             }
@@ -745,10 +749,14 @@ public class EasyBLE {
     /**
      * 根据MAC地址获取设备的配对状态
      *
-     * @return {@link BluetoothDevice#BOND_NONE}，{@link BluetoothDevice#BOND_BONDED}，{@link BluetoothDevice#BOND_BONDING}
+     * @return -1：获取失败，其他{@link BluetoothDevice#BOND_NONE}，{@link BluetoothDevice#BOND_BONDED}，{@link BluetoothDevice#BOND_BONDING}
      */
+    @SuppressLint("MissingPermission")
     public int getBondState(@NonNull String address) {
         checkStatus();
+        if (noConnectPermission(null)) {
+            return -1;
+        }
         try {
             return bluetoothAdapter.getRemoteDevice(address).getBondState();
         } catch (Exception e) {
@@ -761,8 +769,12 @@ public class EasyBLE {
      *
      * @param address 设备地址
      */
+    @SuppressLint("MissingPermission")
     public boolean createBond(@NonNull String address) {
         checkStatus();
+        if (noConnectPermission(null)) {
+            return false;
+        }
         try {
             BluetoothDevice remoteDevice = bluetoothAdapter.getRemoteDevice(address);
             return remoteDevice.getBondState() != BluetoothDevice.BOND_NONE || remoteDevice.createBond();
@@ -775,25 +787,27 @@ public class EasyBLE {
      * 根据过滤器，清除配对
      */
     @SuppressWarnings("all")
-    public void clearBondDevices(RemoveBondFilter filter) {
+    public boolean clearBondDevices(RemoveBondFilter filter) {
         checkStatus();
-        if (bluetoothAdapter == null) {
-            return;
-        }
-        Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
-        if (devices == null) {
-            return;
-        }
-        for (BluetoothDevice device : devices) {
-            if (filter == null || filter.accept(device)) {
-                try {
-                    Method method = device.getClass().getMethod("removeBond");
-                    method.setAccessible(true);
-                    method.invoke(device);
-                } catch (Throwable ignore) {
+        if (bluetoothAdapter != null) {
+            if (noConnectPermission(null)) {
+                return false;
+            }
+            Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
+            for (BluetoothDevice device : devices) {
+                if (filter == null || filter.accept(device)) {
+                    try {
+                        Method method = device.getClass().getMethod("removeBond");
+                        method.setAccessible(true);
+                        method.invoke(device);
+                    } catch (Throwable ignore) {
+                        return false;
+                    }
                 }
             }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -802,8 +816,11 @@ public class EasyBLE {
      * @param address 设备地址
      */
     @SuppressWarnings("all")
-    public void removeBond(@NonNull String address) {
+    public boolean removeBond(@NonNull String address) {
         checkStatus();
+        if (noConnectPermission(null)) {
+            return false;
+        }
         try {
             BluetoothDevice remoteDevice = bluetoothAdapter.getRemoteDevice(address);
             if (remoteDevice.getBondState() != BluetoothDevice.BOND_NONE) {
@@ -811,7 +828,9 @@ public class EasyBLE {
                 method.setAccessible(true);
                 method.invoke(remoteDevice);
             }
+            return true;
         } catch (Throwable ignore) {
         }
+        return false;
     }
 }
