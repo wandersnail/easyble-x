@@ -130,24 +130,18 @@ abstract class AbstractScanner implements Scanner {
     @SuppressWarnings("all")
     private void getSystemConnectedDevices(Context context) {
         try {
-            Method method = bluetoothAdapter.getClass().getDeclaredMethod("getConnectionState");
-            method.setAccessible(true);
-            int state = (int) method.invoke(bluetoothAdapter);
-            if (state == BluetoothAdapter.STATE_CONNECTED) {
-                Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
-                for (BluetoothDevice device : devices) {
-                    Method isConnectedMethod = device.getClass().getDeclaredMethod("isConnected");
-                    isConnectedMethod.setAccessible(true);
-                    boolean isConnected = (boolean) isConnectedMethod.invoke(device);
-                    if (isConnected) {
-                        parseScanResult(device, true);
-                    }
+            Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
+            for (BluetoothDevice device : devices) {
+                Method method = device.getClass().getDeclaredMethod("isConnected");
+                method.setAccessible(true);
+                if ((boolean) method.invoke(device)) {
+                    parseScanResult(device, true);
                 }
             }
         } catch (Throwable ignore) {
         }
         //遍历支持的，获取所有连接的
-        for (int i = 1; i <= 21; i++) {
+        for (int i = 1; i <= 22; i++) {
             try {
                 getSystemConnectedDevices(context, i);
             } catch (Throwable ignore) {

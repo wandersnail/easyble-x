@@ -3,9 +3,6 @@
 ## 基于此库编写的BLE调试助手——BLE调试宝，各大应用市场都已上架，欢迎下载使用。
 [![](https://img.shields.io/badge/下载-%E5%8D%8E%E4%B8%BA%E5%BA%94%E7%94%A8%E5%B8%82%E5%9C%BA-red)](https://appstore.huawei.com/app/C100302733)
 
-## 学习提高
-[![](https://img.shields.io/badge/下载-java、python、vue、js、c++等各种视频教程-blue.svg)](https://p.zhekou.life)
-
 ## 最新版本
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x/badge.svg)](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x)
