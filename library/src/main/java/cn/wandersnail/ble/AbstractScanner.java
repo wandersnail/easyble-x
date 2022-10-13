@@ -1,6 +1,7 @@
 package cn.wandersnail.ble;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
@@ -16,17 +17,16 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 
-import androidx.annotation.CallSuper;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
-
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import androidx.annotation.CallSuper;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.ble.util.Logger;
 
@@ -43,6 +43,7 @@ abstract class AbstractScanner implements Scanner {
     private final SparseArray<BluetoothProfile> proxyBluetoothProfiles = new SparseArray<>();
     final Logger logger;
     private final DeviceCreator deviceCreator;
+    final Context context;
 
     AbstractScanner(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter) {
         this.bluetoothAdapter = bluetoothAdapter;
@@ -50,6 +51,7 @@ abstract class AbstractScanner implements Scanner {
         mainHandler = new Handler(Looper.getMainLooper());
         logger = easyBle.getLogger();
         deviceCreator = easyBle.getDeviceCreator();
+        context = easyBle.getContext();
     }
     
     @Override
@@ -65,7 +67,7 @@ abstract class AbstractScanner implements Scanner {
     }
 
     //位置服务是否开户
-    private boolean isLocationEnabled(Context context) {
+    private boolean isLocationEnabled(@NonNull Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
             return locationManager != null && locationManager.isLocationEnabled();
@@ -80,7 +82,10 @@ abstract class AbstractScanner implements Scanner {
     }
     
     //检查是否有定位权限
-    private boolean noLocationPermission(Context context) {
+    private boolean noLocationPermission(@Nullable Context context) {
+        if (context == null) {
+            context = this.context;
+        }
         int sdkVersion = context.getApplicationInfo().targetSdkVersion;
         if (sdkVersion >= Build.VERSION_CODES.Q) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
             return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION);
@@ -91,7 +96,7 @@ abstract class AbstractScanner implements Scanner {
     }
 
     //检查是否有搜索权限
-    private boolean noScanPermission(Context context) {
+    private boolean noScanPermission(@Nullable Context context) {
         //在31以上的需要搜索权限才能搜索到蓝牙设备
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return !PermissionChecker.hasPermission(context, Manifest.permission.BLUETOOTH_SCAN);
@@ -188,6 +193,7 @@ abstract class AbstractScanner implements Scanner {
         parseScanResult(device, isConnectedBySys, null, -120, null);
     }
     
+    @SuppressLint("MissingPermission")
     void parseScanResult(BluetoothDevice device, boolean isConnectedBySys, @Nullable ScanResult result, int rssi, byte[] scanRecord) {
         if ((configuration.onlyAcceptBleDevice && device.getType() != BluetoothDevice.DEVICE_TYPE_LE) ||
                 !device.getAddress().matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
@@ -285,7 +291,7 @@ abstract class AbstractScanner implements Scanner {
         }
         proxyBluetoothProfiles.clear();
         try {
-            if (isBtEnabled()) {
+            if (isBtEnabled() && !noScanPermission(null)) {
                 performStopScan();
             }
         } catch (Throwable ignore) {

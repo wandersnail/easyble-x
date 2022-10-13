@@ -1,5 +1,6 @@
 package cn.wandersnail.ble;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 
 import androidx.annotation.NonNull;
@@ -20,11 +21,13 @@ class ClassicScanner extends AbstractScanner {
         return true;
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void performStartScan() {
         bluetoothAdapter.startDiscovery();
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void performStopScan() {
         bluetoothAdapter.cancelDiscovery();
