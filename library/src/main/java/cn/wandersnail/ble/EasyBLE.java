@@ -789,25 +789,28 @@ public class EasyBLE {
     @SuppressWarnings("all")
     public boolean clearBondDevices(RemoveBondFilter filter) {
         checkStatus();
-        if (bluetoothAdapter != null) {
-            if (noConnectPermission(null)) {
-                return false;
-            }
-            Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
-            for (BluetoothDevice device : devices) {
-                if (filter == null || filter.accept(device)) {
-                    try {
-                        Method method = device.getClass().getMethod("removeBond");
-                        method.setAccessible(true);
-                        method.invoke(device);
-                    } catch (Throwable ignore) {
-                        return false;
-                    }
+        if (bluetoothAdapter == null) {
+           return false;
+        }
+        if (noConnectPermission(null)) {
+            return false;
+        }
+        Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
+        if (devices == null) {
+            return false;
+        }
+        for (BluetoothDevice device : devices) {
+            if (filter == null || filter.accept(device)) {
+                try {
+                    Method method = device.getClass().getMethod("removeBond");
+                    method.setAccessible(true);
+                    method.invoke(device);
+                } catch (Throwable ignore) {
+                    return false;
                 }
             }
-            return true;
         }
-        return false;
+        return true;
     }
 
     /**
