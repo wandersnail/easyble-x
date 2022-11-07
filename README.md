@@ -1,7 +1,7 @@
 # Android BLE开发框架
 
-## 基于此库编写的BLE调试助手——BLE调试宝，各大应用市场都已上架，欢迎下载使用。
-[![](https://img.shields.io/badge/下载-%E5%8D%8E%E4%B8%BA%E5%BA%94%E7%94%A8%E5%B8%82%E5%9C%BA-red)](https://appstore.huawei.com/app/C100302733)
+## 基于此库编写的调试工具——调试全能王，各大应用市场都已上架，欢迎下载使用。
+[![](https://img.shields.io/badge/下载-%E5%8D%8E%E4%B8%BA%E5%BA%94%E7%94%A8%E5%B8%82%E5%9C%BA-red)](https://appgallery.huawei.com/app/C105371117)
 
 ## 最新版本
 
