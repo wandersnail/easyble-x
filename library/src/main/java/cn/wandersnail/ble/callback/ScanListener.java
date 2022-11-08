@@ -33,6 +33,14 @@ public interface ScanListener {
      * 缺少连接权限。 {@link Manifest.permission#BLUETOOTH_CONNECT}
      */
     int ERROR_LACK_CONNECT_PERMISSION = 4;
+    /**
+     * 蓝牙未开启
+     */
+    int ERROR_BLUETOOTH_OFF = 5;
+    /**
+     * 扫描器未准备好
+     */
+    int ERROR_SCANNER_NOT_READY = 6;
     
 
     /**

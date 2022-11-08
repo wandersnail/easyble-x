@@ -943,6 +943,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private void handleGattStatusFailed(int status) {
         if (currentRequest != null) {
+            connHandler.removeMessages(MSG_REQUEST_TIMEOUT);//移除超时检测
             handleFailedCallback(currentRequest, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, status, false);
         }
     }

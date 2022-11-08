@@ -17,16 +17,17 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 
+import androidx.annotation.CallSuper;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import androidx.annotation.CallSuper;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.ble.util.Logger;
 
@@ -221,7 +222,18 @@ abstract class AbstractScanner implements Scanner {
     @Override
     public void startScan(@NonNull Context context) {
         synchronized (this) {
-            if (!isBtEnabled() || (getType() != ScannerType.CLASSIC && isScanning) || !isReady()) {
+            if (getType() != ScannerType.CLASSIC && isScanning) {
+                return;
+            }
+            if (!isReady()) {
+                String errorMsg = "Scanner not ready.";
+                handleScanCallback(false, null, false, ScanListener.ERROR_SCANNER_NOT_READY, errorMsg);
+                logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
+            }
+            if (!isBtEnabled()) {
+                String errorMsg = "Bluetooth is not turned on.";
+                handleScanCallback(false, null, false, ScanListener.ERROR_BLUETOOTH_OFF, errorMsg);
+                logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                 return;
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
