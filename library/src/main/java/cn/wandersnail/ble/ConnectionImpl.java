@@ -924,6 +924,7 @@ class ConnectionImpl implements Connection, ScanListener {
         if (enableNotificationOrIndicationFail(((int) request.value) == 1,
                 request.type == RequestType.SET_NOTIFICATION, characteristic)) {
             handleGattStatusFailed(-1);
+            executeNextRequest();
         }
     }
     
@@ -934,7 +935,6 @@ class ConnectionImpl implements Connection, ScanListener {
                     notifyPhyChange(currentRequest, txPhy, rxPhy);
                 } else {
                     handleGattStatusFailed(status);
-                    
                 }
                 executeNextRequest();
             }
