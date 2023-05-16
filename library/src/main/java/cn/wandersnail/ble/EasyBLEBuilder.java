@@ -30,9 +30,12 @@ public class EasyBLEBuilder {
     }
 
     /**
+     * 已废弃。使用{@link ScanConfiguration#setScannerType(ScannerType)}
+     *
      * 指定蓝牙扫描器，默认为系统Android5.0以上使用{@link ScannerType#LE}，否则使用{@link ScannerType#LEGACY}。
-     * 系统小于Android5.0时，指定{@link ScannerType#LE}无效
+     * 系统小于Android5.0时，指定{@link ScannerType#LE}无效。
      */
+    @Deprecated
     public EasyBLEBuilder setScannerType(@NonNull ScannerType scannerType) {
         this.scannerType = scannerType;
         return this;

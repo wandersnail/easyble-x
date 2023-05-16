@@ -21,6 +21,9 @@ class PermissionChecker {
     static boolean hasPermission(@Nullable Context context, @NonNull String permission) {
         Activity activity = context instanceof Activity ? (Activity) context : AppHolder.getInstance().getTopActivity();
         context = context == null ? EasyBLE.instance.getContext() : context;
+        if (context == null) {
+            return false;
+        }
         if (activity == null) {
             return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
         } else {

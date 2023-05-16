@@ -25,6 +25,8 @@ public class ScanConfiguration {
     boolean onlyAcceptBleDevice;
     int rssiLowLimit = -120;
     List<ScanFilter> filters;
+    boolean abortOnLeakPermission;
+    ScannerType scannerType;
 
     public int getScanPeriodMillis() {
         return scanPeriodMillis;
@@ -102,6 +104,25 @@ public class ScanConfiguration {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     public ScanConfiguration setFilters(@Nullable List<ScanFilter> filters) {
         this.filters = filters;
+        return this;
+    }
+
+    /**
+     * 缺少权限时是否中断搜索
+     *
+     * @param abortOnLeakPermission true：缺权限时中断
+     */
+    public ScanConfiguration setAbortOnLeakPermission(boolean abortOnLeakPermission) {
+        this.abortOnLeakPermission = abortOnLeakPermission;
+        return this;
+    }
+
+    /**
+     * 指定蓝牙扫描器，默认为系统Android5.0以上使用{@link ScannerType#LE}，否则使用{@link ScannerType#LEGACY}。
+     * 系统小于Android5.0时，指定{@link ScannerType#LE}无效
+     */
+    public ScanConfiguration setScannerType(@NonNull ScannerType scannerType) {
+        this.scannerType = scannerType;
         return this;
     }
 }

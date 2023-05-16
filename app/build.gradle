@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+
 Properties properties = new Properties()
 InputStream inputStream = project.rootProject.file('local.properties').newDataInputStream()
 properties.load(inputStream)
@@ -27,10 +28,8 @@ android {
         release {
             minifyEnabled false
         }
-    }
-    packagingOptions {
-        resources {
-            excludes += ['META-INF/library_release.kotlin_module']
+        debug {
+            minifyEnabled false
         }
     }
     compileOptions {
@@ -39,6 +38,11 @@ android {
     }
     lint {
         abortOnError false
+        checkReleaseBuilds false
+    }
+    buildFeatures {
+        dataBinding true
+        viewBinding true
     }
     namespace 'com.wandersnail.bledemo'
 }
@@ -47,6 +51,7 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation project(':library')
     implementation 'androidx.appcompat:appcompat:1.3.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'com.tencent:mmkv:1.2.11'
     implementation 'cn.wandersnail:commons-android:1.3.2'
