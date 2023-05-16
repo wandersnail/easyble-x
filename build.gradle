@@ -4,14 +4,15 @@ buildscript {
     ext {
         compileSdkVersion = 31
         minSdkVersion = 21
-        targetSdkVersion = 28
+        targetSdkVersion = 31
 
         kotlin_version = '1.7.10'
     }
     
     repositories {
         google()
-        mavenCentral()
+//        mavenCentral()
+        maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://maven.aliyun.com/repository/jcenter' }
     }
     dependencies {
@@ -23,7 +24,8 @@ buildscript {
 allprojects {
     repositories {
         google()
-        mavenCentral()
+//        mavenCentral()
+        maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://maven.aliyun.com/repository/jcenter' }
         maven { url 'https://jitpack.io' }
     }

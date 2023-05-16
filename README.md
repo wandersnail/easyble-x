@@ -155,6 +155,12 @@ private ScanListener scanListener = new ScanListener() {
 				break;
 			case ScanListener.ERROR_LOCATION_SERVICE_CLOSED://位置服务未开启		
 				break;
+			case ScanListener.ERROR_LACK_LOCATION_PERMISSION://缺少定位权限		
+				break;
+			case ScanListener.ERROR_LACK_SCAN_PERMISSION://targetSdkVersion大于等于Android12时，缺少搜索权限(发现附近设备)	
+				break;
+			case ScanListener.ERROR_LACK_CONNECT_PERMISSION://targetSdkVersion大于等于Android12时，缺少连接权限	
+				break;	
 			case ScanListener.ERROR_SCAN_FAILED://搜索失败
 				break;
 		}

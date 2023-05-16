@@ -12,14 +12,12 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
+
+import com.wandersnail.bledemo.databinding.ActivityScanBinding;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -29,51 +27,38 @@ import java.util.List;
 
 import cn.wandersnail.ble.Device;
 import cn.wandersnail.ble.EasyBLE;
+import cn.wandersnail.ble.ScannerType;
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.commons.helper.PermissionsRequester2;
 import cn.wandersnail.commons.util.ToastUtils;
 import cn.wandersnail.widget.listview.BaseListAdapter;
 import cn.wandersnail.widget.listview.BaseViewHolder;
-import cn.wandersnail.widget.listview.PullRefreshLayout;
 
 /**
  * date: 2019/8/4 15:13
  * author: zengfansheng
  */
-public class ScanActivity extends AppCompatActivity {
+public class ScanActivity extends BaseViewBindingActivity<ActivityScanBinding> {
     private ListAdapter listAdapter;
-    private PullRefreshLayout refreshLayout;
-    private LinearLayout layoutEmpty;
     private final List<Device> devList = new ArrayList<>();
     private PermissionsRequester2 permissionsRequester;
+    private boolean scanning;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_scan);
         initViews();
         EasyBLE.getInstance().addScanListener(scanListener);        
         checkPermissions();
     }
 
     private void initViews() {
-        refreshLayout = findViewById(R.id.refreshLayout);
-        ListView lv = findViewById(R.id.lv);
-        layoutEmpty = findViewById(R.id.layoutEmpty);
-        refreshLayout.setColorSchemeColors(ContextCompat.getColor(this, R.color.colorAccent));
         listAdapter = new ListAdapter(this, devList);
-        lv.setAdapter(listAdapter);
-        lv.setOnItemClickListener((parent, view, position, id) -> {
+        binding.lv.setAdapter(listAdapter);
+        binding.lv.setOnItemClickListener((parent, view, position, id) -> {
             Intent intent = new Intent(ScanActivity.this, MainActivity.class);
             intent.putExtra("device", devList.get(position));
             startActivity(intent);
-        });
-        refreshLayout.setOnRefreshListener(() -> {
-            if (EasyBLE.getInstance().isInitialized()) {
-                EasyBLE.getInstance().stopScan();
-                doStartScan();
-            }
-            refreshLayout.postDelayed(() -> refreshLayout.setRefreshing(false), 500);
         });
     }
 
@@ -87,34 +72,47 @@ public class ScanActivity extends AppCompatActivity {
     private final ScanListener scanListener = new ScanListener() {
         @Override
         public void onScanStart() {
+            scanning = true;
             invalidateOptionsMenu();
         }
 
         @Override
         public void onScanStop() {
+            scanning = false;
             invalidateOptionsMenu();
         }
 
         @Override
         public void onScanResult(@NonNull Device device, boolean isConnectedBySys) {
-            layoutEmpty.setVisibility(View.INVISIBLE);
+            binding.layoutEmpty.setVisibility(View.INVISIBLE);
             listAdapter.add(device);
         }
 
         @Override
         public void onScanError(int errorCode, @NotNull String errorMsg) {
+            List<String> list = new ArrayList<>();
             switch(errorCode) {
-                case ScanListener.ERROR_LACK_LOCATION_PERMISSION://缺少定位权限	
+                case ScanListener.ERROR_LACK_LOCATION_PERMISSION://缺少定位权限
                     ToastUtils.showShort("缺少定位权限");
+                    if (getApplicationInfo().targetSdkVersion >= 29) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
+                        list.add(Manifest.permission.ACCESS_FINE_LOCATION);
+                    } else {
+                        list.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+                    }
+                    permissionsRequester.checkAndRequest(list);
             		break;
                 case ScanListener.ERROR_LOCATION_SERVICE_CLOSED://位置服务未开启	
                     ToastUtils.showShort("位置服务未开启");    
             		break;
                 case ScanListener.ERROR_LACK_SCAN_PERMISSION://缺少搜索权限	
                     ToastUtils.showShort("缺少搜索权限");
+                    list.add(Manifest.permission.BLUETOOTH_SCAN);
+                    permissionsRequester.checkAndRequest(list);
             		break;
-                case ScanListener.ERROR_LACK_CONNECT_PERMISSION://缺少连接权限	
+                case ScanListener.ERROR_LACK_CONNECT_PERMISSION://缺少连接权限
                     ToastUtils.showShort("缺少连接权限");
+                    list.add(Manifest.permission.BLUETOOTH_CONNECT);
+                    permissionsRequester.checkAndRequest(list);
                     break;
                 case ScanListener.ERROR_SCAN_FAILED://搜索失败
                     ToastUtils.showShort("搜索出错：" + errorCode);
@@ -122,22 +120,6 @@ public class ScanActivity extends AppCompatActivity {
             }
         }
     };
-    
-    //需要进行检测的权限
-    private List<String> getNeedPermissions() {
-        List<String> list = new ArrayList<>();        
-        if (getApplicationInfo().targetSdkVersion >= 29) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
-            list.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        } else {
-            list.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-        }
-        //Android 12需要
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            list.add(Manifest.permission.BLUETOOTH_SCAN);
-            list.add(Manifest.permission.BLUETOOTH_CONNECT);
-        }
-        return list;
-    }
 
     @SuppressLint("MissingPermission")
     @Override
@@ -147,8 +129,11 @@ public class ScanActivity extends AppCompatActivity {
         if (EasyBLE.getInstance().isInitialized()) {
             if (EasyBLE.getInstance().isBluetoothOn()) {
                 doStartScan();
-            } else if (permissionsRequester.hasPermissions(getNeedPermissions())) {
-                startActivity(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE));
+            } else {
+                try {
+                    startActivity(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE));
+                } catch (Exception ignore) {
+                }
             }
         }
     }
@@ -166,8 +151,16 @@ public class ScanActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.scan, menu);
         MenuItem item = menu.findItem(R.id.menuProgress);
         item.setActionView(R.layout.toolbar_indeterminate_progress);
-        item.setVisible(EasyBLE.getInstance().isScanning());
+        item.setVisible(scanning);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.menuScan) {
+            doStartScan();
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private void checkPermissions() {
@@ -176,14 +169,26 @@ public class ScanActivity extends AppCompatActivity {
         permissionsRequester.setCallback(list -> {
             
         });
-        permissionsRequester.checkAndRequest(getNeedPermissions());
     }
 
     private void doStartScan() {
         listAdapter.clear();
-        layoutEmpty.setVisibility(View.VISIBLE);
+        binding.layoutEmpty.setVisibility(View.VISIBLE);
+        if (binding.rbClassic.isChecked()) {
+            EasyBLE.getInstance().scanConfiguration.setScannerType(ScannerType.CLASSIC);
+        } else if (binding.rbLe.isChecked()) {
+            EasyBLE.getInstance().scanConfiguration.setScannerType(ScannerType.LE);
+        } else {
+            EasyBLE.getInstance().scanConfiguration.setScannerType(ScannerType.LEGACY);
+        }
         EasyBLE.getInstance().stopScanQuietly();
         EasyBLE.getInstance().startScan();
+    }
+
+    @NonNull
+    @Override
+    public Class<ActivityScanBinding> getViewBindingClass() {
+        return ActivityScanBinding.class;
     }
 
     private static class ListAdapter extends BaseListAdapter<Device> {

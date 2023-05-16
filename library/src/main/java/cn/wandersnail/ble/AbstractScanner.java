@@ -67,12 +67,17 @@ abstract class AbstractScanner implements Scanner {
         scanListeners.remove(listener);
     }
 
+    @Override
+    public List<ScanListener> getListeners() {
+        return scanListeners;
+    }
+
     //位置服务是否开户
     private boolean isLocationEnabled(@NonNull Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
             return locationManager != null && locationManager.isLocationEnabled();
-        } else {
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 int locationMode = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE);
                 return locationMode != Settings.Secure.LOCATION_MODE_OFF;
@@ -80,35 +85,42 @@ abstract class AbstractScanner implements Scanner {
                 return false;
             }
         }
+        return true;
     }
-    
-    //检查是否有定位权限
-    private boolean noLocationPermission(@Nullable Context context) {
+
+    private boolean isTargetAndBuildMatch(@Nullable Context context, int version) {
         if (context == null) {
             context = this.context;
         }
-        int sdkVersion = context.getApplicationInfo().targetSdkVersion;
-        if (sdkVersion >= Build.VERSION_CODES.Q) {//target sdk版本在29以上的需要精确定位权限才能搜索到蓝牙设备
-            return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION);
-        } else {
+        return context.getApplicationInfo().targetSdkVersion >= version && Build.VERSION.SDK_INT >= version;
+    }
+    
+    //检查是否有定位权限
+    protected boolean noLocationPermission(@Nullable Context context) {
+        if (context == null) {
+            context = this.context;
+        }
+        int targetSdkVersion = context.getApplicationInfo().targetSdkVersion;
+        if (targetSdkVersion < Build.VERSION_CODES.Q) {//target sdk版本在29以上31以下的需要精确定位权限才能搜索到蓝牙设备
             return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) &&
                     !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION);
         }
+        return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION);
     }
 
     //检查是否有搜索权限
-    private boolean noScanPermission(@Nullable Context context) {
+    protected boolean noScanPermission(@Nullable Context context) {
         //在31以上的需要搜索权限才能搜索到蓝牙设备
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (isTargetAndBuildMatch(context, Build.VERSION_CODES.S)) {
             return !PermissionChecker.hasPermission(context, Manifest.permission.BLUETOOTH_SCAN);
         }
         return false;
     }
     
     //检查是否有连接权限，部分机型获取设备名称需要连接权限
-    private boolean noConnectPermission(Context context) {
+    protected boolean noConnectPermission(Context context) {
         //在31以上的需要搜索权限才能搜索到蓝牙设备
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (isTargetAndBuildMatch(context, Build.VERSION_CODES.S)) {
             return !PermissionChecker.hasPermission(context, Manifest.permission.BLUETOOTH_CONNECT);
         }
         return false;
@@ -122,12 +134,22 @@ abstract class AbstractScanner implements Scanner {
                 if (device != null) {
                     listener.onScanResult(device, isConnectedBySys);
                 } else if (start) {
+                    logger.log(Log.DEBUG, Logger.TYPE_SCAN_STATE, "搜索开始，搜索器：" + getType().name());
                     listener.onScanStart();
                 } else if (errorCode >= 0) {
                     listener.onScanError(errorCode, errorMsg);
                 } else {
                     listener.onScanStop();
                 }
+            }
+        });
+    }
+
+    void handleErrorAndStop(final int errorCode, final String errorMsg) {
+        mainHandler.post(() -> {
+            for (ScanListener listener : scanListeners) {
+                listener.onScanError(errorCode, errorMsg);
+                listener.onScanStop();
             }
         });
     }
@@ -200,7 +222,10 @@ abstract class AbstractScanner implements Scanner {
                 !device.getAddress().matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
             return;
         }
-        String name = device.getName() == null ? "" : device.getName();
+        String name = "";
+        if (!noConnectPermission(context)) {
+            name = device.getName() == null ? "" : device.getName();//Android12需要连接权限才能获取设备名称
+        }
         if (configuration.rssiLowLimit <= rssi) {
             //通过构建器实例化Device
             Device dev = deviceCreator.create(device, result);
@@ -236,31 +261,33 @@ abstract class AbstractScanner implements Scanner {
                 logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                 return;
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (!isLocationEnabled(context)) {
-                    String errorMsg = "Unable to scan for Bluetooth devices, the phone's location service is not turned on.";
-                    handleScanCallback(false, null, false, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, errorMsg);
-                    logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
-                    return;
-                }
-                if (noLocationPermission(context)) {
-                    String errorMsg = "Unable to scan for Bluetooth devices, lack location permission.";
-                    handleScanCallback(false, null, false, ScanListener.ERROR_LACK_LOCATION_PERMISSION, errorMsg);
-                    logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
-                    return;
-                }
-                if (noScanPermission(context)) {
-                    String errorMsg = "Unable to scan for Bluetooth devices, lack scan permission.";
-                    handleScanCallback(false, null, false, ScanListener.ERROR_LACK_SCAN_PERMISSION, errorMsg);
-                    logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
-                    return;
-                }
-                if (noConnectPermission(context)) {
-                    String errorMsg = "Unable to scan for Bluetooth devices, lack connect permission.";
-                    handleScanCallback(false, null, false, ScanListener.ERROR_LACK_CONNECT_PERMISSION, errorMsg);
-                    logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
-                    return;
-                }
+            boolean noPermission = false;
+            if (!isLocationEnabled(context)) {
+                String errorMsg = "Unable to scan for Bluetooth devices, the phone's location service is not turned on.";
+                handleScanCallback(false, null, false, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, errorMsg);
+                logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
+                noPermission = true;
+            }
+            if (noLocationPermission(context)) {
+                String errorMsg = "Unable to scan for Bluetooth devices, lack location permission.";
+                handleScanCallback(false, null, false, ScanListener.ERROR_LACK_LOCATION_PERMISSION, errorMsg);
+                logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
+                noPermission = true;
+            }
+            if (noScanPermission(context)) {
+                String errorMsg = "Unable to scan for Bluetooth devices, lack scan permission.";
+                handleScanCallback(false, null, false, ScanListener.ERROR_LACK_SCAN_PERMISSION, errorMsg);
+                logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
+                noPermission = true;
+            }
+            if (noConnectPermission(context)) {
+                String errorMsg = "Unable to scan for Bluetooth devices, lack connect permission.";
+                handleScanCallback(false, null, false, ScanListener.ERROR_LACK_CONNECT_PERMISSION, errorMsg);
+                logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
+                noPermission = true;
+            }
+            if (noPermission && configuration.abortOnLeakPermission) {
+                return;
             }
             if (getType() != ScannerType.CLASSIC) {
                 isScanning = true;

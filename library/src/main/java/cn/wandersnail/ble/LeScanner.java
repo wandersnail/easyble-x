@@ -67,14 +67,23 @@ class LeScanner extends AbstractScanner {
         } else {
             settings = configuration.scanSettings;
         }
-        bleScanner.startScan(configuration.filters, settings, scanCallback);
+        try {
+            bleScanner.startScan(configuration.filters, settings, scanCallback);
+        } catch (Exception e) {
+            logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, "搜索开始失败：" + e.getMessage());
+            handleErrorAndStop(ScanListener.ERROR_SCAN_FAILED, e.getMessage());
+        }
     }
 
     @SuppressLint("MissingPermission")
     @Override
     protected void performStopScan() {
         if (bleScanner != null) {
-            bleScanner.stopScan(scanCallback);
+            try {
+                bleScanner.stopScan(scanCallback);
+            } catch (Exception e) {
+                logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, "搜索结束失败：" + e.getMessage());
+            }
         }
     }
 

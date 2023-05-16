@@ -48,7 +48,6 @@ public class EasyBLE {
     private final DeviceCreator deviceCreator;
     private final Observable observable;
     private final Logger logger;
-    private final ScannerType scannerType;
     public final ScanConfiguration scanConfiguration;
     private Scanner scanner;
     private Application application;
@@ -67,9 +66,11 @@ public class EasyBLE {
     EasyBLE(EasyBLEBuilder builder) {
         tryGetApplication();
         bondController = builder.bondController;
-        scannerType = builder.scannerType;
-        deviceCreator = builder.deviceCreator == null ? new DefaultDeviceCreator() : builder.deviceCreator;
         scanConfiguration = builder.scanConfiguration == null ? new ScanConfiguration() : builder.scanConfiguration;
+        if (scanConfiguration.scannerType == null && builder.scannerType != null) {
+            scanConfiguration.scannerType = builder.scannerType;
+        }
+        deviceCreator = builder.deviceCreator == null ? new DefaultDeviceCreator() : builder.deviceCreator;
         logger = builder.logger == null ? new DefaultLogger("EasyBLE") : builder.logger;
         if (builder.observable != null) {
             internalObservable = false;
@@ -369,25 +370,57 @@ public class EasyBLE {
     
     //检查并实例化搜索器
     private void checkAndInstanceScanner() {
-        if (scanner == null) {
-            synchronized (this) {
-                if (bluetoothAdapter != null && scanner == null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        if (scannerType == ScannerType.LEGACY) {
-                            scanner = new LegacyScanner(this, bluetoothAdapter);
-                        } else if (scannerType == ScannerType.CLASSIC) {
-                            scanner = new ClassicScanner(this, bluetoothAdapter);
-                        } else {
-                            scanner = new LeScanner(this, bluetoothAdapter);
+        synchronized (this) {
+            if (bluetoothAdapter != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    if (scanConfiguration.scannerType == ScannerType.LEGACY) {
+                        if (scanner == null || !(scanner instanceof LegacyScanner)) {
+                            handleScannerChange(LegacyScanner.class);
                         }
-                    } else if (scannerType == ScannerType.CLASSIC) {
-                        scanner = new ClassicScanner(this, bluetoothAdapter);
-                    } else {
-                        scanner = new LegacyScanner(this, bluetoothAdapter);
+                    } else if (scanConfiguration.scannerType == ScannerType.CLASSIC) {
+                        if (scanner == null || !(scanner instanceof ClassicScanner)) {
+                            handleScannerChange(ClassicScanner.class);
+                        }
+                    } else if (scanner == null || !(scanner instanceof LeScanner)) {
+                        handleScannerChange(LeScanner.class);
                     }
+                } else if (scanConfiguration.scannerType == ScannerType.CLASSIC) {
+                    if (scanner == null || !(scanner instanceof ClassicScanner)) {
+                        handleScannerChange(ClassicScanner.class);
+                    }
+                } else if (scanner == null || !(scanner instanceof LegacyScanner)) {
+                    handleScannerChange(ClassicScanner.class);
                 }
             }
-        }        
+        }
+    }
+
+    /**
+     * 搜索器改变
+     * 
+     * @param newScannerClass 要切换到的搜索器
+     */
+    private void handleScannerChange(Class<? extends Scanner> newScannerClass) {
+        List<ScanListener> listeners = new ArrayList<>();
+        if (scanner != null) {
+            scanner.stopScan(true);
+            listeners.addAll(scanner.getListeners());
+            scanner.release();
+            scanner = null;
+        }
+        if (ClassicScanner.class.getName().equals(newScannerClass.getName())) {
+            scanner = new ClassicScanner(this, bluetoothAdapter);
+        } else if (LegacyScanner.class.getName().equals(newScannerClass.getName())) {
+            scanner = new LegacyScanner(this, bluetoothAdapter);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
+                LeScanner.class.getName().equals(newScannerClass.getName())) {
+            scanner = new LeScanner(this, bluetoothAdapter);
+        }
+        if (scanner != null) {
+            for (ScanListener listener : listeners) {
+                scanner.addScanListener(listener);
+            }
+        }
     }
     
     /**

@@ -5,16 +5,42 @@
     android:layout_height="match_parent"
     android:background="#fff">
 
-    <cn.wandersnail.widget.listview.PullRefreshLayout
-        android:id="@+id/refreshLayout"
+    <LinearLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <RadioGroup
+            android:id="@+id/rgScanner"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                android:id="@+id/rbClassic"
+                android:text="传统蓝牙搜索器"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+            <RadioButton
+                android:id="@+id/rbLegacy"
+                android:text="BLE旧搜索器"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+            <RadioButton
+                android:id="@+id/rbLe"
+                android:checked="true"
+                android:text="BLE新搜索器"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </RadioGroup>
+
         <ListView
             android:id="@+id/lv"
+            android:layout_marginTop="10dp"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
-    </cn.wandersnail.widget.listview.PullRefreshLayout>
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/layoutEmpty"
