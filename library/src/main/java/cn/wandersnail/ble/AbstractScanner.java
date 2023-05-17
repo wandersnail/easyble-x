@@ -101,7 +101,7 @@ abstract class AbstractScanner implements Scanner {
             context = this.context;
         }
         int targetSdkVersion = context.getApplicationInfo().targetSdkVersion;
-        if (targetSdkVersion < Build.VERSION_CODES.Q) {//target sdk版本在29以上31以下的需要精确定位权限才能搜索到蓝牙设备
+        if (targetSdkVersion < Build.VERSION_CODES.Q) {//target sdk版本在29以上需要精确定位权限才能搜索到蓝牙设备
             return !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) &&
                     !PermissionChecker.hasPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION);
         }
@@ -263,25 +263,25 @@ abstract class AbstractScanner implements Scanner {
             }
             boolean noPermission = false;
             if (!isLocationEnabled(context)) {
-                String errorMsg = "Unable to scan for Bluetooth devices, the phone's location service is not turned on.";
+                String errorMsg = "Scan error! The phone's location service is not turned on.";
                 handleScanCallback(false, null, false, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, errorMsg);
                 logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                 noPermission = true;
             }
             if (noLocationPermission(context)) {
-                String errorMsg = "Unable to scan for Bluetooth devices, lack location permission.";
+                String errorMsg = "Scan error! Lack location permission.";
                 handleScanCallback(false, null, false, ScanListener.ERROR_LACK_LOCATION_PERMISSION, errorMsg);
                 logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                 noPermission = true;
             }
             if (noScanPermission(context)) {
-                String errorMsg = "Unable to scan for Bluetooth devices, lack scan permission.";
+                String errorMsg = "Scan error! Lack scan permission.";
                 handleScanCallback(false, null, false, ScanListener.ERROR_LACK_SCAN_PERMISSION, errorMsg);
                 logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                 noPermission = true;
             }
             if (noConnectPermission(context)) {
-                String errorMsg = "Unable to scan for Bluetooth devices, lack connect permission.";
+                String errorMsg = "Scan error! Lack connect permission.";
                 handleScanCallback(false, null, false, ScanListener.ERROR_LACK_CONNECT_PERMISSION, errorMsg);
                 logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
                 noPermission = true;
