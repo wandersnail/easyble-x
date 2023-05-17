@@ -25,7 +25,7 @@ public class ScanConfiguration {
     boolean onlyAcceptBleDevice;
     int rssiLowLimit = -120;
     List<ScanFilter> filters;
-    boolean abortOnLeakPermission;
+    boolean abortOnLeakPermission = true;
     ScannerType scannerType;
 
     public int getScanPeriodMillis() {
@@ -50,6 +50,10 @@ public class ScanConfiguration {
 
     public List<ScanFilter> getFilters() {
         return filters;
+    }
+
+    public boolean isAbortOnLeakPermission() {
+        return abortOnLeakPermission;
     }
 
     /**
