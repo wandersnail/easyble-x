@@ -73,6 +73,20 @@ allprojects {
 }
 ```
 
+4. AndroidManifest.xml配置权限，以下权限在SDK中已配置，如想去除某些可在app的AndroidManifest声明对应权限，然后加上tools:node="remove"
+```
+<uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
+<!--  ACCESS_COARSE_LOCATION在target 28以下可使用  -->
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+<!--  ACCESS_FINE_LOCATION 在target 29以上必须，否则不会有搜索结果  -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+<!--  BLUETOOTH_SCAN 在target 31以上必须，否则直接抛异常  -->
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+<!--  BLUETOOTH_CONNECT 在target 31以上必须，否则直接抛异常  -->
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+```
+
 ## 使用方法
 
 ### 初始化SDK
