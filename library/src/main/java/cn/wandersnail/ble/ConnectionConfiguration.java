@@ -33,6 +33,7 @@ public class ConnectionConfiguration {
      * 建立连接时是否使用自动连接方式。connectGatt(context,autoConnect,...)方法第二个参数
      */
     boolean useAutoConnect = false;
+    boolean stopScanWhenConnecting = true;
     /**
      * 连接失败后重连时使用自动连接方式。connectGatt(context,autoConnect,...)方法第二个参数
      */
@@ -166,5 +167,15 @@ public class ConnectionConfiguration {
     @Nullable
     WriteOptions getDefaultWriteOptions(@NonNull UUID service, @NonNull UUID characteristic) {
         return defaultWriteOptionsMap.get(service + ":" + characteristic);
+    }
+
+    /**
+     * 连接时是否停止搜索。有些蓝牙模块连接之前必须先停止搜索
+     *
+     * @param stopScanWhenConnecting true：开始连接时，如果正在搜索则自动停止，false：不停止
+     */
+    public ConnectionConfiguration stopScanWhenConnecting(boolean stopScanWhenConnecting) {
+        this.stopScanWhenConnecting = stopScanWhenConnecting;
+        return this;
     }
 }

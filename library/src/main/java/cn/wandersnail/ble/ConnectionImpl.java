@@ -451,8 +451,9 @@ class ConnectionImpl implements Connection, ScanListener {
         @Override
         public void run() {
             if (!isReleased) {
-                //连接之前必须先停止搜索
-                easyBle.stopScan();
+                if (configuration.stopScanWhenConnecting) {
+                    easyBle.stopScan();
+                }
                 boolean autoConnect = configuration.useAutoConnect;
                 if (!autoConnect && connectFailed && configuration.useAutoConnectAfterConnectionFailure) {
                     autoConnect = true;
