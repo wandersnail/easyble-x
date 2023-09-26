@@ -551,6 +551,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private void tryScanReconnect() {
         if (!isReleased) {
+            tryReconnectCount++;
             connStartTime = System.currentTimeMillis();
             easyBle.stopScan();
             //搜索设备，搜索到才执行连接

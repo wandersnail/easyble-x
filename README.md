@@ -1,6 +1,6 @@
 # Android BLE开发框架
 
-## 推荐一款工具箱【蜗牛工具箱】APP，涵盖广，功能丰富。生活实用、效率办公、图片处理等等，还有隐藏的VIP功能，总之很多惊喜的功能。
+## 推荐一款工具箱【蜗牛工具箱】APP，涵盖广，功能丰富。生活实用、效率办公、图片处理等等，还有隐藏的VIP功能，总之很多惊喜的功能。各大应用市场搜索【蜗牛工具箱】安装即可。
 
 <div align="center">
     <img src="https://appimg.dbankcdn.com/application/screenshut1/b894e330ffe84787ad617071e2739cc7.jpg" width=150>
@@ -9,7 +9,7 @@
     <img src="https://appimg.dbankcdn.com/application/screenshut4/b894e330ffe84787ad617071e2739cc7.jpg" width=150>
 </div>
 
-点击下方按钮或扫码下载【蜗牛工具箱】
+华为手机可点击下方按钮或扫码下载【蜗牛工具箱】
 
 [![](https://img.shields.io/badge/下载-%E8%9C%97%E7%89%9B%E5%B7%A5%E5%85%B7%E7%AE%B1-red)](https://appgallery1.huawei.com/#/app/C109066561)
 
