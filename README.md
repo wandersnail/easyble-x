@@ -1,19 +1,41 @@
-# Android BLE开发框架
+## 推荐一款工具箱【蜗牛工具箱】
 
-## 推荐一款工具箱【蜗牛工具箱】APP，涵盖广，功能丰富。生活实用、效率办公、图片处理等等，还有隐藏的VIP功能，总之很多惊喜的功能。各大应用市场搜索【蜗牛工具箱】安装即可。
+> 涵盖广，功能丰富。生活实用、效率办公、图片处理等等，还有隐藏的VIP功能，总之很多惊喜的功能。各大应用市场搜索【蜗牛工具箱】安装即可。
 
 <div align="center">
-    <img src="https://appimg.dbankcdn.com/application/screenshut1/b894e330ffe84787ad617071e2739cc7.jpg" width=150>
-    <img src="https://appimg.dbankcdn.com/application/screenshut2/b894e330ffe84787ad617071e2739cc7.jpg" width=150>
-    <img src="https://appimg.dbankcdn.com/application/screenshut3/b894e330ffe84787ad617071e2739cc7.jpg" width=150>
-    <img src="https://appimg.dbankcdn.com/application/screenshut4/b894e330ffe84787ad617071e2739cc7.jpg" width=150>
+    <img src="https://tucdn.wpon.cn/2023/12/21/3cea99987b074.png" width=150>
+    <img src="https://tucdn.wpon.cn/2023/12/21/d46d124878a87.png" width=150>
+    <img src="https://tucdn.wpon.cn/2023/12/21/191d4b5dca4d3.png" width=150>
+    <img src="https://tucdn.wpon.cn/2023/12/21/cad80aeb12184.png" width=150>
 </div>
 
-华为手机可点击下方按钮或扫码下载【蜗牛工具箱】
+**部分功能介绍（持续更新中...）**
 
-[![](https://img.shields.io/badge/下载-%E8%9C%97%E7%89%9B%E5%B7%A5%E5%85%B7%E7%AE%B1-red)](https://appgallery1.huawei.com/#/app/C109066561)
+【滚动字幕】超实用应援打call神器，输入文字内容使文字在屏幕中滚动显示；
+【振动器】可自定义振动频率、时长，达到各种有意思的效果；
+【测量仪器】手机当直尺、水平仪、指南针、分贝仪；
+【文件加解密】可加密任意文件，可用于私密文件分享；
+【金额转大写】将阿拉伯数字类型的金额转成中文大写；
+【通信调试】BLE/SPP蓝牙、USB、TCP/UDP/MQTT通信调试；
+【二维码】调用相机扫描或扫描图片识别二维码，支持解析WiFi二维码获取密码，输入文字生成相应的二维码；
+【图片模糊处理】将图片进行高斯模糊处理，毛玻璃效果；
+【黑白图片上色】黑白图片变彩色；
+【成语词典】查询成语拼音、释义、出处、例句；
+【图片拼接】支持长图、4宫格、9宫格拼接；
+【自动点击】自动连点器，解放双手；
+【图片加水印】图片上添加自定义水印；
+【网页定时刷新】设定刷新后自动定时刷新网页；
+【应用管理】查看本机安装的应用详细信息，并可提取安装包分享。
 
-![image](data:image/png;base64,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)
+点击下方按钮或扫码下载【蜗牛工具箱】
+
+[![](https://img.shields.io/badge/下载-%E8%9C%97%E7%89%9B%E5%B7%A5%E5%85%B7%E7%AE%B1-red.svg)](https://mobile.baidu.com/item?pid=2067914)
+
+<img src="https://tucdn.wpon.cn/2023/12/21/31d6480011cd8.png" width=150>
+
+----------------------------------------------
+
+# Android BLE开发框架使用说明
 
 ## 最新版本
 
@@ -23,6 +45,7 @@
 [![](https://img.shields.io/badge/源码-码云-red.svg)](https://gitee.com/fszeng/easyble-x)
 
 ## 功能
+
 - 支持多设备同时连接
 - 支持广播包解析
 - 支持连接同时配对
@@ -43,14 +66,16 @@
 ## 配置
 
 1. 因为使用了jdk8的一些特性，需要在module的build.gradle里添加如下配置：
-```
-//纯java的项目
-android {
-	compileOptions {
-		sourceCompatibility JavaVersion.VERSION_1_8
-		targetCompatibility JavaVersion.VERSION_1_8
-	}
-}
+   
+   ```
+   //纯java的项目
+   android {
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+   }
+   ```
 
 //有kotlin的项目还需要在project的build.gradle里添加
 allprojects {
@@ -62,31 +87,35 @@ allprojects {
             jvmTarget = '1.8'
         }
     }
-}
-```
 
+}
+
+```
 2. module的build.gradle中的添加依赖，自行将latestVersion修改为各自最新版本，commons-android [最新版本](https://gitee.com/fszeng/commons-android) ，同步后通常就可以用了：
 ```
-dependencies {
-	...
-	implementation 'cn.wandersnail:easyble-x:latestVersion'
-	implementation 'cn.wandersnail:commons-android:latestVersion'
-}
-```
 
+dependencies {
+    ...
+    implementation 'cn.wandersnail:easyble-x:latestVersion'
+    implementation 'cn.wandersnail:commons-android:latestVersion'
+}
+
+```
 3. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，添加完再次同步即可。
 ```
-allprojects {
-	repositories {
-		...
-		mavenCentral()
-		maven { url 'https://jitpack.io' }
-	}
-}
-```
 
+allprojects {
+    repositories {
+        ...
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+```
 4. AndroidManifest.xml配置权限，以下权限在SDK中已配置，如想去除某些可在app的AndroidManifest声明对应权限，然后加上tools:node="remove"
 ```
+
 <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
 <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
 <!--  ACCESS_COARSE_LOCATION在target 28以下可使用  -->
@@ -116,19 +145,19 @@ EasyBLE.getInstance().initialize(this);
 
 ```
 ScanConfiguration scanConfig = new ScanConfiguration()
-		.setScanSettings(new ScanSettings.Builder()
-				.setScanMode(ScanSettings.SCAN_MODE_BALANCED)//搜索模式
-				.build())
-		.setScanPeriodMillis(15000)//搜索周期
-		.setAcceptSysConnectedDevice(true)//是否将系统蓝牙已连接的设备放到搜索结果中
-		.setOnlyAcceptBleDevice(true);//是否过滤非ble设备
+        .setScanSettings(new ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_BALANCED)//搜索模式
+                .build())
+        .setScanPeriodMillis(15000)//搜索周期
+        .setAcceptSysConnectedDevice(true)//是否将系统蓝牙已连接的设备放到搜索结果中
+        .setOnlyAcceptBleDevice(true);//是否过滤非ble设备
 EasyBLE ble = EasyBLE.getBuilder().setScanConfiguration(scanConfig)
         .setScannerType(ScannerType.LE)//指定蓝牙扫描器，默认为系统Android5.0以上使用ScannerType.LE
         .setExecutorService(executorService)//自定义线程池用来执行后台任务，也可使用默认
         .setDeviceCreator(creator)//设备实例构建器。返回搜索结果时的设备对象由此构建器实例化
-		.setObserveAnnotationRequired(false)//不强制使用{@link Observe}注解才会收到被观察者的消息，默认为false
-		.setMethodDefaultThreadMode(ThreadMode.MAIN)//指定回调方法和观察者方法的默认线程，默认为ThreadMode.MAIN
-		.build();
+        .setObserveAnnotationRequired(false)//不强制使用{@link Observe}注解才会收到被观察者的消息，默认为false
+        .setMethodDefaultThreadMode(ThreadMode.MAIN)//指定回调方法和观察者方法的默认线程，默认为ThreadMode.MAIN
+        .build();
 ble.initialize(this);
 ```
 
@@ -148,20 +177,20 @@ EasyBLE.getInstance().setLogEnabled(true);//开启日志打印
 ### 蓝牙搜索
 
 1. 定义搜索监听器
-
+   
    > Android6.0以上搜索需要至少模糊定位权限，如果targetSdkVersion设置29以上需要精确定位权限。权限需要动态申请
 
 ```
 private ScanListener scanListener = new ScanListener() {
-	@Override
-	public void onScanStart() {
-		//搜索开始
-	}
+    @Override
+    public void onScanStart() {
+        //搜索开始
+    }
 
-	@Override
-	public void onScanStop() {
-		//搜索停止
-	}
+    @Override
+    public void onScanStop() {
+        //搜索停止
+    }
 
     /**
      * 搜索到BLE设备
@@ -169,45 +198,49 @@ private ScanListener scanListener = new ScanListener() {
      * @param device           搜索到的设备
      * @param isConnectedBySys 是否已被系统蓝牙连接上
      */
-	@Override
-	public void onScanResult(@NonNull Device device, boolean isConnectedBySys) {
-		//搜索结果
-	}
+    @Override
+    public void onScanResult(@NonNull Device device, boolean isConnectedBySys) {
+        //搜索结果
+    }
 
-	@Override
-	public void onScanError(int errorCode, @NotNull String errorMsg) {
-		switch(errorCode) {
-			case ScanListener.ERROR_LACK_LOCATION_PERMISSION://缺少定位权限		
-				break;
-			case ScanListener.ERROR_LOCATION_SERVICE_CLOSED://位置服务未开启		
-				break;
-			case ScanListener.ERROR_LACK_LOCATION_PERMISSION://缺少定位权限		
-				break;
-			case ScanListener.ERROR_LACK_SCAN_PERMISSION://targetSdkVersion大于等于Android12时，缺少搜索权限(发现附近设备)	
-				break;
-			case ScanListener.ERROR_LACK_CONNECT_PERMISSION://targetSdkVersion大于等于Android12时，缺少连接权限	
-				break;	
-			case ScanListener.ERROR_SCAN_FAILED://搜索失败
-				break;
-		}
-	}
+    @Override
+    public void onScanError(int errorCode, @NotNull String errorMsg) {
+        switch(errorCode) {
+            case ScanListener.ERROR_LACK_LOCATION_PERMISSION://缺少定位权限        
+                break;
+            case ScanListener.ERROR_LOCATION_SERVICE_CLOSED://位置服务未开启        
+                break;
+            case ScanListener.ERROR_LACK_LOCATION_PERMISSION://缺少定位权限        
+                break;
+            case ScanListener.ERROR_LACK_SCAN_PERMISSION://targetSdkVersion大于等于Android12时，缺少搜索权限(发现附近设备)    
+                break;
+            case ScanListener.ERROR_LACK_CONNECT_PERMISSION://targetSdkVersion大于等于Android12时，缺少连接权限    
+                break;    
+            case ScanListener.ERROR_SCAN_FAILED://搜索失败
+                break;
+        }
+    }
 };
 ```
+
 2. 添加监听
 
 ```
 EasyBLE.getInstance().addScanListener(scanListener);
 ```
+
 3. 开始搜索
 
 ```
 EasyBLE.getInstance().startScan();
 ```
+
 4. 停止搜索
 
 ```
 EasyBLE.getInstance().stopScan();
 ```
+
 5. 停止监听
 
 ```
@@ -239,7 +272,7 @@ public class MainActivity extends AppCompatActivity implements EventObserver {
                 break;
         }
     }
-	
+
     /**
      * 使用{@link Observe}确定要接收消息，方法在{@link EasyBLEBuilder#setMethodDefaultThreadMode(ThreadMode)}指定的线程执行
      */
@@ -335,19 +368,19 @@ builder.setTag(UUID.randomUUID().toString());
 builder.setPriority(Integer.MAX_VALUE);//设置请求优先级
 //设置了回调则观察者不会收到此次请求的结果消息
 builder.setCallback(new ReadCharacteristicCallback() {
-	//注解可以指定回调线程
-	@RunOn(ThreadMode.BACKGROUND)
-	@Override
-	public void onCharacteristicRead(@NonNull Request request, @NonNull byte[] value) {
-		Log.d("EasyBLE", "主线程：" + (Looper.getMainLooper() == Looper.myLooper()));
-		Log.d("EasyBLE", "读取到特征值：" + StringUtils.toHex(value, " "));
-	}
+    //注解可以指定回调线程
+    @RunOn(ThreadMode.BACKGROUND)
+    @Override
+    public void onCharacteristicRead(@NonNull Request request, @NonNull byte[] value) {
+        Log.d("EasyBLE", "主线程：" + (Looper.getMainLooper() == Looper.myLooper()));
+        Log.d("EasyBLE", "读取到特征值：" + StringUtils.toHex(value, " "));
+    }
 
-	//不使用注解指定线程的话，使用构建器设置的默认线程
-	@Override
-	public void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value) {
+    //不使用注解指定线程的话，使用构建器设置的默认线程
+    @Override
+    public void onRequestFailed(@NonNull Request request, int failType, @Nullable Object value) {
 
-	}
+    }
 });
 builder.build().execute(connection);
 
@@ -355,12 +388,12 @@ builder.build().execute(connection);
 Request.WriteCharacteristicBuilder builder = Request.getWriteCharacteristicBuilder(serviceUuid, characteristicUuid, "test write".getBytes());
 //根据需要设置写入配置
 builder.setWriteOptions(new WriteOptions.Builder()
-		.setPackageSize(20)
-		.setPackageWriteDelayMillis(5)
-		.setRequestWriteDelayMillis(10)
-		.setWaitWriteResult(true)
-		.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
-		.build());
+        .setPackageSize(20)
+        .setPackageWriteDelayMillis(5)
+        .setRequestWriteDelayMillis(10)
+        .setWaitWriteResult(true)
+        .setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+        .build());
 //不设置回调，使用观察者模式接收结果
 connection.execute(builder.build());
 ```
@@ -372,12 +405,14 @@ connection.execute(builder.build());
 ```
 EasyBLE.getInstance().release();
 ```
+
 ### 代码混淆
+
 如果使用jar方式依赖，需要添加一下混淆规则。使用aar或直接远程依赖不需要额外添加，库里自带混淆规则
 
 ```
 -keep class * implements cn.wandersnail.commons.observer.Observe {
-	public <methods>;
+    public <methods>;
 }
 -keep class * implements cn.wandersnail.ble.Request {
     !private *;
@@ -385,6 +420,7 @@ EasyBLE.getInstance().release();
 ```
 
 ## Demo效果预览
+
 ![image](https://s2.ax1x.com/2020/02/29/3sWVn1.png)
 ![image](https://s2.ax1x.com/2020/02/29/3sWAXR.png)
 ![image](https://s2.ax1x.com/2020/02/29/3sWe76.gif)
