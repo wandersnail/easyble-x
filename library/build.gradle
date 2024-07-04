@@ -8,7 +8,7 @@ signing {
     sign configurations.archives
 }
 
-def lib_version = '1.4.9'
+def lib_version = '1.5.0'
 def user_name = 'wandersnail'
 def lib_group = 'cn.wandersnail'
 def lib_artifact = 'easyble-x'
@@ -42,17 +42,18 @@ dependencies {
     compileOnly 'cn.wandersnail:commons-android:1.3.4'
 }
 
-task sourcesJar(type: Jar) {
+tasks.register('sourcesJar', Jar) {
     archiveClassifier.set('sources')
     from android.sourceSets.main.java.srcDirs
 }
 
-task javadoc(type: Javadoc) {
+tasks.register('javadoc', Javadoc) {
     source = android.sourceSets.main.java.srcDirs
     setClasspath(classpath + project.files(android.getBootClasspath().join(File.pathSeparator)))
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
+tasks.register('javadocJar', Jar) {
+    dependsOn javadoc
     archiveClassifier.set('javadoc')
     from javadoc.destinationDir
 }
