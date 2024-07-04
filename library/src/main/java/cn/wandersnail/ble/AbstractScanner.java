@@ -88,13 +88,6 @@ abstract class AbstractScanner implements Scanner {
         return true;
     }
 
-    private boolean isTargetAndBuildMatch(@Nullable Context context, int version) {
-        if (context == null) {
-            context = this.context;
-        }
-        return context.getApplicationInfo().targetSdkVersion >= version && Build.VERSION.SDK_INT >= version;
-    }
-    
     //检查是否有定位权限
     protected boolean noLocationPermission(@Nullable Context context) {
         if (context == null) {
@@ -111,7 +104,7 @@ abstract class AbstractScanner implements Scanner {
     //检查是否有搜索权限
     protected boolean noScanPermission(@Nullable Context context) {
         //在31以上的需要搜索权限才能搜索到蓝牙设备
-        if (isTargetAndBuildMatch(context, Build.VERSION_CODES.S)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return !PermissionChecker.hasPermission(context, Manifest.permission.BLUETOOTH_SCAN);
         }
         return false;
@@ -120,7 +113,7 @@ abstract class AbstractScanner implements Scanner {
     //检查是否有连接权限，部分机型获取设备名称需要连接权限
     protected boolean noConnectPermission(Context context) {
         //在31以上的需要搜索权限才能搜索到蓝牙设备
-        if (isTargetAndBuildMatch(context, Build.VERSION_CODES.S)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return !PermissionChecker.hasPermission(context, Manifest.permission.BLUETOOTH_CONNECT);
         }
         return false;
