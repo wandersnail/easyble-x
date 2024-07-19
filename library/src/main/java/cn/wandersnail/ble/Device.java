@@ -215,4 +215,14 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
             return new Device[size];
         }
     };
+
+    @NonNull
+    @Override
+    public Device clone() {
+        try {
+            return (Device) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
 }
