@@ -31,17 +31,19 @@ allprojects {
     }
 
     // 指定编码
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
         options.encoding = "UTF-8"
     }
 
-    tasks.withType(Javadoc) {
-        enabled = false
-        options {
-            encoding "UTF-8"
-            charSet 'UTF-8'
+    tasks.withType(Javadoc).tap {
+        configureEach {
+            enabled = false
+            options {
+                encoding "UTF-8"
+                charSet 'UTF-8'
+            }
+            options.addStringOption('Xdoclint:none', '-quiet')
         }
-        options.addStringOption('Xdoclint:none', '-quiet')
     }
 }
 

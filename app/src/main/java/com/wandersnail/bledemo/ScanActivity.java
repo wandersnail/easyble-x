@@ -30,6 +30,7 @@ import cn.wandersnail.ble.EasyBLE;
 import cn.wandersnail.ble.ScannerType;
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.commons.helper.PermissionsRequester2;
+import cn.wandersnail.commons.poster.ThreadMode;
 import cn.wandersnail.commons.util.ToastUtils;
 import cn.wandersnail.widget.listview.BaseListAdapter;
 import cn.wandersnail.widget.listview.BaseViewHolder;

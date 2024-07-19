@@ -11,6 +11,9 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import java.util.List;
+import java.util.Objects;
+
+import cn.wandersnail.commons.poster.ThreadMode;
 
 /**
  * 搜索配置
@@ -27,6 +30,7 @@ public class ScanConfiguration {
     List<ScanFilter> filters;
     boolean abortOnLeakPermission = true;
     ScannerType scannerType;
+    ThreadMode callbackThreadMode = ThreadMode.MAIN;
 
     public int getScanPeriodMillis() {
         return scanPeriodMillis;
@@ -56,6 +60,10 @@ public class ScanConfiguration {
         return abortOnLeakPermission;
     }
 
+    public ThreadMode getCallbackThreadMode() {
+        return callbackThreadMode;
+    }
+
     /**
      * 搜索周期
      *
@@ -82,6 +90,7 @@ public class ScanConfiguration {
      */
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     public ScanConfiguration setScanSettings(@NonNull ScanSettings scanSettings) {
+        Objects.requireNonNull(scanSettings);
         this.scanSettings = scanSettings;
         return this;
     }
@@ -99,6 +108,15 @@ public class ScanConfiguration {
      */
     public ScanConfiguration setRssiLowLimit(int rssiLowLimit) {
         this.rssiLowLimit = rssiLowLimit;
+        return this;
+    }
+
+    /**
+     * 设置回调线程模式
+     */
+    public ScanConfiguration setCallbackThreadMode(@NonNull ThreadMode mode) {
+        Objects.requireNonNull(mode);
+        this.callbackThreadMode = mode;
         return this;
     }
 
@@ -126,6 +144,7 @@ public class ScanConfiguration {
      * 系统小于Android5.0时，指定{@link ScannerType#LE}无效
      */
     public ScanConfiguration setScannerType(@NonNull ScannerType scannerType) {
+        Objects.requireNonNull(scannerType);
         this.scannerType = scannerType;
         return this;
     }

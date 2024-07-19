@@ -25,11 +25,15 @@ import androidx.annotation.RequiresApi;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import cn.wandersnail.ble.callback.ScanListener;
 import cn.wandersnail.ble.util.Logger;
+import cn.wandersnail.commons.poster.PosterDispatcher;
+import cn.wandersnail.commons.poster.ThreadMode;
 
 /**
  * date: 2019/10/1 14:44
@@ -45,12 +49,14 @@ abstract class AbstractScanner implements Scanner {
     final Logger logger;
     private final DeviceCreator deviceCreator;
     final Context context;
+    private final PosterDispatcher posterDispatcher;
 
     AbstractScanner(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter) {
         this.bluetoothAdapter = bluetoothAdapter;
         this.configuration = easyBle.scanConfiguration;
         mainHandler = new Handler(Looper.getMainLooper());
         logger = easyBle.getLogger();
+        posterDispatcher = easyBle.getPosterDispatcher();
         deviceCreator = easyBle.getDeviceCreator();
         context = easyBle.getContext();
     }
@@ -119,10 +125,18 @@ abstract class AbstractScanner implements Scanner {
         return false;
     }
 
+    private void postToMainThread(Runnable runnable) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            runnable.run();
+        } else {
+            mainHandler.post(runnable);
+        }
+    }
+
     //处理搜索回调
     void handleScanCallback(final boolean start, @Nullable final Device device, final boolean isConnectedBySys,
                             final int errorCode, final String errorMsg) {
-        mainHandler.post(() -> {
+        posterDispatcher.post(configuration.getCallbackThreadMode(), () -> {
             for (ScanListener listener : scanListeners) {
                 if (device != null) {
                     listener.onScanResult(device, isConnectedBySys);
@@ -139,7 +153,7 @@ abstract class AbstractScanner implements Scanner {
     }
 
     void handleErrorAndStop(final int errorCode, final String errorMsg) {
-        mainHandler.post(() -> {
+        postToMainThread(() -> {
             for (ScanListener listener : scanListeners) {
                 listener.onScanError(errorCode, errorMsg);
                 listener.onScanStop();
@@ -211,29 +225,31 @@ abstract class AbstractScanner implements Scanner {
     
     @SuppressLint("MissingPermission")
     void parseScanResult(BluetoothDevice device, boolean isConnectedBySys, @Nullable ScanResult result, int rssi, byte[] scanRecord) {
-        if ((configuration.onlyAcceptBleDevice && device.getType() != BluetoothDevice.DEVICE_TYPE_LE) ||
-                !device.getAddress().matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
-            return;
-        }
-        String name = "";
-        if (!noConnectPermission(context)) {
-            name = device.getName() == null ? "" : device.getName();//Android12需要连接权限才能获取设备名称
-        }
-        if (configuration.rssiLowLimit <= rssi) {
-            //通过构建器实例化Device
-            Device dev = deviceCreator.create(device, result);
-            if (dev != null) {
-                dev.name = TextUtils.isEmpty(dev.getName()) ? name : dev.getName();
-                dev.rssi = rssi;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    dev.scanResult = result;
-                }
-                dev.scanRecord = scanRecord;
-                handleScanCallback(false, dev, isConnectedBySys, -1, "");
+        EasyBLE.getInstance().getExecutorService().execute(()-> {
+            if ((configuration.onlyAcceptBleDevice && device.getType() != BluetoothDevice.DEVICE_TYPE_LE) ||
+                    !device.getAddress().matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
+                return;
             }
-        }
-        String msg = String.format(Locale.US, "found device! [name: %s, addr: %s]", TextUtils.isEmpty(name) ? "N/A" : name, device.getAddress());
-        logger.log(Log.DEBUG, Logger.TYPE_SCAN_STATE, msg);
+            String name = "";
+            if (!noConnectPermission(context)) {
+                name = device.getName() == null ? "" : device.getName();//Android12需要连接权限才能获取设备名称
+            }
+            if (configuration.rssiLowLimit <= rssi) {
+                //通过构建器实例化Device
+                Device dev = deviceCreator.create(device, result);
+                if (dev != null) {
+                    dev.name = TextUtils.isEmpty(dev.getName()) ? name : dev.getName();
+                    dev.rssi = rssi;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        dev.scanResult = result;
+                    }
+                    dev.scanRecord = scanRecord;
+                    handleScanCallback(false, dev, isConnectedBySys, -1, "");
+                }
+            }
+            String msg = String.format(Locale.US, "found device! [name: %s, addr: %s]", TextUtils.isEmpty(name) ? "N/A" : name, device.getAddress());
+            logger.log(Log.DEBUG, Logger.TYPE_SCAN_STATE, msg);
+        });
     }
 
     @CallSuper
