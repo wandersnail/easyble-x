@@ -2,6 +2,7 @@ package cn.wandersnail.ble;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Application;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -450,12 +451,23 @@ public class EasyBLE {
     }
 
     /**
-     * 搜索BLE设备
+     * 搜索BLE设备。部分机型使用此方法无法正确判断出是否拥有相应的权限，请使用{@link #startScan(Activity)}
      */
+    @Deprecated
     public void startScan() {
         checkAndInstanceScanner();
         if (checkStatus() && scanner != null) {
             scanner.startScan(application);
+        }
+    }
+
+    /**
+     * 搜索BLE设备
+     */
+    public void startScan(@NonNull Activity activity) {
+        checkAndInstanceScanner();
+        if (checkStatus() && scanner != null) {
+            scanner.startScan(activity);
         }
     }
 
