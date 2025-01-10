@@ -65,13 +65,11 @@ publishing {
             artifactId = lib_artifact
             version = lib_version
             description = lib_description
-
-            artifact "$buildDir/outputs/aar/${project.name}-release.aar"
-
             // 增加 sourcesJar、javadocJar 任务
             artifact sourcesJar
             artifact javadocJar
-
+            // 依赖 bundleReleaseAar 这是构建生产渠道的aar包任务，并上传其产出的aar ,推荐
+            afterEvaluate { artifact(tasks.getByName("bundleReleaseAar")) }
             pom {
                 name = lib_artifact
                 description = lib_description
