@@ -2,13 +2,14 @@ plugins {
     id 'com.android.library'
     id 'maven-publish'
     id 'signing'
+    id 'tech.yanand.maven-central-publish' version '1.3.0'
 }
 
 signing {
     sign configurations.archives
 }
 
-def lib_version = '1.5.2'
+def lib_version = '1.5.3'
 def user_name = 'wandersnail'
 def lib_group = 'cn.wandersnail'
 def lib_artifact = 'easyble-x'
@@ -99,26 +100,30 @@ publishing {
         }
     }
 
-    Properties properties = new Properties()
-    InputStream inputStream = project.rootProject.file('local.properties').newDataInputStream()
-    properties.load(inputStream)
-    def ossrhUsername = properties.containsKey('ossrhUsername') ? properties['ossrhUsername'] : ''
-    def ossrhPassword = properties.containsKey('ossrhPassword') ? properties['ossrhPassword'] : ''
-    if (ossrhUsername != null && ossrhPassword != null) {
-        repositories {
-            maven {
-                url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-                credentials {
-                    username = ossrhUsername
-                    password = ossrhPassword
-                }
-            }
-        }
+    repositories {
+
     }
 }
 
 signing {
     sign publishing.publications.release
+}
+
+Properties properties = new Properties()
+InputStream inputStream = project.rootProject.file('local.properties').newDataInputStream()
+properties.load(inputStream)
+String authTokenValue = properties.containsKey('authTokenValue') ? properties['authTokenValue'] : ''
+
+mavenCentral {
+    // 从 Sonatype 官方获取的 Publisher API 调用的 token，应为 Base64 编码后的 username:password
+    authToken = authTokenValue
+    // 上传是否应该自动发布。如果您希望手动执行此操作，请使用 'USER_MANAGED'。
+    // 该属性是可选的，默认为 'AUTOMATIC'。
+    publishingType = "AUTOMATIC"
+    // 当发布类型为 'AUTOMATIC' 时，状态API获取 'PUBLISHING' 或 'PUBLISHED' 状态的最大等待时间
+    // 或者当发布类型为 'USER_MANAGED' 时，获取 'VALIDATED' 状态。
+    // 该属性是可选的，默认为60秒。
+    maxWait = 60
 }
 
 javadoc {

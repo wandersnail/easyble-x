@@ -226,7 +226,8 @@ abstract class AbstractScanner implements Scanner {
     @SuppressLint("MissingPermission")
     void parseScanResult(BluetoothDevice device, boolean isConnectedBySys, @Nullable ScanResult result, int rssi, byte[] scanRecord) {
         EasyBLE.getInstance().getExecutorService().execute(()-> {
-            if ((configuration.onlyAcceptBleDevice && device.getType() != BluetoothDevice.DEVICE_TYPE_LE) ||
+            if ((configuration.onlyAcceptBleDevice && device.getType() != BluetoothDevice.DEVICE_TYPE_LE &&
+                    device.getType() != BluetoothDevice.DEVICE_TYPE_DUAL) ||
                     !device.getAddress().matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
                 return;
             }
