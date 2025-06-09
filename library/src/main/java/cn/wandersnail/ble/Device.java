@@ -58,7 +58,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     @NonNull
     public String getName() {
-        return name;
+        return name == null ? "" : name;
     }
 
     public void setName(@NonNull String name) {
@@ -67,7 +67,7 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     @NonNull
     public String getAddress() {
-        return address;
+        return address == null ? "" : address;
     }
 
     public int getRssi() {

@@ -9,7 +9,7 @@ signing {
     sign configurations.archives
 }
 
-def lib_version = '1.5.3'
+def lib_version = '1.5.4'
 def user_name = 'wandersnail'
 def lib_group = 'cn.wandersnail'
 def lib_artifact = 'easyble-x'
@@ -19,10 +19,10 @@ group = lib_group
 version = lib_version
 
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        minSdkVersion 19
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdk 19
+        targetSdk rootProject.ext.targetSdkVersion
 
         consumerProguardFiles 'easyblex-consumer-rules.pro'
     }
@@ -101,7 +101,6 @@ publishing {
     }
 
     repositories {
-
     }
 }
 
