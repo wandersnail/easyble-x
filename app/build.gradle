@@ -12,10 +12,10 @@ if (properties.containsKey('ndkVersion')) {
     ndkVer = project.ndkVersion
 }
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdk rootProject.ext.minSdkVersion
+        targetSdk rootProject.ext.targetSdkVersion
         applicationId "com.wandersnail.bledemo"
         versionCode 1
         versionName "1.0"
