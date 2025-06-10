@@ -1,5 +1,6 @@
 package cn.wandersnail.ble;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -41,6 +42,7 @@ import cn.wandersnail.commons.util.StringUtils;
  * date: 2019/8/3 19:47
  * author: zengfansheng
  */
+@SuppressLint("MissingPermission")
 class ConnectionImpl implements Connection, ScanListener {
     private static final int MSG_REQUEST_TIMEOUT = 0;
     private static final int MSG_CONNECT = 1;
@@ -79,6 +81,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private int mtu = 23;
     private BluetoothGattCallback originCallback;
     private boolean connectFailed;//连接失败过
+    private long lastRemoteRssiReadTime;
 
     ConnectionImpl(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter, Device device, ConnectionConfiguration configuration,
                    int connectDelay, EventObserver observer) {
@@ -160,6 +163,9 @@ class ConnectionImpl implements Connection, ScanListener {
                 easyBle.getExecutorService().execute(() -> originCallback.onServicesDiscovered(gatt, status));
             }
             if (!isReleased) {
+                if (gatt != null) {
+                    gatt.readRemoteRssi();
+                }
                 Message.obtain(connHandler, MSG_ON_SERVICES_DISCOVERED, status, 0).sendToTarget();
             } else {
                 closeGatt(gatt);
@@ -240,6 +246,7 @@ class ConnectionImpl implements Connection, ScanListener {
 
         @Override
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
+            lastRemoteRssiReadTime = System.currentTimeMillis();
             device.setRssi(rssi);
             if (originCallback != null) {
                 easyBle.getExecutorService().execute(() -> originCallback.onReadRemoteRssi(gatt, rssi, status));
@@ -441,6 +448,22 @@ class ConnectionImpl implements Connection, ScanListener {
                     }
                 } else if (configuration.isAutoReconnect) {
                     doDisconnect(true);
+                }
+            }
+            //通过读取rssi来辅助判断是否断开连接
+            if (device.connectionState == ConnectionState.SERVICE_DISCOVERED && lastRemoteRssiReadTime > 0) {
+                //如果5秒内没有成功读取到rssi则说明连接已断开
+                if (configuration.useReadRemoteRssiToDetectDisconnection &&
+                        System.currentTimeMillis() - lastRemoteRssiReadTime > 5000) {
+                    logD(Logger.TYPE_CONNECTION_STATE, "disconnected! [name: %s, addr: %s, autoReconnEnable: %s]",
+                            device.name, device.address, configuration.isAutoReconnect);
+                    clearRequestQueueAndNotify();
+                    notifyDisconnected();
+                } else if (System.currentTimeMillis() - lastRemoteRssiReadTime > 1000) {
+                    BluetoothGatt gatt = bluetoothGatt;
+                    if (gatt != null) {
+                        gatt.readRemoteRssi();
+                    }
                 }
             }
             connHandler.sendEmptyMessageDelayed(MSG_TIMER, 500);
@@ -675,7 +698,7 @@ class ConnectionImpl implements Connection, ScanListener {
         }
 
         @Override
-        public void handleMessage(Message msg) {
+        public void handleMessage(@NonNull Message msg) {
             ConnectionImpl connection = weakRef.get();
             if (connection != null) {
                 if (connection.isReleased) {
