@@ -29,7 +29,8 @@
 - 【BLE调试】低功耗蓝牙GATT通信调试，支持主从模式，可多设备同时连接，实时日志；
 - 【SPP蓝牙调试】经典蓝牙Socket通信调试，支持自定义UUID，多设备同时连接，实时日志；
 - 【USB调试】USB串口调试，兼容芯片多，实时日志；
-……
+- ……
+
 已集成上百个小工具，持续更新中...
 
 点击下方按钮或扫码下载【蜗牛工具箱】
@@ -82,18 +83,20 @@
    }
    ```
 
-//有kotlin的项目还需要在project的build.gradle里添加
-allprojects {
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+   ```
+   //有kotlin的项目还需要在project的build.gradle里添加
+   allprojects {
+       tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+           sourceCompatibility = JavaVersion.VERSION_1_8
+           targetCompatibility = JavaVersion.VERSION_1_8
 
-        kotlinOptions {
-            jvmTarget = '1.8'
+            kotlinOptions {
+                jvmTarget = '1.8'
+            }
         }
     }
+   ```
 
-}
 
 ```
 2. module的build.gradle中的添加依赖，自行将latestVersion修改为各自最新版本，commons-android [最新版本](https://gitee.com/fszeng/commons-android) ，同步后通常就可以用了：
