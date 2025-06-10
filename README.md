@@ -98,20 +98,19 @@
    ```
 
 
-```
 2. module的build.gradle中的添加依赖，自行将latestVersion修改为各自最新版本，commons-android [最新版本](https://gitee.com/fszeng/commons-android) ，同步后通常就可以用了：
-```
 
+```
 dependencies {
     ...
     implementation 'cn.wandersnail:easyble-x:latestVersion'
     implementation 'cn.wandersnail:commons-android:latestVersion'
 }
-
 ```
+
 3. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，添加完再次同步即可。
-```
 
+```
 allprojects {
     repositories {
         ...
@@ -119,11 +118,11 @@ allprojects {
         maven { url 'https://jitpack.io' }
     }
 }
-
 ```
+
 4. AndroidManifest.xml配置权限，以下权限在SDK中已配置，如想去除某些可在app的AndroidManifest声明对应权限，然后加上tools:node="remove"
-```
 
+```
 <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
 <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
 <!--  ACCESS_COARSE_LOCATION在target 28以下可使用  -->
