@@ -29,9 +29,9 @@
 
 点击下方按钮或扫码下载【蜗牛工具箱】
 
-[![](https://img.shields.io/badge/下载-%E8%9C%97%E7%89%9B%E5%B7%A5%E5%85%B7%E7%AE%B1-red.svg)](https://mobile.baidu.com/item?pid=2067914)
+[![](https://img.shields.io/badge/下载-%E8%9C%97%E7%89%9B%E5%B7%A5%E5%85%B7%E7%AE%B1-red.svg)](https://www.pgyer.com/8AN5OhVd)
 
-<img src="https://tucdn.wpon.cn/2023/12/21/31d6480011cd8.png" width=150>
+<img src="https://www.pgyer.com/app/qrcode/8AN5OhVd" width=150>
 
 ----------------------------------------------
 
@@ -39,7 +39,7 @@
 
 ## 最新版本
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x/badge.svg)](https://maven-badges.herokuapp.com/maven-central/cn.wandersnail/easyble-x)
+[![Maven Central](https://img.shields.io/maven-central/v/cn.wandersnail/easyble-x.svg?color=4AC61C)](https://mvnrepository.com/artifact/cn.wandersnail/easyble-x)
 [![Release](https://jitpack.io/v/cn.wandersnail/easyble-x.svg)](https://jitpack.io/#cn.wandersnail/easyble-x)
 [![](https://img.shields.io/badge/源码-github-blue.svg)](https://github.com/wandersnail/easyble-x)
 [![](https://img.shields.io/badge/源码-码云-red.svg)](https://gitee.com/fszeng/easyble-x)
