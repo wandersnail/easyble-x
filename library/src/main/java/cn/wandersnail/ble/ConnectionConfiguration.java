@@ -45,6 +45,10 @@ public class ConnectionConfiguration {
     @NonNull
     final List<Pair<Integer, Integer>> scanIntervalPairsInAutoReconnection;
     private final Map<String, WriteOptions> defaultWriteOptionsMap = new HashMap<>();
+    /**
+     * 使用读取信号强度辅助判断连接状态
+     */
+    boolean useReadRemoteRssiToDetectDisconnection = false;
 
     public ConnectionConfiguration() {
         scanIntervalPairsInAutoReconnection = new ArrayList<>();
@@ -176,6 +180,16 @@ public class ConnectionConfiguration {
      */
     public ConnectionConfiguration stopScanWhenConnecting(boolean stopScanWhenConnecting) {
         this.stopScanWhenConnecting = stopScanWhenConnecting;
+        return this;
+    }
+
+    /**
+     * 使用读取信号强度辅助判断连接状态
+     *
+     * @param useReadRemoteRssiToDetectDisconnection true：使用，false：不使用
+     */
+    public ConnectionConfiguration setUseReadRemoteRssiToDetectDisconnection(boolean useReadRemoteRssiToDetectDisconnection) {
+        this.useReadRemoteRssiToDetectDisconnection = useReadRemoteRssiToDetectDisconnection;
         return this;
     }
 }
