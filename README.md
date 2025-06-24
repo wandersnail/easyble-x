@@ -3,10 +3,10 @@
 > 涵盖广，功能丰富。生活实用、效率办公、图片处理等等，还有隐藏的VIP功能，总之很多惊喜的功能。各大应用市场搜索【蜗牛工具箱】安装即可。
 
 <div align="center">
-    <img src="https://tucdn.wpon.cn/2023/12/21/3cea99987b074.png" width=150>
-    <img src="https://tucdn.wpon.cn/2023/12/21/d46d124878a87.png" width=150>
-    <img src="https://tucdn.wpon.cn/2023/12/21/191d4b5dca4d3.png" width=150>
-    <img src="https://tucdn.wpon.cn/2023/12/21/cad80aeb12184.png" width=150>
+    <img src="https://pic1.imgdb.cn/item/685a0c1658cb8da5c8696135.png" width=150>
+    <img src="https://pic1.imgdb.cn/item/685a0c1758cb8da5c869613d.png" width=150>
+    <img src="https://pic1.imgdb.cn/item/685a0c1758cb8da5c869613e.png" width=150>
+    <img src="https://pic1.imgdb.cn/item/685a0c1758cb8da5c8696140.png" width=150>
 </div>
 
 **部分功能介绍**
@@ -16,7 +16,6 @@
 - 【测量仪器】手机当直尺、水平仪、指南针、分贝仪；
 - 【文件加解密】可加密任意文件，可用于私密文件分享；
 - 【金额转大写】将阿拉伯数字类型的金额转成中文大写；
-- 【通信调试】BLE/SPP蓝牙、USB、TCP/UDP/MQTT通信调试；
 - 【二维码】调用相机扫描或扫描图片识别二维码，支持解析WiFi二维码获取密码，输入文字生成相应的二维码；
 - 【图片模糊处理】将图片进行高斯模糊处理，毛玻璃效果；
 - 【黑白图片上色】黑白图片变彩色；
@@ -29,8 +28,10 @@
 - 【BLE调试】低功耗蓝牙GATT通信调试，支持主从模式，可多设备同时连接，实时日志；
 - 【SPP蓝牙调试】经典蓝牙Socket通信调试，支持自定义UUID，多设备同时连接，实时日志；
 - 【USB调试】USB串口调试，兼容芯片多，实时日志；
-- ……
-
+- 【MQTT调试】MQTT通信调试，实时日志、自定义按键、订阅主题保存；
+- 【TCP/UDP调试】支持TCP客户端、TCP服务端、UDP客户端、UDP服务端；
+- 【私密相册】加密存储图片，保护个人隐私；
+……
 已集成上百个小工具，持续更新中...
 
 点击下方按钮或扫码下载【蜗牛工具箱】
@@ -45,7 +46,7 @@
 
 ## 最新版本
 
-[![Maven Central](https://img.shields.io/maven-central/v/cn.wandersnail/easyble-x.svg?color=4AC61C)](https://mvnrepository.com/artifact/cn.wandersnail/easyble-x)
+[![Maven Central](https://img.shields.io/maven-central/v/cn.wandersnail/easyble-x.svg?color=4AC61C)](https://central.sonatype.com/artifact/cn.wandersnail/easyble-x/versions)
 [![Release](https://jitpack.io/v/cn.wandersnail/easyble-x.svg)](https://jitpack.io/#cn.wandersnail/easyble-x)
 [![](https://img.shields.io/badge/源码-github-blue.svg)](https://github.com/wandersnail/easyble-x)
 [![](https://img.shields.io/badge/源码-码云-red.svg)](https://gitee.com/fszeng/easyble-x)
