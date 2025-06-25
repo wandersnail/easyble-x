@@ -31,7 +31,8 @@
 - 【MQTT调试】MQTT通信调试，实时日志、自定义按键、订阅主题保存；
 - 【TCP/UDP调试】支持TCP客户端、TCP服务端、UDP客户端、UDP服务端；
 - 【私密相册】加密存储图片，保护个人隐私；
-……
+- ……
+
 已集成上百个小工具，持续更新中...
 
 点击下方按钮或扫码下载【蜗牛工具箱】
@@ -72,34 +73,7 @@
 
 ## 配置
 
-1. 因为使用了jdk8的一些特性，需要在module的build.gradle里添加如下配置：
-   
-   ```
-   //纯java的项目
-   android {
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-   }
-   ```
-
-   ```
-   //有kotlin的项目还需要在project的build.gradle里添加
-   allprojects {
-       tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
-           sourceCompatibility = JavaVersion.VERSION_1_8
-           targetCompatibility = JavaVersion.VERSION_1_8
-
-            kotlinOptions {
-                jvmTarget = '1.8'
-            }
-        }
-    }
-   ```
-
-
-2. module的build.gradle中的添加依赖，自行将latestVersion修改为各自最新版本，commons-android [最新版本](https://gitee.com/fszeng/commons-android) ，同步后通常就可以用了：
+1. module的build.gradle中的添加依赖，自行将latestVersion修改为各自最新版本，commons-android [最新版本](https://gitee.com/fszeng/commons-android) ，同步后通常就可以用了：
 
 ```
 dependencies {
@@ -109,7 +83,7 @@ dependencies {
 }
 ```
 
-3. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，添加完再次同步即可。
+1. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，添加完再次同步即可。
 
 ```
 allprojects {
@@ -121,7 +95,7 @@ allprojects {
 }
 ```
 
-4. AndroidManifest.xml配置权限，以下权限在SDK中已配置，如想去除某些可在app的AndroidManifest声明对应权限，然后加上tools:node="remove"
+2. AndroidManifest.xml配置权限，以下权限在SDK中已配置，如想去除某些可在app的AndroidManifest声明对应权限，然后加上tools:node="remove"
 
 ```
 <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
