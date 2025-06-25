@@ -83,7 +83,7 @@ dependencies {
 }
 ```
 
-1. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，添加完再次同步即可。
+2. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，添加完再次同步即可。
 
 ```
 allprojects {
@@ -95,7 +95,7 @@ allprojects {
 }
 ```
 
-2. AndroidManifest.xml配置权限，以下权限在SDK中已配置，如想去除某些可在app的AndroidManifest声明对应权限，然后加上tools:node="remove"
+3. AndroidManifest.xml配置权限，以下权限在SDK中已配置，如想去除某些可在app的AndroidManifest声明对应权限，然后加上tools:node="remove"
 
 ```
 <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
