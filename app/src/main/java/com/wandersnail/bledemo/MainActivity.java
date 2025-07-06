@@ -121,30 +121,25 @@ public class MainActivity extends BaseActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-            case R.id.menuDisconnect:
-                EasyBLE.getInstance().disconnectConnection(device);
-        		break;
-            case R.id.menuConnect:
-            {
-                ConnectionConfiguration config = new ConnectionConfiguration();
-                config.setConnectTimeoutMillis(10000);
-                config.setRequestTimeoutMillis(1000);
-                config.setAutoReconnect(false);
-                config.setUseAutoConnect(false);
-                connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态
-            }  
-        		break;
-            case R.id.menuAutoConnect:
-            {
-                ConnectionConfiguration config = new ConnectionConfiguration();
-                config.setConnectTimeoutMillis(10000);
-                config.setRequestTimeoutMillis(1000);
-                config.setAutoReconnect(false);
-                config.setUseAutoConnect(true);
-                connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态
-            }
-                break;
+        if (item.getItemId() == R.id.menuDisconnect) {
+            EasyBLE.getInstance().disconnectConnection(device);
+            return true;
+        } else if (item.getItemId() == R.id.menuConnect) {
+            ConnectionConfiguration config = new ConnectionConfiguration();
+            config.setConnectTimeoutMillis(10000);
+            config.setRequestTimeoutMillis(1000);
+            config.setAutoReconnect(false);
+            config.setUseAutoConnect(false);
+            connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态
+            return true;
+        } else if (item.getItemId() == R.id.menuAutoConnect) {
+            ConnectionConfiguration config = new ConnectionConfiguration();
+            config.setConnectTimeoutMillis(10000);
+            config.setRequestTimeoutMillis(1000);
+            config.setAutoReconnect(false);
+            config.setUseAutoConnect(true);
+            connection = EasyBLE.getInstance().connect(device, config);//观察者监听连接状态
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
