@@ -481,6 +481,7 @@ class ConnectionImpl implements Connection, ScanListener {
                 if (!autoConnect && connectFailed && configuration.useAutoConnectAfterConnectionFailure) {
                     autoConnect = true;
                 }
+                closeGatt(bluetoothGatt);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     bluetoothGatt = device.getOriginDevice().connectGatt(easyBle.getContext(), autoConnect, gattCallback,
                             configuration.transport, configuration.phy);
@@ -1137,6 +1138,7 @@ class ConnectionImpl implements Connection, ScanListener {
     private boolean doRefresh() {
         try {
             Method localMethod = bluetoothGatt.getClass().getMethod("refresh");
+            localMethod.setAccessible(true);
             return (boolean) localMethod.invoke(bluetoothGatt);
         } catch (Throwable ignore) {
         }
