@@ -9,7 +9,7 @@ signing {
     sign configurations.archives
 }
 
-def lib_version = '1.5.5'
+def lib_version = '1.5.6'
 def user_name = 'wandersnail'
 def lib_group = 'cn.wandersnail'
 def lib_artifact = 'easyble-x'
