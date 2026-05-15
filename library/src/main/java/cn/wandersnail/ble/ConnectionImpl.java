@@ -607,6 +607,7 @@ class ConnectionImpl implements Connection, ScanListener {
             gatt.disconnect();
         } catch (Throwable ignore) {
         }
+        doRefresh();
         try {
             gatt.close();
         } catch (Throwable ignore) {
@@ -644,6 +645,9 @@ class ConnectionImpl implements Connection, ScanListener {
             handleWriteFailed(request);
             return false;
         }
+        // 重新设置超时，避免发送大包数据时触发默认超时
+        connHandler.removeMessages(MSG_REQUEST_TIMEOUT);
+        connHandler.sendMessageDelayed(Message.obtain(connHandler, MSG_REQUEST_TIMEOUT, request), configuration.requestTimeoutMillis);
         return true;
     }
 

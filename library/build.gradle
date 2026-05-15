@@ -4,12 +4,17 @@ plugins {
     id 'signing'
     id 'tech.yanand.maven-central-publish' version '1.3.0'
 }
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
 
 signing {
     sign configurations.archives
 }
 
-def lib_version = '1.5.6'
+def lib_version = '1.5.7'
 def user_name = 'wandersnail'
 def lib_group = 'cn.wandersnail'
 def lib_artifact = 'easyble-x'
@@ -25,11 +30,6 @@ android {
         targetSdk rootProject.ext.targetSdkVersion
 
         consumerProguardFiles 'easyblex-consumer-rules.pro'
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
     }
     lint {
         abortOnError false
