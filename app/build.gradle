@@ -40,9 +40,7 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     kotlin {
-        jvmToolchain {
-            languageVersion.set(JavaLanguageVersion.of(17))
-        }
+        jvmToolchain(17)
     }
     lint {
         abortOnError false
