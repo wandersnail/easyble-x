@@ -451,10 +451,10 @@ class ConnectionImpl implements Connection, ScanListener {
                 }
             }
             //通过读取rssi来辅助判断是否断开连接
-            if (device.connectionState == ConnectionState.SERVICE_DISCOVERED && lastRemoteRssiReadTime > 0) {
+            if (device.connectionState == ConnectionState.SERVICE_DISCOVERED && lastRemoteRssiReadTime > 0 &&
+                    configuration.useReadRemoteRssiToDetectDisconnection) {
                 //如果5秒内没有成功读取到rssi则说明连接已断开
-                if (configuration.useReadRemoteRssiToDetectDisconnection &&
-                        System.currentTimeMillis() - lastRemoteRssiReadTime > 5000) {
+                if (System.currentTimeMillis() - lastRemoteRssiReadTime > 5000) {
                     logD(Logger.TYPE_CONNECTION_STATE, "disconnected! [name: %s, addr: %s, autoReconnEnable: %s]",
                             device.name, device.address, configuration.isAutoReconnect);
                     clearRequestQueueAndNotify();
