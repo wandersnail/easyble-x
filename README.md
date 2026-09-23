@@ -3,10 +3,10 @@
 > 面向硬件工程师、嵌入式开发者、电子爱好者的蓝牙调试工具，同时支持BLE低功耗蓝牙与SPP串口蓝牙，一站式完成蓝牙设备测试。各大应用市场搜索【蓝牙工坊】安装即可。
 
 <div align="center">
-    <img src="https://s41.ax1x.com/2026/09/11/pneuhmd.png" width=150>
-    <img src="https://s41.ax1x.com/2026/09/11/pneuWOH.png" width=150>
-    <img src="https://s41.ax1x.com/2026/09/11/pneu5TI.png" width=150>
-    <img src="https://s41.ax1x.com/2026/09/11/pneu40A.png" width=150>
+    <img src="https://cdn-app-screenshot.pgyer.com/e/e/9/1/1/ee911b4ea22819d4f8d94bb811da2b83?x-oss-process=image/resize,m_lfit,h_528,w_528/format,jpg" width=150>
+    <img src="https://cdn-app-screenshot.pgyer.com/d/5/d/c/f/d5dcf8ba7d21f9d7357df416680cdcf4?x-oss-process=image/resize,m_lfit,h_528,w_528/format,jpg" width=150>
+    <img src="https://cdn-app-screenshot.pgyer.com/4/9/6/1/3/496137b00e186c6142592fd395c18a61?x-oss-process=image/resize,m_lfit,h_528,w_528/format,jpg" width=150>
+    <img src="https://cdn-app-screenshot.pgyer.com/8/f/7/5/b/8f75b7822dd33d0edd5d63e9503e3c69?x-oss-process=image/resize,m_lfit,h_528,w_528/format,jpg" width=150>
 </div>
 
 ✅ 实时日志打印，数据秒级展示，支持日志持久化本地保存，调试过程数据不丢失；
