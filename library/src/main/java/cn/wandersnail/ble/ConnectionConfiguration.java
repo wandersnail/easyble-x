@@ -71,7 +71,7 @@ public class ConnectionConfiguration {
      * 连接超时时长
      */
     public ConnectionConfiguration setConnectTimeoutMillis(int connectTimeoutMillis) {
-        if (requestTimeoutMillis >= 1000) {
+        if (connectTimeoutMillis >= 1000) {
             this.connectTimeoutMillis = connectTimeoutMillis;
         }
         return this;

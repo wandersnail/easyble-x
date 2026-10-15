@@ -100,6 +100,14 @@ public class EasyBLE {
         return instance;
     }
 
+    /**
+     * 获取当前实例，不触发自动创建。实例已销毁时返回null
+     */
+    @Nullable
+    static EasyBLE getActiveInstance() {
+        return instance;
+    }
+
     public static EasyBLEBuilder getBuilder() {
         return new EasyBLEBuilder();
     }
@@ -221,29 +229,6 @@ public class EasyBLE {
                         break;    
                 }
             }
-            if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) { //蓝牙开关状态变化 
-                if (bluetoothAdapter != null) {
-                    //通知观察者蓝牙状态
-                    observable.notifyObservers(MethodInfoGenerator.onBluetoothAdapterStateChanged(bluetoothAdapter.getState()));
-                    if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) { //蓝牙关闭
-                        logger.log(Log.DEBUG, Logger.TYPE_GENERAL, "蓝牙关闭了");
-                        //通知搜索器
-                        if (scanner != null) {
-                            scanner.onBluetoothOff();
-                        }
-                        //断开所有连接
-                        disconnectAllConnections();
-                    } else if (bluetoothAdapter.getState() == BluetoothAdapter.STATE_ON) {
-                        logger.log(Log.DEBUG, Logger.TYPE_GENERAL, "蓝牙开启了");
-                        //重连所有设置了自动重连的连接
-                        for (Connection connection : connectionMap.values()) {
-                            if (connection.isAutoReconnectEnabled()) {
-                                connection.reconnect();
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -310,15 +295,24 @@ public class EasyBLE {
      * 关闭所有连接并释放资源
      */
     public synchronized void release() {
-        if (broadcastReceiver != null) {
-            application.unregisterReceiver(broadcastReceiver);
+        isInitialized = false;
+        if (application != null && broadcastReceiver != null) {
+            try {
+                application.unregisterReceiver(broadcastReceiver);
+            } catch (Throwable ignore) {
+            }
             broadcastReceiver = null;
         }
-        isInitialized = false;
         if (scanner != null) {
             scanner.release();
+            scanner = null;
         }
-        releaseAllConnections();
+        //逐个释放连接。不能调用releaseAllConnections()，其内部的checkStatus会在release过程中触发自动重新初始化
+        for (Connection connection : connectionMap.values()) {
+            connection.release();
+        }
+        connectionMap.clear();
+        addressList.clear();
         if (internalObservable) {
             observable.unregisterAll();
             posterDispatcher.clearTasks();
@@ -390,7 +384,7 @@ public class EasyBLE {
                         handleScannerChange(ClassicScanner.class);
                     }
                 } else if (scanner == null || !(scanner instanceof LegacyScanner)) {
-                    handleScannerChange(ClassicScanner.class);
+                    handleScannerChange(LegacyScanner.class);
                 }
             }
         }
@@ -764,6 +758,12 @@ public class EasyBLE {
                 connection.release();
             }
         }
+    }
+
+    //连接被释放后从集合中移除。不做初始化检查，避免在release过程中触发自动重新初始化
+    void onConnectionReleased(Device device) {
+        addressList.remove(device.getAddress());
+        connectionMap.remove(device.getAddress());
     }
 
     /**
