@@ -31,5 +31,5 @@ allprojects {
 }
 
 tasks.register('clean', Delete) {
-    delete rootProject.buildFile
+    delete rootProject.layout.buildDirectory
 }

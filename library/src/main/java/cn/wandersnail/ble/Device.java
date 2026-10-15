@@ -32,8 +32,14 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     public Device(@NonNull BluetoothDevice originDevice) {
         this.originDevice = originDevice;
-        this.name = originDevice.getName() == null ? "" : originDevice.getName();
         this.address = originDevice.getAddress();
+        //Android 12+获取设备名需要BLUETOOTH_CONNECT权限，缺失时不能崩溃
+        String n = null;
+        try {
+            n = originDevice.getName();
+        } catch (Throwable ignore) {
+        }
+        this.name = n == null ? "" : n;
     }
 
     @NonNull
@@ -76,7 +82,9 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     @NonNull
     public ConnectionState getConnectionState() {
-        Connection connection = EasyBLE.getInstance().getConnection(this);
+        //使用getActiveInstance避免在实例销毁后重新创建单例
+        EasyBLE ble = EasyBLE.getActiveInstance();
+        Connection connection = ble == null ? null : ble.getConnection(this);
         return connection == null ? connectionState : connection.getConnectionState();
     }
 
@@ -133,17 +141,11 @@ public class Device implements Comparable<Device>, Cloneable, Parcelable {
 
     @Override
     public int compareTo(@NonNull Device other) {
-        if (rssi == 0) {
-            return -1;
-        } else if (other.rssi == 0) {
-            return 1;
-        } else {
-            int result = Integer.compare(other.rssi, rssi);
-            if (result == 0) {
-                result = name.compareTo(other.name);
-            }
-            return result;
+        int result = Integer.compare(other.rssi, rssi);
+        if (result == 0) {
+            result = name.compareTo(other.name);
         }
+        return result;
     }
 
     @NonNull

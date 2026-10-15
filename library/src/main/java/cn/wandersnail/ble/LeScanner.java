@@ -68,7 +68,12 @@ class LeScanner extends AbstractScanner {
             settings = configuration.scanSettings;
         }
         try {
-            bleScanner.startScan(configuration.filters, settings, scanCallback);
+            BluetoothLeScanner scanner = getLeScanner();
+            if (scanner != null) {
+                scanner.startScan(configuration.filters, settings, scanCallback);
+            } else {
+                handleErrorAndStop(ScanListener.ERROR_SCAN_FAILED, "BluetoothLeScanner is null.");
+            }
         } catch (Exception e) {
             logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, "搜索开始失败：" + e.getMessage());
             handleErrorAndStop(ScanListener.ERROR_SCAN_FAILED, e.getMessage());

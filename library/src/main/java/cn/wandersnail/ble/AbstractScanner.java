@@ -42,6 +42,7 @@ import cn.wandersnail.commons.poster.ThreadMode;
 abstract class AbstractScanner implements Scanner {
     final ScanConfiguration configuration;
     final BluetoothAdapter bluetoothAdapter;
+    private final EasyBLE easyBle;
     private final Handler mainHandler;
     private boolean isScanning;
     private final List<ScanListener> scanListeners = new CopyOnWriteArrayList<>();
@@ -53,6 +54,7 @@ abstract class AbstractScanner implements Scanner {
 
     AbstractScanner(EasyBLE easyBle, BluetoothAdapter bluetoothAdapter) {
         this.bluetoothAdapter = bluetoothAdapter;
+        this.easyBle = easyBle;
         this.configuration = easyBle.scanConfiguration;
         mainHandler = new Handler(Looper.getMainLooper());
         logger = easyBle.getLogger();
@@ -225,7 +227,8 @@ abstract class AbstractScanner implements Scanner {
     
     @SuppressLint("MissingPermission")
     void parseScanResult(BluetoothDevice device, boolean isConnectedBySys, @Nullable ScanResult result, int rssi, byte[] scanRecord) {
-        EasyBLE.getInstance().getExecutorService().execute(()-> {
+        //使用创建时持有的实例，避免在单例销毁后通过getInstance重新创建
+        easyBle.getExecutorService().execute(()-> {
             if ((configuration.onlyAcceptBleDevice && device.getType() != BluetoothDevice.DEVICE_TYPE_LE &&
                     device.getType() != BluetoothDevice.DEVICE_TYPE_DUAL) ||
                     !device.getAddress().matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")) {
@@ -264,6 +267,7 @@ abstract class AbstractScanner implements Scanner {
                 String errorMsg = "Scanner not ready.";
                 handleScanCallback(false, null, false, ScanListener.ERROR_SCANNER_NOT_READY, errorMsg);
                 logger.log(Log.ERROR, Logger.TYPE_SCAN_STATE, errorMsg);
+                return;
             }
             if (!isBtEnabled()) {
                 String errorMsg = "Bluetooth is not turned on.";

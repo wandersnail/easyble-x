@@ -14,6 +14,7 @@ import cn.wandersnail.ble.callback.MtuChangeCallback;
 import cn.wandersnail.ble.callback.NotificationChangeCallback;
 import cn.wandersnail.ble.callback.PhyChangeCallback;
 import cn.wandersnail.ble.callback.ReadCharacteristicCallback;
+import cn.wandersnail.ble.callback.ReadDescriptorCallback;
 import cn.wandersnail.ble.callback.ReadRssiCallback;
 
 /**
@@ -90,9 +91,9 @@ public class RequestBuilderFactory {
      * @param characteristic 特征UUID
      * @param descriptor     描述符UUID
      */
-    public RequestBuilder<NotificationChangeCallback> getReadDescriptorBuilder(@NonNull UUID service, @NonNull UUID characteristic,
-                                                                                @NonNull UUID descriptor) {
-        RequestBuilder<NotificationChangeCallback> builder = new RequestBuilder<>(RequestType.READ_DESCRIPTOR);
+    public RequestBuilder<ReadDescriptorCallback> getReadDescriptorBuilder(@NonNull UUID service, @NonNull UUID characteristic,
+                                                                           @NonNull UUID descriptor) {
+        RequestBuilder<ReadDescriptorCallback> builder = new RequestBuilder<>(RequestType.READ_DESCRIPTOR);
         builder.service = service;
         builder.characteristic = characteristic;
         builder.descriptor = descriptor;

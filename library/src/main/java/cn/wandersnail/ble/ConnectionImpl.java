@@ -205,7 +205,7 @@ class ConnectionImpl implements Connection, ScanListener {
                         if (currentRequest.remainQueue == null || currentRequest.remainQueue.isEmpty()) {
                             progress = total;
                         } else {
-                            progress = data.length / packageSize - currentRequest.remainQueue.size() + 1;
+                            progress = total - currentRequest.remainQueue.size();
                         }
                         printWriteLog(currentRequest, progress, total, characteristic.getValue());
                     }
@@ -217,18 +217,19 @@ class ConnectionImpl implements Connection, ScanListener {
                         connHandler.sendMessageDelayed(Message.obtain(connHandler, MSG_REQUEST_TIMEOUT, currentRequest),
                                 configuration.requestTimeoutMillis);
                         GenericRequest req = currentRequest;
-                        int delay = currentRequest.writeOptions.packageWriteDelayMillis;
+                        int delay = req.writeOptions.packageWriteDelayMillis;
                         if (delay > 0) {
-                            try {
-                                Thread.sleep(delay);
-                            } catch (InterruptedException ignore) {
-                            }
-                            if (req != currentRequest) {
-                                return;
-                            }
+                            //延时写下一包，避免在Binder线程中睡眠
+                            connHandler.postDelayed(() -> {
+                                if (!isReleased && req == currentRequest && req.remainQueue != null && !req.remainQueue.isEmpty()) {
+                                    req.sendingBytes = req.remainQueue.remove();
+                                    write(req, characteristic, req.sendingBytes);
+                                }
+                            }, delay);
+                        } else {
+                            req.sendingBytes = req.remainQueue.remove();
+                            write(req, characteristic, req.sendingBytes);
                         }
-                        req.sendingBytes = req.remainQueue.remove();
-                        write(req, characteristic, req.sendingBytes);
                     }
                 } else {
                     handleFailedCallback(currentRequest, REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, status, true);
@@ -466,7 +467,15 @@ class ConnectionImpl implements Connection, ScanListener {
                     }
                 }
             }
-            connHandler.sendEmptyMessageDelayed(MSG_TIMER, 500);
+            //连接已就绪且未启用RSSI检测、或已断开且无需自动重连时，无需继续轮询，状态变化时会通过
+            //sendConnectionCallback重新启动定时器
+            boolean serviceIdle = device.connectionState == ConnectionState.SERVICE_DISCOVERED &&
+                    !configuration.useReadRemoteRssiToDetectDisconnection;
+            boolean disconnectIdle = device.connectionState == ConnectionState.DISCONNECTED &&
+                    (!configuration.isAutoReconnect || isActiveDisconnect);
+            if (!serviceIdle && !disconnectIdle) {
+                connHandler.sendEmptyMessageDelayed(MSG_TIMER, 500);
+            }
         }
     }
 
@@ -588,14 +597,16 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private boolean canScanReconnect() {
         long duration = System.currentTimeMillis() - lastScanStopTime;
-        List<Pair<Integer, Integer>> parameters = configuration.scanIntervalPairsInAutoReconnection;
+        //排序副本，避免修改用户配置的原始列表
+        List<Pair<Integer, Integer>> parameters = new ArrayList<>(configuration.scanIntervalPairsInAutoReconnection);
         Collections.sort(parameters, (o1, o2) -> {
-            if (o1 == null || o1.first == null) return 1;
-            if (o2 == null || o2.first == null) return -1;
-            return o2.first.compareTo(o1.first);
+            int first1 = o1 == null || o1.first == null ? Integer.MIN_VALUE : o1.first;
+            int first2 = o2 == null || o2.first == null ? Integer.MIN_VALUE : o2.first;
+            return Integer.compare(first2, first1);
         });
         for (Pair<Integer, Integer> pair : parameters) {
-            if (pair.first != null && pair.second != null && tryReconnectCount >= pair.first && duration >= pair.second) {
+            if (pair != null && pair.first != null && pair.second != null &&
+                    tryReconnectCount >= pair.first && duration >= pair.second) {
                 return true;
             }
         }
@@ -626,6 +637,10 @@ class ConnectionImpl implements Connection, ScanListener {
                 posterDispatcher.post(observer, MethodInfoGenerator.onConnectionStateChanged(device));
             }
             observable.notifyObservers(MethodInfoGenerator.onConnectionStateChanged(device));
+            //状态离开空闲态（SERVICE_DISCOVERED或无需重连的DISCONNECTED）后，恢复定时器轮询
+            if (!isReleased && !connHandler.hasMessages(MSG_TIMER)) {
+                connHandler.sendEmptyMessageDelayed(MSG_TIMER, 500);
+            }
         }
     }
 
@@ -875,43 +890,33 @@ class ConnectionImpl implements Connection, ScanListener {
 
     private void executeWriteCharacteristic(GenericRequest request, BluetoothGattCharacteristic characteristic) {
         try {
-            byte[] value = (byte[]) request.value;
             WriteOptions options = request.writeOptions;
             int reqDelay = options.requestWriteDelayMillis > 0 ? options.requestWriteDelayMillis : options.packageWriteDelayMillis;
             if (reqDelay > 0) {
-                try {
-                    Thread.sleep(reqDelay);
-                } catch (InterruptedException ignore) {
-                }
-                if (request != currentRequest) {
-                    return;
-                }
+                //延时执行，避免在调用线程（可能是主线程）中睡眠
+                connHandler.postDelayed(() -> doExecuteWriteCharacteristic(request, characteristic), reqDelay);
+            } else {
+                doExecuteWriteCharacteristic(request, characteristic);
             }
+        } catch (Throwable e) {
+            handleWriteFailed(request);
+        }
+    }
+
+    private void doExecuteWriteCharacteristic(GenericRequest request, BluetoothGattCharacteristic characteristic) {
+        try {
+            if (isReleased || request != currentRequest) {
+                return;
+            }
+            byte[] value = (byte[]) request.value;
+            WriteOptions options = request.writeOptions;
             if (options.useMtuAsPackageSize) {
                 options.packageSize = mtu - 3;
             }
             if (value.length > options.packageSize) {
                 List<byte[]> list = MathUtils.splitPackage(value, options.packageSize);
                 if (!options.isWaitWriteResult) { //不等待写入回调，直接写入下一包数据
-                    int delay = options.packageWriteDelayMillis;
-                    for (int i = 0; i < list.size(); i++) {
-                        byte[] bytes = list.get(i);
-                        if (i > 0 && delay > 0) {
-                            try {
-                                Thread.sleep(delay);
-                            } catch (InterruptedException ignore) {
-                            }
-                            if (request != currentRequest) {
-                                return;
-                            }
-                        }
-                        if (!write(request, characteristic, bytes)) {
-                            return;
-                        } else {
-                            printWriteLog(request, i + 1, list.size(), bytes);
-                        }
-                    }
-                    printWriteLog(request, list.size(), list.size(), list.get(list.size() - 1));
+                    writePackagesNoWait(request, characteristic, list, 0);
                 } else { //发送第一包，剩下的加入队列
                     request.remainQueue = new ConcurrentLinkedQueue<>();
                     request.remainQueue.addAll(list);
@@ -930,6 +935,31 @@ class ConnectionImpl implements Connection, ScanListener {
             }
         } catch (Throwable e) {
             handleWriteFailed(request);
+        }
+    }
+
+    //不等待写入结果时，逐包通过Handler调度写入，避免在调用线程中睡眠
+    private void writePackagesNoWait(GenericRequest request, BluetoothGattCharacteristic characteristic,
+                                     List<byte[]> packages, int index) {
+        if (isReleased || request != currentRequest) {
+            return;
+        }
+        int delay = request.writeOptions.packageWriteDelayMillis;
+        if (index > 0 && delay > 0) {
+            connHandler.postDelayed(() -> writePackagesNoWait(request, characteristic, packages, index), delay);
+            return;
+        }
+        byte[] bytes = packages.get(index);
+        if (!write(request, characteristic, bytes)) {
+            return;
+        }
+        printWriteLog(request, index + 1, packages.size(), bytes);
+        if (index < packages.size() - 1) {
+            writePackagesNoWait(request, characteristic, packages, index + 1);
+        } else {
+            //全部分包写入完成
+            notifyCharacteristicWrite(request, (byte[]) request.value);
+            executeNextRequest();
         }
     }
 
@@ -1157,7 +1187,8 @@ class ConnectionImpl implements Connection, ScanListener {
     private void release(boolean noEvent) {
         if (!isReleased) {
             isReleased = true;
-            configuration.setAutoReconnect(false); //停止自动重连
+            //不修改configuration的自动重连设置，避免污染用户复用的配置对象；
+            //所有重连路径均已由isReleased标记拦截
             connHandler.removeCallbacksAndMessages(null);
             easyBle.removeScanListener(this);
             clearRequestQueueAndNotify();
@@ -1170,7 +1201,7 @@ class ConnectionImpl implements Connection, ScanListener {
             if (!noEvent) {
                 sendConnectionCallback();
             }
-            easyBle.releaseConnection(device);//从集合中删除
+            easyBle.onConnectionReleased(device);//从集合中删除
         }
     }
 
@@ -1212,6 +1243,11 @@ class ConnectionImpl implements Connection, ScanListener {
     @Override
     public void clearRequestQueueByType(@Nullable RequestType type) {
         synchronized (this) {
+            if (type == null) {
+                requestQueue.clear();
+                currentRequest = null;
+                return;
+            }
             Iterator<GenericRequest> it = requestQueue.iterator();
             while (it.hasNext()) {
                 GenericRequest request = it.next();
