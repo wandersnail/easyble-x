@@ -8,3 +8,10 @@ build
 .kotlin
 
 /local.properties
+
+# ===== 签名凭据，严禁提交 =====
+# GPG 私钥环
+secring.gpg
+*.gpg
+# 本模块的本地签名配置（keyId/口令/私钥路径），仅保留在本地
+/library/gradle.properties

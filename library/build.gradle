@@ -10,11 +10,27 @@ java {
     }
 }
 
+// ===== 签名凭据 =====
+// GnuPG 2.x 不再生成 secring.gpg，改用 armored 私钥（useInMemoryPgpKeys）。
+// 凭据只保留在本地 library/gradle.properties（已被 .gitignore 排除）：
+//   signing.keyFile=<armored 私钥文件绝对路径>
+//   signing.password=<私钥口令>
+// 也可用 -Psigning.keyFile=... -Psigning.password=... 或环境变量 SIGNING_KEY_FILE / SIGNING_PASSWORD 传入。
+// 缺少凭据时跳过签名任务，避免本地 assemble 因签名失败而中断。
+def signingKeyFile = findProperty('signing.keyFile') ?: System.getenv('SIGNING_KEY_FILE')
+def signingPassword = findProperty('signing.password') ?: System.getenv('SIGNING_PASSWORD')
+def signingAvailable = signingKeyFile != null && signingPassword != null &&
+        new File(signingKeyFile.toString()).isFile()
+
 signing {
+    required { signingAvailable }
+    if (signingAvailable) {
+        useInMemoryPgpKeys(new File(signingKeyFile.toString()).getText('UTF-8'), signingPassword.toString())
+    }
     sign configurations.archives
 }
 
-def lib_version = '1.5.9'
+def lib_version = '1.6.0'
 def user_name = 'wandersnail'
 def lib_group = 'cn.wandersnail'
 def lib_artifact = 'easyble-x'
@@ -105,6 +121,7 @@ publishing {
 }
 
 signing {
+    required { signingAvailable }
     sign publishing.publications.release
 }
 
