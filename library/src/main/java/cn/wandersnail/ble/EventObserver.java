@@ -110,6 +110,20 @@ public interface EventObserver extends Observer {
     }
 
     /**
+     * 连接参数更新（连接间隔、从机延迟、超时）。
+     * <br>仅在 Android 8.0（API 26）及以上、且底层实际上报了参数变化时回调。
+     * <br>该事件不依附于某个请求，请求连接优先级后实际生效的参数通过此回调获取。
+     *
+     * @param device   设备
+     * @param interval 连接间隔，单位 1.25ms
+     * @param latency  从机延迟，单位为连接事件个数
+     * @param timeout  连接超时，单位 10ms
+     * @param status   状态值。{@link BluetoothGatt#GATT_SUCCESS}表示成功
+     */
+    default void onConnectionUpdated(@NonNull Device device, int interval, int latency, int timeout, int status) {
+    }
+
+    /**
      * 请求失败
      *
      * @param request  请求

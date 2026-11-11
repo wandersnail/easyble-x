@@ -9,6 +9,7 @@ import androidx.annotation.RequiresApi;
 
 import java.util.UUID;
 
+import cn.wandersnail.ble.callback.ConnectionPriorityCallback;
 import cn.wandersnail.ble.callback.IndicationChangeCallback;
 import cn.wandersnail.ble.callback.MtuChangeCallback;
 import cn.wandersnail.ble.callback.NotificationChangeCallback;
@@ -142,6 +143,21 @@ public class RequestBuilderFactory {
     public RequestBuilder<PhyChangeCallback> getSetPreferredPhyBuilder(int txPhy, int rxPhy, int phyOptions) {
         RequestBuilder<PhyChangeCallback> builder = new RequestBuilder<>(RequestType.SET_PREFERRED_PHY);
         builder.value = new int[]{txPhy, rxPhy, phyOptions};
+        return builder;
+    }
+
+    /**
+     * 获取请求连接优先级构建器。
+     * <br>该请求只表示系统是否受理，实际生效的连接参数请通过
+     * {@link cn.wandersnail.ble.EventObserver#onConnectionUpdated} 获取。
+     *
+     * @param priority 连接优先级。{@link android.bluetooth.BluetoothGatt#CONNECTION_PRIORITY_HIGH}等
+     */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    public RequestBuilder<ConnectionPriorityCallback> getRequestConnectionPriorityBuilder(int priority) {
+        RequestBuilder<ConnectionPriorityCallback> builder =
+                new RequestBuilder<>(RequestType.REQUEST_CONNECTION_PRIORITY);
+        builder.value = priority;
         return builder;
     }
 }

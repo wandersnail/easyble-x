@@ -83,6 +83,16 @@ class MethodInfoGenerator {
                 new MethodInfo.Parameter(int.class, txPhy), new MethodInfo.Parameter(int.class, rxPhy));
     }
 
+    static MethodInfo onConnectionUpdated(Device device, int interval, int latency, int timeout, int status) {
+        return new MethodInfo("onConnectionUpdated", new MethodInfo.Parameter(Device.class, device),
+                new MethodInfo.Parameter(int.class, interval), new MethodInfo.Parameter(int.class, latency),
+                new MethodInfo.Parameter(int.class, timeout), new MethodInfo.Parameter(int.class, status));
+    }
+
+    static MethodInfo onConnectionPriorityRequested(Request request) {
+        return new MethodInfo("onConnectionPriorityRequested", new MethodInfo.Parameter(Request.class, request));
+    }
+
     @Deprecated
     static MethodInfo onRequestFailed(Request request, int failType, Object value) {
         return new MethodInfo("onRequestFailed", new MethodInfo.Parameter(Request.class, request),

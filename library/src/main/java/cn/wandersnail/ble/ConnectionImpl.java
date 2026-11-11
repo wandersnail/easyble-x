@@ -337,10 +337,27 @@ class ConnectionImpl implements Connection, ScanListener {
         public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
             if (originCallback != null) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    easyBle.getExecutorService().execute(() -> originCallback.onPhyRead(gatt, txPhy, rxPhy, status));
+                    easyBle.getExecutorService().execute(() -> originCallback.onPhyUpdate(gatt, txPhy, rxPhy, status));
                 }
             }
             handlePhyChange(false, txPhy, rxPhy, status);
+        }
+
+        /**
+         * 连接参数更新回调。
+         * <br>系统的 {@code BluetoothGattCallback#onConnectionUpdated} 为隐藏 API，
+         * 公开 SDK 中不存在，无法使用 {@code @Override}。这里以完全相同的签名声明，
+         * 在 API 26+ 设备上运行时由系统通过虚分派回调到该方法。
+         */
+        public void onConnectionUpdated(BluetoothGatt gatt, int interval, int latency, int timeout, int status) {
+            MethodInfo info = MethodInfoGenerator.onConnectionUpdated(device, interval, latency, timeout, status);
+            if (observer != null) {
+                posterDispatcher.post(observer, info);
+            }
+            observable.notifyObservers(info);
+            logD(Logger.TYPE_CONNECTION_UPDATED,
+                    "connection updated! [addr: %s, interval: %d(1.25ms), latency: %d, timeout: %d(10ms), status: %d]",
+                    device.address, interval, latency, timeout, status);
         }
     }
 
@@ -840,6 +857,18 @@ class ConnectionImpl implements Connection, ScanListener {
                             bluetoothGatt.setPreferredPhy(options[0], options[1], options[2]);
                         }
                         break;
+                    case REQUEST_CONNECTION_PRIORITY:
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            int priority = (int) request.value;
+                            if (bluetoothGatt.requestConnectionPriority(priority)) {
+                                notifyConnectionPriorityRequested(request);
+                            } else {
+                                handleFailedCallback(request, REQUEST_FAIL_TYPE_REQUEST_FAILED, false);
+                            }
+                        }
+                        // 该请求没有对应的系统回调，直接执行下一个请求
+                        executeNextRequest();
+                        break;
                     default:
                         BluetoothGattService gattService = bluetoothGatt.getService(request.service);
                         if (gattService != null) {
@@ -1136,6 +1165,13 @@ class ConnectionImpl implements Connection, ScanListener {
         handleCallbacks(request.callback, info);
         String event = request.type == RequestType.READ_PHY ? "phy read!" : "phy update!";
         logD(Logger.TYPE_PHY_CHANGE, "%s [addr: %s, tvPhy: %s, rxPhy: %s]", event, device.address, txPhy, rxPhy);
+    }
+
+    private void notifyConnectionPriorityRequested(GenericRequest request) {
+        MethodInfo info = MethodInfoGenerator.onConnectionPriorityRequested(request);
+        handleCallbacks(request.callback, info);
+        logD(Logger.TYPE_CONNECTION_UPDATED, "connection priority requested! [addr: %s, priority: %d]",
+                device.address, (int) request.value);
     }
 
     @Override

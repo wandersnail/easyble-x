@@ -45,6 +45,10 @@ public interface Logger {
     int TYPE_INDICATION_CHANGED = 10;
     int TYPE_CHARACTERISTIC_WRITE = 11;
     int TYPE_PHY_CHANGE = 12;
+    /**
+     * 连接参数更新（连接间隔、从机延迟、超时）
+     */
+    int TYPE_CONNECTION_UPDATED = 13;
 
     /**
      * 打印日志

@@ -42,5 +42,9 @@ public enum RequestType {
     /**
      * 设置物理层发送器和接收器偏好
      */
-    SET_PREFERRED_PHY
+    SET_PREFERRED_PHY,
+    /**
+     * 请求连接优先级（连接参数）
+     */
+    REQUEST_CONNECTION_PRIORITY
 }
